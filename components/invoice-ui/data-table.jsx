@@ -1,4 +1,10 @@
-import { useRef } from "react";
+import {
+  Fragment,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   flexRender,
   getFilteredRowModel,
@@ -16,6 +22,7 @@ import {
 import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PaginationComponent } from "./pagination-component";
+import { Input } from "../ui/input";
 
 export function DataTable({
   data,
@@ -26,39 +33,101 @@ export function DataTable({
   totalItems,
   page,
   onPageChange,
+  manualFiltering = true,
+  onFilterChange,
+  onRowSelectionChange,
+  rowSelection,
 }) {
   const tableContainerRef = useRef(null);
+  const [columnFilters, setColumnFilters] = useState([]);
+
   const table = useReactTable({
     data,
     columns,
+    defaultColumn: {
+      enableColumnFilter: false,
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: enablePagination
       ? getPaginationRowModel()
       : undefined,
     manualPagination: true,
-    manualFiltering: true,
+    manualFiltering: manualFiltering,
+    enableColumnFilter: true,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnFiltersChange: (filters) => {
+      setColumnFilters(filters);
+    },
+
+    onRowSelectionChange: onRowSelectionChange,
+    state: {
+      columnFilters,
+      rowSelection,
+    },
   });
+
+  useEffect(() => {
+    onFilterChange?.(columnFilters);
+  }, [columnFilters]);
 
   return (
     <div ref={tableContainerRef}>
       <Table>
         <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <TableHead key={header.id} className="p-4">
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
+          {table.getHeaderGroups().map((headerGroup) => {
+            const isFilterable = headerGroup.headers.some((header) =>
+              header.column.getCanFilter()
+            );
+
+            return (
+              <Fragment key={headerGroup.id}>
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          "p-4",
+                          header.column.columnDef.rowClassName
                         )}
-                  </TableHead>
-                );
-              })}
-            </TableRow>
-          ))}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+                {isFilterable && (
+                  <TableRow>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead
+                          key={header.id}
+                          className={cn(
+                            "px-4 py-2",
+                            header.column.columnDef.rowClassName
+                          )}
+                        >
+                          {header.column.getCanFilter() && (
+                            <Filter
+                              filter={header.column.getFilterValue()}
+                              onChange={header.column.setFilterValue}
+                              type={header.column.columnDef.filterFn}
+                              header={header.column.columnDef.header}
+                            />
+                          )}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                )}
+              </Fragment>
+            );
+          })}
         </TableHeader>
         <TableBody>
           {isLoading ? (
@@ -66,7 +135,7 @@ export function DataTable({
               <TableRow key={index}>
                 <TableCell
                   colSpan={columns.length}
-                  className="text-center px-4 py-3"
+                  className={"text-center px-4 py-3"}
                   key={index}
                 >
                   <Skeleton className="w-full h-8" />
@@ -78,7 +147,7 @@ export function DataTable({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
-                className={cn("odd:bg-muted")}
+                className={cn("odd:bg-muted", row.original.rowClassName)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id} className="px-4 py-3">
@@ -107,5 +176,16 @@ export function DataTable({
         enablePagination={enablePagination}
       />
     </div>
+  );
+}
+
+function Filter({ filter, onChange, type, header }) {
+  return (
+    <Input
+      type={type === "includesDate" ? "date" : "text"}
+      value={filter || ""}
+      placeholder={`Filter ${header}`}
+      onChange={(e) => onChange(e.target.value)}
+    />
   );
 }

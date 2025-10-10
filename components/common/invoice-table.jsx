@@ -4,7 +4,7 @@ import { APP_ROUTES } from "@/app/constants/app-routes";
 import { ProcessStatusBadge } from "../invoice-ui/process-status-badge";
 import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { EyeIcon } from "lucide-react";
 
 export function InvoiceTable({
@@ -15,6 +15,7 @@ export function InvoiceTable({
   page = 0,
   onPageChange,
   enablePagination = false,
+  onFilterChange,
 }) {
   const router = useRouter();
 
@@ -28,19 +29,22 @@ export function InvoiceTable({
         header: "Invoice Number",
         accessorKey: "invoiceNumber",
         filterFn: "includesString",
+        enableColumnFilter: true,
       },
       {
         header: "Document Name",
         accessorKey: "documentName",
         filterFn: "includesString",
+        enableColumnFilter: true,
       },
       {
         header: "Start Time",
         accessorKey: "startTime",
-        filterFn: "includesString",
+        filterFn: "includesDate",
         cell: ({ row }) => {
           return <span>{humanizeDateTime(row.original.startTime)}</span>;
         },
+        enableColumnFilter: true,
       },
       {
         header: "End Time",
@@ -48,6 +52,8 @@ export function InvoiceTable({
         cell: ({ row }) => {
           return <span>{humanizeDateTime(row.original.endTime)}</span>;
         },
+        enableColumnFilter: true,
+        filterFn: "includesDate",
       },
       {
         header: "Time Taken",
@@ -96,6 +102,7 @@ export function InvoiceTable({
       totalItems={totalItems}
       page={page}
       onPageChange={onPageChange}
+      onFilterChange={onFilterChange}
     />
   );
 }

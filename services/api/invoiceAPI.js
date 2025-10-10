@@ -1,11 +1,11 @@
-import { BaseAPI } from './baseAPI';
+import { BaseAPI, BaseAPIError } from "./baseAPI";
 
 export class InvoiceAPI {
   static async getAllInvoices(filters = {}) {
     try {
-      return await BaseAPI?.get('/invoices', { params: filters });
+      return await BaseAPI?.get("/invoices", { params: filters });
     } catch (error) {
-      throw new Error('Failed to fetch invoice trace data');
+      throw new BaseAPIError("Failed to fetch all invoices", 500);
     }
   }
 
@@ -13,7 +13,7 @@ export class InvoiceAPI {
     try {
       return await BaseAPI?.get(`/invoices/${id}`);
     } catch (error) {
-      throw error;
+      throw new BaseAPIError("Failed to fetch invoice details", 500);
     }
   }
 }

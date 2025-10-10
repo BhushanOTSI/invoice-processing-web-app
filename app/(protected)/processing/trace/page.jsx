@@ -15,9 +15,11 @@ import { Card } from "@/components/ui/card";
 
 export default function Page() {
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({});
 
   const { data: invoices, isLoading } = useInvoiceTrace({
     page: page,
+    ...filters,
   });
 
   useSetBreadcrumbs([
@@ -41,6 +43,14 @@ export default function Page() {
           enablePagination
           onPageChange={(newPage) => {
             setPage(newPage + 1);
+          }}
+          onFilterChange={(filters = []) => {
+            const filterObj = filters.reduce((acc, filter) => {
+              acc[filter.id] = filter.value;
+              return acc;
+            }, {});
+
+            setFilters(filterObj);
           }}
         />
       </Card>
