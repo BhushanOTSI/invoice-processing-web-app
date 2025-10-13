@@ -53,7 +53,7 @@ export default function Page() {
           title={data?.aiWorkHours?.title}
           value={formatFractionalHoursAuto(
             data?.aiWorkHours?.count,
-            data.aiWorkHours?.unit
+            data?.aiWorkHours?.unit
           )}
           description={data?.aiWorkHours?.description}
           icon={<Clock10 />}
@@ -63,7 +63,7 @@ export default function Page() {
           title={data?.avgTimePerInvoice?.title}
           value={formatFractionalHoursAuto(
             data?.avgTimePerInvoice?.count,
-            data.avgTimePerInvoice?.unit
+            data?.avgTimePerInvoice?.unit
           )}
           description={data?.avgTimePerInvoice?.description}
           icon={<Calculator />}
