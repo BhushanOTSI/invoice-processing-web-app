@@ -107,7 +107,15 @@ export function InvoiceProcessingTable({
         header: "Start Date",
         accessorKey: "startTime",
         cell: ({ row }) => {
-          return <span>{humanizeDateTime(row.original.startTime) || "-"}</span>;
+          return (
+            <span>
+              {humanizeDateTime(row.original.startTime) ||
+                humanizeDateTime(
+                  row.original.detailsResponseJson?.processSession?.startTime
+                ) ||
+                "-"}
+            </span>
+          );
         },
         enableColumnFilter: false,
       },
@@ -115,7 +123,15 @@ export function InvoiceProcessingTable({
         header: "End Date",
         accessorKey: "endTime",
         cell: ({ row }) => {
-          return <span>{humanizeDateTime(row.original.endTime) || "-"}</span>;
+          return (
+            <span>
+              {humanizeDateTime(row.original.endTime) ||
+                humanizeDateTime(
+                  row.original.detailsResponseJson?.processSession?.completedAt
+                ) ||
+                "-"}
+            </span>
+          );
         },
         enableColumnFilter: false,
       },
