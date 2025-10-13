@@ -153,16 +153,21 @@ export default function ProcessTracePage() {
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
         <Card className={"p-0 gap-0 overflow-hidden"}>
           <CardContent className={"p-0 "}>
-            <div className="flex ">
-              <div className="w-1/3 border-r dark:bg-muted/50 overflow-y-auto h-screen">
+            <div className="flex w-full">
+              <div className="w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen">
                 <TabsList className={"flex-col"}>
                   {traceMessages.map((message, index) => {
                     const Icon = ProcessIcons[message.status?.toLowerCase()];
 
                     return (
-                      <TabsTrigger key={message.id} value={index + 1} asChild>
+                      <TabsTrigger
+                        key={message.id}
+                        value={index + 1}
+                        asChild
+                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                      >
                         <Collapsible>
-                          <div className="w-full text-left cursor-pointer px-2 py-3 border-b last:border-b-0 text-sm hover:bg-muted/50">
+                          <div className="w-full text-left cursor-pointer px-2 py-3 border-b last:border-b-0 text-sm">
                             <div className="flex items-center gap-2">
                               <div className="w-4">
                                 <CollapsibleTrigger
@@ -190,15 +195,15 @@ export default function ProcessTracePage() {
                                 />
                               </div>
                               <div className="flex-1">{message.name}</div>
-                              <div className="min-w-10 text-xs text-muted-foreground">
+                              <div className="min-w-10 text-xs">
                                 {message.processingTimeSeconds &&
-                                  message.processingTimeSeconds + " ms"}
+                                  message.processingTimeSeconds + " sec"}
                                 <div>Step {message.stepNum}</div>
                               </div>
                             </div>
                           </div>
                           <CollapsibleContent>
-                            <div className="px-4 py-3 text-xs border-b bg-muted/80">
+                            <div className="px-4 py-3 text-xs border-b bg-accent text-accent-foreground">
                               {message.message}
                             </div>
                           </CollapsibleContent>
@@ -208,7 +213,7 @@ export default function ProcessTracePage() {
                   })}
                 </TabsList>
               </div>
-              <div className="flex-1 h-screen">
+              <div className="flex-1 h-screen min-w-0">
                 {isLoading ? (
                   <ProcessMessage message={{}} isLoading={isLoading} />
                 ) : (

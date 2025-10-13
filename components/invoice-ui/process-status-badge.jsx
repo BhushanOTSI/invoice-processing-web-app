@@ -6,17 +6,17 @@ import {
   Clock1Icon,
   XIcon,
   BanIcon,
-  CheckCircle2Icon,
+  CheckCheckIcon,
 } from "lucide-react";
 
 export const ProcessIcons = {
   processing: Spinner,
   pending: Clock1Icon,
-  completed: CheckIcon,
+  completed: CheckCheckIcon,
   failed: XIcon,
   cancelled: BanIcon,
   scheduled: Clock1Icon,
-  partially_completed: CheckCircle2Icon,
+  partially_completed: CheckIcon,
 };
 
 const variants = cva("rounded-lg capitalize", {

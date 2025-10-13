@@ -11,7 +11,10 @@ export const useAuth = () => {
   const router = useRouter();
 
   return useMutation({
-    mutationFn: ({ username, password }) => AuthAPI.login(username, password),
+    mutationFn: ({ username, password }) => {
+      localStorage.setItem("username", username);
+      return AuthAPI.login(username, password);
+    },
     onSuccess: (data) => {
       BaseAPI.setAuthToken(data.access_token);
       router.push(APP_ROUTES.DASHBOARD);

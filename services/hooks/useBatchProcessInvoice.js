@@ -30,7 +30,7 @@ export const useBatchProcessInvoice = () => {
 export const useBatchDetails = (batchID) => {
   return useQuery({
     queryKey: ["batch", "details", batchID],
-    queryFn: () => BatchProcessInvoiceAPI?.getBatchDetails(batchID),
+    queryFn: () => BatchProcessInvoiceAPI.getBatchDetails(batchID),
     enabled: !!batchID,
     refetchInterval: ({ state }) => {
       if (state?.status === "failed" || state.data?.status === "completed") {
@@ -45,7 +45,7 @@ export const useBatchDetails = (batchID) => {
 export const useTraces = (filters = {}) => {
   return useQuery({
     queryKey: ["batch", "traces", ...Object.values(filters)],
-    queryFn: () => BatchProcessInvoiceAPI?.getTraces(filters),
+    queryFn: () => BatchProcessInvoiceAPI.getTraces(filters),
   });
 };
 
@@ -57,12 +57,29 @@ export const useProcessingStream = (
   return useQuery({
     queryKey: ["processInvoice", "stream", processId],
     queryFn: async () => {
-      return await BatchProcessInvoiceAPI?.getProcessingStream(
+      return await BatchProcessInvoiceAPI.getProcessingStream(
         processId,
         options
       );
     },
     enabled: enabled && !!processId,
+    refetchInterval: false,
+  });
+};
+
+export const useFetchS3Json = (s3Url, enabled = false) => {
+  return useQuery({
+    queryKey: ["s3Json", s3Url],
+    queryFn: async () => {
+      const response = await fetch(s3Url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch JSON from S3: ${response.statusText}`);
+      }
+      return response.json();
+    },
+    enabled: enabled && !!s3Url,
+    retry: 2,
+    staleTime: 5 * 60 * 1000,
     refetchInterval: false,
   });
 };

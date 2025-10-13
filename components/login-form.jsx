@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from "./ui/form";
 import { useAuth } from "@/services/hooks/useAuth";
+import { UserIcon } from "lucide-react";
 
 export function LoginForm({ className, ...props }) {
   const { mutate: login, isPending } = useAuth();
@@ -104,15 +105,20 @@ export function LoginForm({ className, ...props }) {
               <Field>
                 <Button type="submit">Login</Button>
               </Field>
-              <FieldSeparator>Demo Credentials</FieldSeparator>
-              <Field orientation="horizontal">
-                <FieldLabel htmlFor="demo-email">Email</FieldLabel>
-                <FieldDescription>otsi</FieldDescription>
-              </Field>
-              <Field orientation="horizontal">
-                <FieldLabel htmlFor="demo-password">Password</FieldLabel>
-                <FieldDescription>otsi@1234</FieldDescription>
-              </Field>
+              <FieldSeparator>Test Acount</FieldSeparator>
+              <div
+                onClick={() => {
+                  form.setValue("username", "otsi");
+                  form.setValue("password", "otsi@1234");
+                }}
+                className="cursor-pointer border px-4 py-2 rounded-md flex items-center gap-2 hover:bg-accent"
+              >
+                <UserIcon className="h-4 w-4" />
+                <div className="flex flex-col justify-center">
+                  <div>Username: otsi</div>
+                  <div>Password: *******</div>
+                </div>
+              </div>
             </FieldGroup>
           </form>
         </Form>

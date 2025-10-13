@@ -4,33 +4,21 @@ import { Markdown } from "./markdown";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import JsonView from "@uiw/react-json-view";
 import { Skeleton } from "../ui/skeleton";
-import { useEffect, useState } from "react";
 import { FileText, FileJson, FileImage } from "lucide-react";
-import { ScrollArea } from "../ui/scroll-area";
+import { useFetchS3Json } from "@/services/hooks/useBatchProcessInvoice";
+import { invoiceJsonToMarkdown } from "@/lib/json-to-markdown";
 
-export function ProcessMessage({
-  message,
-  isLoading = false,
-  isStreaming = false,
-}) {
+export function ProcessMessage({ message, isLoading = false }) {
   const markdown = message.extraMetadata?.markdown;
   const s3PdfUrl = message.extraMetadata?.s3PdfUrl;
   const s3JsonUrl = message.extraMetadata?.s3JsonUrl;
-  const [jsonData, setJsonData] = useState(null);
 
-  useEffect(() => {
-    if (s3JsonUrl) {
-      fetch(s3JsonUrl)
-        .then((res) => res.json())
-        .then((data) => setJsonData(data))
-        .catch((err) => console.error("Failed to fetch JSON:", err));
-    }
-  }, [s3JsonUrl]);
+  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
 
   if (isLoading) {
     return (
       <div className="space-y-2">
-        <div className="flex justify-between items-center flex-wrap p-4 border-b">
+        <div className="flex justify-between items-center flex-wrap py-4 px-6 border-b">
           <div className="flex-1 space-y-2">
             <Skeleton className="w-1/2 h-4" />
             <Skeleton className="w-1/3 h-4" />
@@ -62,7 +50,7 @@ export function ProcessMessage({
   return (
     <div className="h-full">
       <Tabs defaultValue={availableTabs[0]} className="h-full gap-0">
-        <div className="grid grid-cols-5 items-center p-4 border-b">
+        <div className="grid grid-cols-5 items-center py-4 px-6 border-b">
           <div className="col-span-3">
             <h6 className="text-sm font-bold">{message.name}</h6>
             <p className="text-sm text-muted-foreground">
@@ -74,7 +62,7 @@ export function ProcessMessage({
               {(hasMarkdown || hasMessage) && (
                 <TabsTrigger
                   value="content"
-                  className="text-sm dark:hover:bg-muted/50"
+                  className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary/10 "
                 >
                   <FileText className="size-3" />
                   Content
@@ -83,7 +71,7 @@ export function ProcessMessage({
               {hasJson && (
                 <TabsTrigger
                   value="json"
-                  className="text-sm dark:hover:bg-muted/50"
+                  className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary/10 "
                 >
                   <FileJson className="size-3" />
                   JSON
@@ -92,7 +80,7 @@ export function ProcessMessage({
               {hasPdf && (
                 <TabsTrigger
                   value="pdf"
-                  className="text-sm dark:hover:bg-muted/50"
+                  className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary/10 "
                 >
                   <FileImage className="size-3" />
                   PDF
@@ -103,9 +91,19 @@ export function ProcessMessage({
         </div>
 
         {(hasMarkdown || hasMessage) && (
-          <TabsContent value="content" className="p-4 h-full overflow-auto">
+          <TabsContent
+            value="content"
+            className="pb-4 px-6 h-full overflow-auto"
+          >
             {hasMarkdown ? (
-              <Markdown>{markdown}</Markdown>
+              <>
+                <Markdown>{markdown}</Markdown>
+                {jsonData && (
+                  <div className="border-t pb-2">
+                    <Markdown>{invoiceJsonToMarkdown(jsonData)}</Markdown>
+                  </div>
+                )}
+              </>
             ) : (
               <p>{message.message}</p>
             )}

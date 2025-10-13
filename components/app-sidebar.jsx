@@ -17,9 +17,7 @@ import { APP_ROUTES } from "@/app/constants/app-routes";
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: localStorage.getItem("username") || "Invoice Processing",
   },
   navMain: [
     {
@@ -67,6 +65,7 @@ const data = {
   ],
 };
 
+console.log(data.user);
 export function AppSidebar({ ...props }) {
   return (
     <Sidebar collapsible="icon" {...props}>
