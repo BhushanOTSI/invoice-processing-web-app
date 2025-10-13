@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "AI Invoice Parser",
+  title: "OTSI - AI Invoice Parser",
   description: "Automate Invoice Processing with AI",
 };
 
@@ -33,7 +33,7 @@ export default function RootLayout({ children }) {
         >
           <QueryProvider>{children}</QueryProvider>
         </ThemeProvider>
-        <Toaster closeButton />
+        <Toaster closeButton position="top-center" autoClose={5000} />
       </body>
     </html>
   );

@@ -6,6 +6,8 @@ export const APP_ROUTES = {
   PROCESSING: {
     NEW: "/processing/new",
     TRACE: "/processing/trace",
+    BATCH: "/processing/trace/batch/[batchID]",
+    TRACE_PROCESS: "/processing/trace/[processID]",
   },
   DOCUMENTATION: {
     INTRODUCTION: "/documentation/introduction",

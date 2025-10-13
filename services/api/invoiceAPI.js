@@ -16,4 +16,8 @@ export class InvoiceAPI {
       throw new BaseAPIError("Failed to fetch invoice details", 500);
     }
   }
+
+  static async getProcessTraceStatus(processID) {
+    return BaseAPI.get(`/process-invoice/${processID}/status`);
+  }
 }

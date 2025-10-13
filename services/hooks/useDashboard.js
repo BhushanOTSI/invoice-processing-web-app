@@ -12,6 +12,7 @@ export const useRecentInvoices = () => {
   return useQuery({
     queryKey: ["dashboard", "recentInvoices"],
     queryFn: DashboardAPI?.getRecentInvoices,
+    refetchInterval: 10 * 1000,
   });
 };
 

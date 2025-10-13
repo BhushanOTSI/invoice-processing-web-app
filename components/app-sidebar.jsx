@@ -30,39 +30,40 @@ const data = {
     {
       title: "Processing",
       icon: Bot,
+      isActive: true,
       items: [
         {
-          title: "New Processing",
+          title: "+ New Processing",
           url: APP_ROUTES.PROCESSING.NEW,
         },
         {
-          title: "Trace's",
+          title: "Monitor Traces",
           url: APP_ROUTES.PROCESSING.TRACE,
         },
       ],
     },
-    {
-      title: "Documentation",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: APP_ROUTES.DOCUMENTATION.INTRODUCTION,
-        },
-        {
-          title: "Get Started",
-          url: APP_ROUTES.DOCUMENTATION.GET_STARTED,
-        },
-        {
-          title: "Tutorials",
-          url: APP_ROUTES.DOCUMENTATION.TUTORIALS,
-        },
-        {
-          title: "Changelog",
-          url: APP_ROUTES.DOCUMENTATION.CHANGELOG,
-        },
-      ],
-    },
+    // {
+    //   title: "Documentation",
+    //   icon: BookOpen,
+    //   items: [
+    //     {
+    //       title: "Introduction",
+    //       url: APP_ROUTES.DOCUMENTATION.INTRODUCTION,
+    //     },
+    //     {
+    //       title: "Get Started",
+    //       url: APP_ROUTES.DOCUMENTATION.GET_STARTED,
+    //     },
+    //     {
+    //       title: "Tutorials",
+    //       url: APP_ROUTES.DOCUMENTATION.TUTORIALS,
+    //     },
+    //     {
+    //       title: "Changelog",
+    //       url: APP_ROUTES.DOCUMENTATION.CHANGELOG,
+    //     },
+    //   ],
+    // },
   ],
 };
 

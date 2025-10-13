@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,57 +11,112 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { LogoOTS } from "@/components/logos";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
+import { useAuth } from "@/services/hooks/useAuth";
 
 export function LoginForm({ className, ...props }) {
-  return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form>
-        <FieldGroup>
-          <div className="flex flex-col items-center gap-2 text-center">
-            <a
-              href="#"
-              className="flex flex-col items-center gap-2 font-medium"
-            >
-              <div className="flex w-24 items-center justify-center rounded-md">
-                <LogoOTS />
-              </div>
-              <span className="sr-only">Acme Inc.</span>
-            </a>
-            <h1 className="text-xl font-bold">Welcome Back!</h1>
-          </div>
-          <Field>
-            <FieldLabel htmlFor="email">Email</FieldLabel>
-            <Input
-              id="email"
-              type="email"
-              placeholder="m@example.com"
-              required
-            />
-          </Field>
+  const { mutate: login, isPending } = useAuth();
 
-          <Field>
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input
-              id="password"
-              type="password"
-              placeholder="********"
-              required
-            />
-          </Field>
-          <Field>
-            <Button type="submit">Login</Button>
-          </Field>
-          <FieldSeparator>Demo Credentials</FieldSeparator>
-          <Field orientation="horizontal">
-            <FieldLabel htmlFor="demo-email">Email</FieldLabel>
-            <FieldDescription>admin@invoiceai.pro</FieldDescription>
-          </Field>
-          <Field orientation="horizontal">
-            <FieldLabel htmlFor="demo-password">Password</FieldLabel>
-            <FieldDescription>admin123</FieldDescription>
-          </Field>
-        </FieldGroup>
-      </form>
-    </div>
+  const form = useForm({
+    resolver: zodResolver(
+      z.object({
+        username: z.string().min(2, {
+          message: "Username is required.",
+        }),
+        password: z.string().min(2, {
+          message: "Password is required.",
+        }),
+      })
+    ),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
+
+  return (
+    <fieldset disabled={isPending}>
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(login)} autoComplete="off">
+            <FieldGroup>
+              <div className="flex flex-col items-center gap-2 text-center">
+                <a
+                  href="#"
+                  className="flex flex-col items-center gap-2 font-medium"
+                >
+                  <div className="flex w-24 items-center justify-center rounded-md">
+                    <LogoOTS />
+                  </div>
+                  <span className="sr-only">Acme Inc.</span>
+                </a>
+                <h1 className="text-xl font-bold">Welcome Back!</h1>
+              </div>
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel htmlFor="email">User Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        id="username"
+                        type="text"
+                        placeholder="user name"
+                        autoComplete="username"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel htmlFor="password">Password</FormLabel>
+                    <FormControl>
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="********"
+                        autoComplete="current-password"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Field>
+                <Button type="submit">Login</Button>
+              </Field>
+              <FieldSeparator>Demo Credentials</FieldSeparator>
+              <Field orientation="horizontal">
+                <FieldLabel htmlFor="demo-email">Email</FieldLabel>
+                <FieldDescription>otsi</FieldDescription>
+              </Field>
+              <Field orientation="horizontal">
+                <FieldLabel htmlFor="demo-password">Password</FieldLabel>
+                <FieldDescription>otsi@1234</FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
+        </Form>
+      </div>
+    </fieldset>
   );
 }

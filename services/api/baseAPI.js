@@ -31,11 +31,14 @@ export class BaseAPI {
     }
   }
 
-  static getDefaultHeaders() {
+  static getDefaultHeaders(isFormData) {
     const headers = {
-      "Content-Type": "application/json",
       Accept: "application/json",
     };
+
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
 
     const token = BaseAPI.getAuthToken();
     if (token) {
@@ -58,17 +61,21 @@ export class BaseAPI {
           }
 
           throw new BaseAPIError(
-            "Authentication required. Please login again.",
+            errorData.message || "Authentication required. Please login again.",
             401
           );
 
         case 403:
           throw new BaseAPIError(
-            "Access forbidden. You do not have permission to access this resource."
+            errorData.message ||
+              "Access forbidden. You do not have permission to access this resource."
           );
 
         case 404:
-          throw new BaseAPIError("Resource not found.", 404);
+          throw new BaseAPIError(
+            errorData.message || "Resource not found.",
+            404
+          );
 
         case 422:
           throw new BaseAPIError(
@@ -77,13 +84,14 @@ export class BaseAPI {
 
         case 429:
           throw new BaseAPIError(
-            "Too many requests. Please try again later.",
+            errorData.message || "Too many requests. Please try again later.",
             429
           );
 
         case 500:
           throw new BaseAPIError(
-            "Internal server error. Please try again later.",
+            errorData.message ||
+              "Internal server error. Please try again later.",
             500
           );
 
@@ -125,8 +133,10 @@ export class BaseAPI {
       url += `?${new URLSearchParams(filtered).toString()}`;
     }
 
+    const isFormData = body instanceof FormData;
+
     const requestHeaders = {
-      ...BaseAPI.getDefaultHeaders(),
+      ...BaseAPI.getDefaultHeaders(isFormData),
       ...headers,
     };
 
@@ -137,7 +147,16 @@ export class BaseAPI {
     };
 
     if (body && method !== "GET") {
-      requestConfig.body = JSON.stringify(body);
+      if (
+        !["application/x-www-form-urlencoded"].includes(
+          requestHeaders["Content-Type"] || ""
+        ) &&
+        !isFormData
+      ) {
+        requestConfig.body = JSON.stringify(body);
+      } else {
+        requestConfig.body = body;
+      }
     }
 
     try {
@@ -166,40 +185,6 @@ export class BaseAPI {
 
   static async delete(endpoint, options = {}) {
     return BaseAPI.request(endpoint, { ...options, method: "DELETE" });
-  }
-
-  static async uploadFile(endpoint, file, additionalData = {}, options = {}) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    Object.keys(additionalData).forEach((key) => {
-      formData.append(key, additionalData[key]);
-    });
-
-    const url = `${BaseAPI.getBaseURL()}${endpoint}`;
-    const token = BaseAPI.getAuthToken();
-
-    const requestHeaders = {
-      Accept: "application/json",
-    };
-
-    if (token) {
-      requestHeaders["Authorization"] = `Bearer ${token}`;
-    }
-
-    const requestConfig = {
-      method: "POST",
-      headers: requestHeaders,
-      body: formData,
-      signal: AbortSignal.timeout(options.timeout || 60000),
-    };
-
-    try {
-      const response = await fetch(url, requestConfig);
-      return await BaseAPI.handleResponse(response);
-    } catch (error) {
-      throw error;
-    }
   }
 
   static async healthCheck() {
@@ -235,5 +220,154 @@ export class BaseAPI {
         error: error.message,
       };
     }
+  }
+
+  static async streamData(endpoint, options = {}) {
+    const {
+      params,
+      onData,
+      onError,
+      onComplete,
+      timeout = 300000,
+      onConnected,
+      onStepComplete,
+      onStepStart,
+      onLog,
+      onSuccess,
+      onFailure,
+    } = options;
+
+    return new Promise((resolve, reject) => {
+      const baseURL = BaseAPI.getBaseURL();
+      let url = `${baseURL}${endpoint}`;
+
+      if (params) {
+        const filtered = Object.fromEntries(
+          Object.entries(params).filter(
+            ([key, value]) => value != null && value !== ""
+          )
+        );
+        url += `?${new URLSearchParams(filtered).toString()}`;
+      }
+
+      const token = BaseAPI.getAuthToken();
+      const headers = {
+        Accept: "text/event-stream",
+        "Cache-Control": "no-cache",
+      };
+
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error("Stream timeout"));
+      }, timeout);
+
+      fetch(url, {
+        method: "GET",
+        headers,
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new BaseAPIError(
+              `HTTP ${response.status}: ${response.statusText}`
+            );
+          }
+
+          if (!response.body) {
+            throw new BaseAPIError("No response body");
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+
+              if (done) {
+                clearTimeout(timeoutId);
+                if (onComplete) onComplete();
+                resolve({ completed: true });
+                break;
+              }
+
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+
+              let currentEvent = null;
+              let currentData = null;
+
+              for (const line of lines) {
+                if (line.trim() === "") {
+                  if (currentEvent && currentData) {
+                    try {
+                      const parsedData = JSON.parse(currentData);
+
+                      switch (currentEvent) {
+                        case "connected":
+                          if (onConnected) onConnected(parsedData);
+                          break;
+                        case "step_start":
+                          if (onStepStart) onStepStart(parsedData);
+                          break;
+                        case "step_complete":
+                          if (onStepComplete) onStepComplete(parsedData);
+                          break;
+                        case "log":
+                          if (onLog) onLog(parsedData);
+                          break;
+                        case "success":
+                          if (onSuccess) onSuccess(parsedData);
+                          break;
+                        case "failure":
+                          if (onFailure) onFailure(parsedData);
+                          break;
+                      }
+
+                      if (onData) onData(parsedData, currentEvent);
+                    } catch (error) {
+                      if (onData) onData(currentData, currentEvent);
+                    }
+                  }
+                  currentEvent = null;
+                  currentData = null;
+                  continue;
+                }
+
+                if (line.startsWith("event: ")) {
+                  currentEvent = line.slice(7).trim();
+                } else if (line.startsWith("data: ")) {
+                  currentData = line.slice(6);
+
+                  if (currentData === "[DONE]") {
+                    clearTimeout(timeoutId);
+                    if (onComplete) onComplete();
+                    resolve({ completed: true });
+                    return;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            clearTimeout(timeoutId);
+            if (onError) onError(error);
+            reject(error);
+          } finally {
+            reader.releaseLock();
+          }
+        })
+        .catch((error) => {
+          clearTimeout(timeoutId);
+          if (onError) onError(error);
+          reject(error);
+        });
+    });
   }
 }

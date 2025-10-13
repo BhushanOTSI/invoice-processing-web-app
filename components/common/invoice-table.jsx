@@ -29,13 +29,13 @@ export function InvoiceTable({
         header: "Invoice Number",
         accessorKey: "invoiceNumber",
         filterFn: "includesString",
-        enableColumnFilter: true,
+        enableColumnFilter: false,
       },
       {
         header: "Document Name",
         accessorKey: "documentName",
         filterFn: "includesString",
-        enableColumnFilter: true,
+        enableColumnFilter: false,
       },
       {
         header: "Start Time",
@@ -44,7 +44,7 @@ export function InvoiceTable({
         cell: ({ row }) => {
           return <span>{humanizeDateTime(row.original.startTime)}</span>;
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
       },
       {
         header: "End Time",
@@ -52,7 +52,7 @@ export function InvoiceTable({
         cell: ({ row }) => {
           return <span>{humanizeDateTime(row.original.endTime)}</span>;
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
         filterFn: "includesDate",
       },
       {

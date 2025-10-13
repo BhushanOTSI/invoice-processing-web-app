@@ -23,6 +23,13 @@ import { Skeleton } from "../ui/skeleton";
 import { cn } from "@/lib/utils";
 import { PaginationComponent } from "./pagination-component";
 import { Input } from "../ui/input";
+import { CopyToClipboard } from "../ui/copy-to-clipboard";
+import Link from "next/link";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "../ui/hover-card";
 
 export function DataTable({
   data,
@@ -36,7 +43,7 @@ export function DataTable({
   manualFiltering = true,
   onFilterChange,
   onRowSelectionChange,
-  rowSelection,
+  rowSelection = {},
 }) {
   const tableContainerRef = useRef(null);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -174,6 +181,7 @@ export function DataTable({
           tableContainerRef.current.scrollIntoView({ behavior: "smooth" });
         }}
         enablePagination={enablePagination}
+        className="justify-end"
       />
     </div>
   );
@@ -187,5 +195,36 @@ function Filter({ filter, onChange, type, header }) {
       placeholder={`Filter ${header}`}
       onChange={(e) => onChange(e.target.value)}
     />
+  );
+}
+
+export function RowRenderLink({ showLink = true, href, value }) {
+  return (
+    <div className="flex items-center gap-0.5">
+      <div className="max-w-24 truncate">
+        {showLink ? (
+          <Link href={href} className="underline">
+            <RowCell value={value} />
+          </Link>
+        ) : (
+          <RowCell value={value} />
+        )}
+      </div>
+      <CopyToClipboard value={value} />
+    </div>
+  );
+}
+
+export function RowCell({ value, className, header }) {
+  return (
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <div className={cn("max-w-36 truncate", className)}>{value}</div>
+      </HoverCardTrigger>
+      <HoverCardContent>
+        {header && <h3>{header}</h3>}
+        <div className="text-sm">{value}</div>
+      </HoverCardContent>
+    </HoverCard>
   );
 }
