@@ -32,7 +32,7 @@ export function CopyToClipboard({ value, className, isLoading = false }) {
       variant="ghost"
       size="sm"
       onClick={handleCopy}
-      className={cn(`h-8 w-8 p-0`, className)}
+      className={cn(`size-4 p-0`, className)}
       title="Copy to clipboard"
     >
       {copied ? (

@@ -94,7 +94,7 @@ export default function ProcessTracePage() {
       <PageContainers>
         <Card>
           <CardContent>
-            <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center">
+            <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
               <DataItem
                 label="Process ID"
                 value={
@@ -104,6 +104,17 @@ export default function ProcessTracePage() {
                   />
                 }
                 allowCopy
+                isLoading={isLoading}
+              />
+
+              <DataItem
+                label="File Name"
+                value={
+                  <RowCell
+                    value={processTraceStatus?.filename || "-"}
+                    header="File Name"
+                  />
+                }
                 isLoading={isLoading}
               />
 
