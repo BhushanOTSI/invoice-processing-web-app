@@ -33,7 +33,7 @@ export function KpiCard({
           {!isLoading && icon}
         </CardAction>
       </CardHeader>
-      <CardContent className={cn("text-2xl font-bold")}>
+      <CardContent className={cn("text-2xl font-semibold")}>
         {isLoading && <Skeleton className="w-full h-6" />}
         {!isLoading && value}
       </CardContent>

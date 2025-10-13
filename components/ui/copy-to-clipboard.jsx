@@ -11,7 +11,8 @@ export function CopyToClipboard({ value, className, isLoading = false }) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
+      const valueToCopy = value?.props?.value || value;
+      await navigator.clipboard.writeText(valueToCopy);
       setCopied(true);
       toast.success("Copied to clipboard");
 

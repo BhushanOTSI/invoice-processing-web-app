@@ -92,86 +92,88 @@ export default function ProcessTracePage() {
   return (
     <>
       <PageContainers>
-        <Card>
-          <CardContent>
-            <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
-              <DataItem
-                label="Process ID"
-                value={
-                  <RowCell
-                    value={processTraceStatus?.processId}
-                    header="Process ID"
-                  />
-                }
-                allowCopy
-                isLoading={isLoading}
+        {/* <Card> */}
+        {/* <CardContent> */}
+        <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
+          <DataItem
+            label="Process ID"
+            value={
+              <RowCell
+                value={processTraceStatus?.processId}
+                header="Process ID"
               />
+            }
+            allowCopy
+            isLoading={isLoading}
+          />
 
-              <DataItem
-                label="File Name"
-                value={
-                  <RowCell
-                    value={processTraceStatus?.filename || "-"}
-                    header="File Name"
-                  />
-                }
-                isLoading={isLoading}
+          <DataItem
+            label="File Name"
+            value={
+              <RowCell
+                value={processTraceStatus?.filename || "-"}
+                header="File Name"
               />
+            }
+            isLoading={isLoading}
+          />
 
-              <DataItem
-                label="Start Time"
-                value={
-                  <span>{humanizeDateTime(processTraceStatus?.startTime)}</span>
-                }
+          <DataItem
+            label="Start Time"
+            value={
+              <span>{humanizeDateTime(processTraceStatus?.startTime)}</span>
+            }
+            isLoading={isLoading}
+          />
+          <DataItem
+            label="End Time"
+            value={
+              <span>{humanizeDateTime(processTraceStatus?.completedAt)}</span>
+            }
+            isLoading={isLoading}
+          />
+          <DataItem
+            label="Status"
+            value={
+              <ProcessStatusBadge
+                status={processTraceStatus?.status}
                 isLoading={isLoading}
               />
-              <DataItem
-                label="End Time"
-                value={
-                  <span>
-                    {humanizeDateTime(processTraceStatus?.completedAt)}
-                  </span>
-                }
-                isLoading={isLoading}
-              />
-              <DataItem
-                label="Status"
-                value={
-                  <ProcessStatusBadge
-                    status={processTraceStatus?.status}
-                    isLoading={isLoading}
-                  />
-                }
-                isLoading={isLoading}
-              />
-              <DataItem
-                label={
-                  processTraceStatus?.status === PROCESS_STATUS.PROCESSING
-                    ? "Running Steps"
-                    : "Steps"
-                }
-                value={`${processTraceStatus?.currentStep || "-"} / ${
-                  processTraceStatus?.totalSteps || "-"
-                }`}
-                isLoading={isLoading}
-              />
-              {isLoadingProcessingStream && (
-                <div className="flex items-center gap-1 text-xs text-green-500 flex-1 justify-end">
-                  Streaming Live
-                  <CircleIcon className="size-2 fill-current animate-pulse" />
-                </div>
-              )}
+            }
+            isLoading={isLoading}
+          />
+          <DataItem
+            label={
+              processTraceStatus?.status === PROCESS_STATUS.PROCESSING
+                ? "Running Steps"
+                : "Steps"
+            }
+            value={`${processTraceStatus?.currentStep || "-"} / ${
+              processTraceStatus?.totalSteps || "-"
+            }`}
+            isLoading={isLoading}
+          />
+          {isLoadingProcessingStream && (
+            <div className="flex items-center gap-1 text-xs text-green-500 flex-1 justify-end">
+              Streaming Live
+              <CircleIcon className="size-2 fill-current animate-pulse" />
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
+        {/* </CardContent> */}
+        {/* </Card> */}
       </PageContainers>
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-        <Card className={"p-0 gap-0 overflow-hidden sticky top-0 rounded-none"}>
+        <Card
+          className={
+            "p-0 gap-0 overflow-hidden sticky top-0 rounded-none border-x-0 "
+          }
+        >
           <CardContent className={"p-0"}>
             <div className="flex w-full">
               <div className="w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen">
-                <TabsList className={"flex-col"}>
+                <TabsList className={"flex-col gap-0 p-3"}>
                   {traceMessages.map((message, index) => {
                     const Icon = ProcessIcons[message.status?.toLowerCase()];
 
@@ -180,11 +182,11 @@ export default function ProcessTracePage() {
                         key={message.id}
                         value={index + 1}
                         asChild
-                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+                        className="group/tab data-[state=active]:bg-primary/10 data-[state=active]:text-primary hover:bg-muted/70 data-[state=active]:hover:bg-primary/15 mb-3 last:mb-0 rounded-lg border border-border/50 data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
                       >
                         <Collapsible>
-                          <div className="w-full text-left cursor-pointer px-2 py-3 border-b last:border-b-0 text-sm">
-                            <div className="flex items-center gap-3">
+                          <div className="w-full text-left cursor-pointer px-3 py-3 text-sm">
+                            <div className="flex items-center gap-1.5">
                               <div className="w-4">
                                 <CollapsibleTrigger
                                   className="hover:bg-transparent p-0 flex items-center justify-center group/step"
@@ -204,25 +206,27 @@ export default function ProcessTracePage() {
                                     "size-4",
                                     message.status ===
                                       PROCESS_STATUS.COMPLETED &&
-                                      "text-green-500",
+                                      "text-green-500 group-data-[state=active]/tab:text-green-600",
                                     message.status === PROCESS_STATUS.FAILED &&
                                       "text-destructive"
                                   )}
                                 />
                               </div>
-                              <div className="flex-1">{message.name}</div>
-                              <div className="min-w-10 text-xs text-center">
+                              <div className="flex-1 text-sm leading-tight">
+                                {message.name}
+                              </div>
+                              <div className="min-w-10 text-xs text-center opacity-70 group-data-[state=active]/tab:opacity-100">
+                                <div>Step {message.stepNum}</div>
                                 {message.processingTimeSeconds &&
                                   formatFractionalHoursAuto(
                                     message.processingTimeSeconds,
                                     "seconds"
                                   )}
-                                <div>Step {message.stepNum}</div>
                               </div>
                             </div>
                           </div>
                           <CollapsibleContent>
-                            <div className="px-4 py-3 text-xs border-b bg-accent text-accent-foreground">
+                            <div className="px-3 pb-3 pt-2 text-xs bg-muted/30 text-muted-foreground border-t border-border/30 mx-0.5 rounded-b-md group-data-[state=active]/tab:bg-primary/5 group-data-[state=active]/tab:text-foreground group-data-[state=active]/tab:border-primary/20">
                               {message.description}
                             </div>
                           </CollapsibleContent>

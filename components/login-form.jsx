@@ -61,7 +61,7 @@ export function LoginForm({ className, ...props }) {
                   </div>
                   <span className="sr-only">Acme Inc.</span>
                 </a>
-                <h1 className="text-xl font-bold">Welcome Back!</h1>
+                <h1 className="text-xl font-semibold">Welcome Back!</h1>
               </div>
               <FormField
                 control={form.control}

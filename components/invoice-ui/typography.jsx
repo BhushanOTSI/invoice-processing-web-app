@@ -3,7 +3,7 @@ import { CopyToClipboard } from "../ui/copy-to-clipboard";
 import { Skeleton } from "../ui/skeleton";
 
 export function PageTitle({ title }) {
-  return <h1 className="text-2xl font-bold">{title}</h1>;
+  return <h1 className="text-2xl font-semibold">{title}</h1>;
 }
 
 export function PageDescription({ description }) {
@@ -11,7 +11,7 @@ export function PageDescription({ description }) {
 }
 
 export function PageSubtitle({ subtitle }) {
-  return <h2 className="text-lg font-bold">{subtitle}</h2>;
+  return <h2 className="text-lg font-semibold">{subtitle}</h2>;
 }
 
 export function PageSubdescription({ subdescription }) {
