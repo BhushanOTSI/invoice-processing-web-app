@@ -105,7 +105,7 @@ export function ProcessMessage({ message, isLoading = false }) {
                 )}
               </>
             ) : (
-              <p>{message.message}</p>
+              <p className="py-4">{message.message}</p>
             )}
           </TabsContent>
         )}
