@@ -35,20 +35,18 @@ export default function Page() {
         <PageSubdescription subdescription="View all processing traces" />
       </PageDescriptiveSection>
 
-      <Card className="p-0">
-        <InvoiceProcessingTable
-          data={traces?.details || []}
-          isLoading={isLoading}
-          page={traces?.page - 1}
-          totalItems={traces?.total}
-          pageSize={traces?.size}
-          enablePagination
-          onPageChange={(newPage) => {
-            setPage(newPage + 1);
-          }}
-          showBatchId
-        />
-      </Card>
+      <InvoiceProcessingTable
+        data={traces?.details || []}
+        isLoading={isLoading}
+        page={traces?.page - 1}
+        totalItems={traces?.total}
+        pageSize={traces?.size}
+        enablePagination
+        onPageChange={(newPage) => {
+          setPage(newPage + 1);
+        }}
+        showBatchId
+      />
     </PageContainers>
   );
 }

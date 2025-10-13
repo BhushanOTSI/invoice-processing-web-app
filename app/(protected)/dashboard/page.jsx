@@ -75,14 +75,12 @@ export default function Page() {
           <PageSubdescription subdescription="View all recent traces" />
         </PageDescriptiveSection>
 
-        <Card className="p-0">
-          <InvoiceProcessingTable
-            data={recentTraces?.details || []}
-            isLoading={isLoadingRecentTraces}
-            enablePagination={false}
-            showBatchId
-          />
-        </Card>
+        <InvoiceProcessingTable
+          data={recentTraces?.details || []}
+          isLoading={isLoadingRecentTraces}
+          enablePagination={false}
+          showBatchId
+        />
       </div>
     </PageContainers>
   );
