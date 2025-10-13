@@ -1,4 +1,10 @@
+import { ButtonGroupText } from "../ui/button-group";
 import { Input } from "../ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "../ui/input-group";
 import {
   Pagination,
   PaginationContent,
@@ -15,17 +21,6 @@ import {
   getPageNumber,
 } from "@/lib/pagination-utils";
 
-/**
- * Smart Pagination Component
- * Shows maximum 3 page numbers with ellipsis when there are more pages
- *
- * @param {Object} props
- * @param {number} props.currentPage - Current page index (0-based)
- * @param {number} props.totalItems - Total number of items
- * @param {number} props.pageSize - Number of items per page
- * @param {function} props.onPageChange - Callback when page changes
- * @param {string} props.className - Additional CSS classes
- */
 export function PaginationComponent({
   currentPage,
   totalItems,
@@ -82,29 +77,32 @@ export function PaginationComponent({
                       >
                         {item.page}
                       </PaginationLink>
-                    ) : (
-                      <PaginationEllipsis />
-                    )}
+                    ) : null}
                   </PaginationItem>
                 )
               )}
-              <Input
-                type="number"
-                aria-label="Go to page"
-                placeholder={`Go to page ${currentPage || 1}`}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const page = parseInt(e.target.value);
+              <InputGroup>
+                <InputGroupInput
+                  type="number"
+                  aria-label="Go to page"
+                  placeholder={`Go to page`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const page = parseInt(e.target.value);
 
-                    if (isNaN(page) || page < 1 || page > totalPages) {
-                      return;
+                      if (isNaN(page) || page < 1 || page > totalPages) {
+                        return;
+                      }
+
+                      handlePageChange(page - 1);
                     }
-
-                    handlePageChange(page - 1);
-                  }
-                }}
-                className="w-20 text-center"
-              />
+                  }}
+                  className="w-26 text-center"
+                />
+                <InputGroupAddon align="inline-end">
+                  Total pages {totalPages}
+                </InputGroupAddon>
+              </InputGroup>
 
               <PaginationItem>
                 <PaginationNext
