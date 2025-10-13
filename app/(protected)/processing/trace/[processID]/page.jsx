@@ -184,7 +184,7 @@ export default function ProcessTracePage() {
                       >
                         <Collapsible>
                           <div className="w-full text-left cursor-pointer px-2 py-3 border-b last:border-b-0 text-sm">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                               <div className="w-4">
                                 <CollapsibleTrigger
                                   className="hover:bg-transparent p-0 flex items-center justify-center group/step"

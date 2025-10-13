@@ -36,7 +36,7 @@ export default function Page() {
     <PageContainers>
       <Card>
         <CardContent>
-          <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center">
+          <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
             <DataItem
               label="Batch No"
               value={
@@ -62,6 +62,19 @@ export default function Page() {
               }
               isLoading={isLoading}
             />
+
+            {PROCESS_STATUS.SCHEDULED !== batchDetails?.status &&
+              batchDetails?.triggerDateTime && (
+                <DataItem
+                  label="Scheduled Time"
+                  value={
+                    <span>
+                      {humanizeDateTime(batchDetails?.triggerDateTime)}
+                    </span>
+                  }
+                  isLoading={isLoading}
+                />
+              )}
 
             {PROCESS_STATUS.SCHEDULED === batchDetails?.status && (
               <div className="flex justify-end flex-1">
