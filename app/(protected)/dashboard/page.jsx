@@ -16,6 +16,7 @@ import { useDashboardStats } from "@/services/hooks/useDashboard";
 import { useTraces } from "@/services/hooks/useBatchProcessInvoice";
 import { Calculator, Clock10, FileText } from "lucide-react";
 import { useMemo } from "react";
+import { formatFractionalHoursAuto } from "@/lib/utils";
 
 export default function Page() {
   useSetBreadcrumbs([{ title: "Dashboard", url: APP_ROUTES.DASHBOARD }]);
@@ -50,14 +51,14 @@ export default function Page() {
         <KpiCard
           isLoading={isLoading}
           title={data?.aiWorkHours?.title}
-          value={data?.aiWorkHours?.count}
+          value={formatFractionalHoursAuto(data?.aiWorkHours?.count)}
           description={data?.aiWorkHours?.description}
           icon={<Clock10 />}
         />
         <KpiCard
           isLoading={isLoading}
           title={data?.avgTimePerInvoice?.title}
-          value={data?.avgTimePerInvoice?.count}
+          value={formatFractionalHoursAuto(data?.avgTimePerInvoice?.count)}
           description={data?.avgTimePerInvoice?.description}
           icon={<Calculator />}
         />

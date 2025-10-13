@@ -90,69 +90,74 @@ export default function ProcessTracePage() {
       : processTraceStatus?.messages) || [];
 
   return (
-    <PageContainers>
-      <Card>
-        <CardContent>
-          <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center">
-            <DataItem
-              label="Process ID"
-              value={
-                <RowCell
-                  value={processTraceStatus?.processId}
-                  header="Process ID"
-                />
-              }
-              allowCopy
-              isLoading={isLoading}
-            />
+    <>
+      <PageContainers>
+        <Card>
+          <CardContent>
+            <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center">
+              <DataItem
+                label="Process ID"
+                value={
+                  <RowCell
+                    value={processTraceStatus?.processId}
+                    header="Process ID"
+                  />
+                }
+                allowCopy
+                isLoading={isLoading}
+              />
 
-            <DataItem
-              label="Start Time"
-              value={
-                <span>{humanizeDateTime(processTraceStatus?.startTime)}</span>
-              }
-              isLoading={isLoading}
-            />
-            <DataItem
-              label="End Time"
-              value={
-                <span>{humanizeDateTime(processTraceStatus?.completedAt)}</span>
-              }
-              isLoading={isLoading}
-            />
-            <DataItem
-              label="Status"
-              value={
-                <ProcessStatusBadge
-                  status={processTraceStatus?.status}
-                  isLoading={isLoading}
-                />
-              }
-              isLoading={isLoading}
-            />
-            <DataItem
-              label={
-                processTraceStatus?.status === PROCESS_STATUS.PROCESSING
-                  ? "Running Steps"
-                  : "Steps"
-              }
-              value={`${processTraceStatus?.currentStep || "-"} / ${
-                processTraceStatus?.totalSteps || "-"
-              }`}
-              isLoading={isLoading}
-            />
-            {isLoadingProcessingStream && (
-              <div className="flex items-center gap-1 text-xs text-green-500 flex-1 justify-end">
-                Streaming Live
-                <CircleIcon className="size-2 fill-current animate-pulse" />
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <DataItem
+                label="Start Time"
+                value={
+                  <span>{humanizeDateTime(processTraceStatus?.startTime)}</span>
+                }
+                isLoading={isLoading}
+              />
+              <DataItem
+                label="End Time"
+                value={
+                  <span>
+                    {humanizeDateTime(processTraceStatus?.completedAt)}
+                  </span>
+                }
+                isLoading={isLoading}
+              />
+              <DataItem
+                label="Status"
+                value={
+                  <ProcessStatusBadge
+                    status={processTraceStatus?.status}
+                    isLoading={isLoading}
+                  />
+                }
+                isLoading={isLoading}
+              />
+              <DataItem
+                label={
+                  processTraceStatus?.status === PROCESS_STATUS.PROCESSING
+                    ? "Running Steps"
+                    : "Steps"
+                }
+                value={`${processTraceStatus?.currentStep || "-"} / ${
+                  processTraceStatus?.totalSteps || "-"
+                }`}
+                isLoading={isLoading}
+              />
+              {isLoadingProcessingStream && (
+                <div className="flex items-center gap-1 text-xs text-green-500 flex-1 justify-end">
+                  Streaming Live
+                  <CircleIcon className="size-2 fill-current animate-pulse" />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </PageContainers>
+
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-        <Card className={"p-0 gap-0 overflow-hidden"}>
-          <CardContent className={"p-0 "}>
+        <Card className={"p-0 gap-0 overflow-hidden sticky top-0 rounded-none"}>
+          <CardContent className={"p-0"}>
             <div className="flex w-full">
               <div className="w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen">
                 <TabsList className={"flex-col"}>
@@ -232,6 +237,6 @@ export default function ProcessTracePage() {
           </CardContent>
         </Card>
       </Tabs>
-    </PageContainers>
+    </>
   );
 }
