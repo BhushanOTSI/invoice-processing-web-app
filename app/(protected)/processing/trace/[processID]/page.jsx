@@ -200,7 +200,7 @@ export default function ProcessTracePage() {
                                 />
                               </div>
                               <div className="flex-1">{message.name}</div>
-                              <div className="min-w-10 text-xs">
+                              <div className="min-w-10 text-xs text-center">
                                 {message.processingTimeSeconds &&
                                   formatFractionalHoursAuto(
                                     message.processingTimeSeconds,
@@ -212,7 +212,7 @@ export default function ProcessTracePage() {
                           </div>
                           <CollapsibleContent>
                             <div className="px-4 py-3 text-xs border-b bg-accent text-accent-foreground">
-                              {message.message}
+                              {message.description}
                             </div>
                           </CollapsibleContent>
                         </Collapsible>
