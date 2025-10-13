@@ -47,6 +47,7 @@ import { useBatchProcessInvoice } from "@/services/hooks/useBatchProcessInvoice"
 import { Spinner } from "../ui/spinner";
 import { useRouter } from "next/navigation";
 import { APP_ROUTES } from "@/app/constants/app-routes";
+import { formatInTimeZone } from "date-fns-tz";
 
 export function FileProcessingForm() {
   return (
@@ -113,7 +114,7 @@ export function FileProcessingFormContent() {
     defaultValues: {
       caseType: "case1",
       files: [],
-      useCache: false,
+      useCache: true,
       trigger_type: "now",
       trigger_datetime: "",
       human_in_loop: false,
@@ -295,10 +296,16 @@ export function FileProcessingFormContent() {
                               const value = e.target.value;
                               if (value) {
                                 const localDate = new Date(value);
-                                const isoString = format(
+                                const tz =
+                                  Intl.DateTimeFormat().resolvedOptions()
+                                    .timeZone;
+
+                                const isoString = formatInTimeZone(
                                   localDate,
+                                  tz,
                                   "yyyy-MM-dd'T'HH:mm:ss.SSSxxx"
                                 );
+
                                 field.onChange(isoString);
                               } else {
                                 field.onChange(value);

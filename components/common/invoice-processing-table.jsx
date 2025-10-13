@@ -75,7 +75,12 @@ export function InvoiceProcessingTable({
               header: "Batch Status",
               accessorKey: "batchStatus",
               cell: ({ row }) => {
-                return <ProcessStatusBadge status={row.original.batchStatus} />;
+                return (
+                  <ProcessStatusBadge
+                    status={row.original.batchStatus}
+                    scheduledTime={row.original.batchScheduledTime}
+                  />
+                );
               },
             },
           ]
@@ -94,7 +99,22 @@ export function InvoiceProcessingTable({
           );
         },
       },
-
+      {
+        header: "Start Date",
+        accessorKey: "startTime",
+        cell: ({ row }) => {
+          return <span>{humanizeDateTime(row.original.startTime) || "-"}</span>;
+        },
+        enableColumnFilter: false,
+      },
+      {
+        header: "End Date",
+        accessorKey: "endTime",
+        cell: ({ row }) => {
+          return <span>{humanizeDateTime(row.original.endTime) || "-"}</span>;
+        },
+        enableColumnFilter: false,
+      },
       {
         header: "Created Date",
         accessorKey: "createdDate",

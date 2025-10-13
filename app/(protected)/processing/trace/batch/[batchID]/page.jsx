@@ -1,14 +1,19 @@
 "use client";
+import { PROCESS_STATUS } from "@/app/constants";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 import { InvoiceProcessingTable } from "@/components/common/invoice-processing-table";
 import { RowCell } from "@/components/invoice-ui/data-table";
 import { PageContainers } from "@/components/invoice-ui/page-containers";
 import { ProcessStatusBadge } from "@/components/invoice-ui/process-status-badge";
 import { DataItem } from "@/components/invoice-ui/typography";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
 import { humanizeDateTime } from "@/lib/utils";
-import { useBatchDetails } from "@/services/hooks/useBatchProcessInvoice";
+import {
+  useBatchDetails,
+  useCancelBatch,
+} from "@/services/hooks/useBatchProcessInvoice";
 import { useParams } from "next/navigation";
 
 export default function Page() {
@@ -23,7 +28,9 @@ export default function Page() {
     },
   ]);
 
-  const { data: batchDetails, isLoading } = useBatchDetails(batchID);
+  const { data: batchDetails, isLoading, refetch } = useBatchDetails(batchID);
+  const { mutateAsync: cancelBatch, isPending: isCancelling } =
+    useCancelBatch(batchID);
 
   return (
     <PageContainers>
@@ -50,10 +57,32 @@ export default function Page() {
                 <ProcessStatusBadge
                   status={batchDetails?.status}
                   isLoading={isLoading}
+                  scheduledTime={batchDetails?.triggerDateTime}
                 />
               }
               isLoading={isLoading}
             />
+
+            {PROCESS_STATUS.SCHEDULED === batchDetails?.status && (
+              <div className="flex justify-end flex-1">
+                <Button
+                  variant="destructive"
+                  type="button"
+                  size="sm"
+                  onClick={async () => {
+                    await cancelBatch();
+                    refetch();
+                  }}
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? (
+                    <span>Cancelling...</span>
+                  ) : (
+                    <span>Cancel</span>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

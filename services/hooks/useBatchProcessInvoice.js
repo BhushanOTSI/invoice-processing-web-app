@@ -83,3 +83,15 @@ export const useFetchS3Json = (s3Url, enabled = false) => {
     refetchInterval: false,
   });
 };
+
+export const useCancelBatch = (batchID) => {
+  return useMutation({
+    mutationFn: () => BatchProcessInvoiceAPI.cancelBatch(batchID),
+    onSuccess: () => {
+      toast.success("Batch cancelled successfully");
+    },
+    onError: (error) => {
+      toast.error(error?.message);
+    },
+  });
+};

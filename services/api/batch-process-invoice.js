@@ -39,4 +39,8 @@ export class BatchProcessInvoiceAPI {
       return { success: false, message: error.message || "Stream failed" };
     }
   }
+
+  static async cancelBatch(batchID) {
+    return BaseAPI.post(`/batch/${batchID}/cancel`);
+  }
 }

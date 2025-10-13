@@ -8,6 +8,8 @@ import {
   BanIcon,
   CheckCheckIcon,
 } from "lucide-react";
+import { humanizeDateTime } from "@/lib/utils";
+import { PROCESS_STATUS } from "@/app/constants";
 
 export const ProcessIcons = {
   processing: Spinner,
@@ -19,16 +21,16 @@ export const ProcessIcons = {
   partially_completed: CheckIcon,
 };
 
-const variants = cva("rounded-lg capitalize", {
+const variants = cva("rounded-lg capitalize text-xs", {
   variants: {
     variant: {
-      processing: "bg-blue-500 text-white",
-      pending: "bg-yellow-500 text-white",
-      completed: "bg-green-500 text-white",
-      failed: "bg-red-500 text-white",
-      cancelled: "bg-gray-500 text-white",
-      scheduled: "bg-purple-500 text-white",
-      partially_completed: "bg-orange-500 text-white",
+      processing: "bg-blue-100 text-blue-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      completed: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
+      scheduled: "bg-purple-100 text-purple-800",
+      partially_completed: "bg-orange-100 text-orange-800",
     },
   },
   defaultVariants: {
@@ -36,7 +38,12 @@ const variants = cva("rounded-lg capitalize", {
   },
 });
 
-export function ProcessStatusBadge({ status, isLoading = false }) {
+export function ProcessStatusBadge({
+  status,
+  isLoading = false,
+  scheduledTime,
+}) {
+  const isScheduled = status === PROCESS_STATUS.SCHEDULED;
   if (isLoading) {
     return <Skeleton className="w-8 h-8" />;
   }
@@ -51,6 +58,9 @@ export function ProcessStatusBadge({ status, isLoading = false }) {
   return (
     <Badge variant="outline" className={variants({ variant: type })}>
       {type} {Icon && <Icon />}
+      {isScheduled && (
+        <span className="text-xs">{humanizeDateTime(scheduledTime)}</span>
+      )}
     </Badge>
   );
 }
