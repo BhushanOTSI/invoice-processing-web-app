@@ -50,9 +50,12 @@ export function ProcessMessage({ message, isLoading = false }) {
   return (
     <div className="h-full">
       <Tabs defaultValue={availableTabs[0]} className="h-full gap-0">
-        <div className="grid grid-cols-5 gap-2 items-center py-4 px-6 border-b">
+        <div className="grid grid-cols-5 gap-1 items-center py-4 px-6 border-b">
           <div className="col-span-3">
-            <h6 className="text-sm font-semibold">{message.name}</h6>
+            <h6 className="text-sm font-semibold truncate">{message.name}</h6>
+            <p className="text-xs col-span-5 text-muted-foreground">
+              {message.description}
+            </p>
           </div>
           <div className="col-span-2 flex justify-end">
             <TabsList className="gap-2 bg-transparent">
@@ -85,9 +88,6 @@ export function ProcessMessage({ message, isLoading = false }) {
               )}
             </TabsList>
           </div>
-          <p className="text-xs col-span-5 text-muted-foreground">
-            {message.description}
-          </p>
         </div>
 
         {(hasMarkdown || hasMessage) && (
