@@ -222,7 +222,7 @@ export function FileProcessingFormContent() {
         {files.length > 0 ? (
           <div className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className={"gap-1 border-b"}>
                 <CardTitle>Processing Configuration</CardTitle>
                 <CardDescription>
                   Configure the processing options for the files.

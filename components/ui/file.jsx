@@ -173,7 +173,7 @@ const FileInput = ({ className }) => {
   return (
     <div
       className={cn(
-        "border-2 border-dashed border-muted rounded-md transition-all",
+        "border-2 border-dashed bg-accent rounded-md transition-all",
         isDragging && "border-blue-500 bg-blue-50 dark:bg-blue-900/20 ",
         className
       )}
