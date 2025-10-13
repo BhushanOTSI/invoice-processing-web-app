@@ -92,8 +92,6 @@ export default function ProcessTracePage() {
   return (
     <>
       <PageContainers>
-        {/* <Card> */}
-        {/* <CardContent> */}
         <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
           <DataItem
             label="Process ID"
@@ -160,8 +158,6 @@ export default function ProcessTracePage() {
             </div>
           )}
         </div>
-        {/* </CardContent> */}
-        {/* </Card> */}
       </PageContainers>
 
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>

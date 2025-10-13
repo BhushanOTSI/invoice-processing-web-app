@@ -10,11 +10,13 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { LogoOTS } from "./logos";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 
 export function AppSidebar({ ...props }) {
+  const { setOpen } = useSidebar();
   const [username, setUsername] = React.useState("Invoice Processing");
 
   React.useEffect(() => {
@@ -54,7 +56,12 @@ export function AppSidebar({ ...props }) {
   );
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar
+      collapsible="icon"
+      {...props}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <SidebarHeader>
         <div className="overflow-hidden">
           <LogoOTS className="w-24 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-[width] duration-200 ease-linear" />

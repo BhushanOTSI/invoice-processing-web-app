@@ -61,20 +61,20 @@ export function ProcessMessage({ message, isLoading = false }) {
               <HoverCard>
                 <HoverCardTrigger>{message.name}</HoverCardTrigger>
                 <HoverCardContent>
-                  <p className="text-xs">{message.name}</p>
+                  <span className="text-xs">{message.name}</span>
                 </HoverCardContent>
               </HoverCard>
             </h6>
-            <p className="text-xs col-span-5 text-muted-foreground line-clamp-2">
+            <div className="text-xs col-span-5 text-muted-foreground line-clamp-2">
               <HoverCard>
                 <HoverCardTrigger>
                   <p className="line-clamp-2">{message.description}</p>
                 </HoverCardTrigger>
                 <HoverCardContent>
-                  <p className="text-xs">{message.description}</p>
+                  <span className="text-xs">{message.description}</span>
                 </HoverCardContent>
               </HoverCard>
-            </p>
+            </div>
           </div>
           <div className="col-span-2 flex justify-end">
             <TabsList className="gap-2 bg-transparent">
