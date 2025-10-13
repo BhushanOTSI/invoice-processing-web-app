@@ -51,14 +51,20 @@ export default function Page() {
         <KpiCard
           isLoading={isLoading}
           title={data?.aiWorkHours?.title}
-          value={formatFractionalHoursAuto(data?.aiWorkHours?.count)}
+          value={formatFractionalHoursAuto(
+            data?.aiWorkHours?.count,
+            data.aiWorkHours.unit
+          )}
           description={data?.aiWorkHours?.description}
           icon={<Clock10 />}
         />
         <KpiCard
           isLoading={isLoading}
           title={data?.avgTimePerInvoice?.title}
-          value={formatFractionalHoursAuto(data?.avgTimePerInvoice?.count)}
+          value={formatFractionalHoursAuto(
+            data?.avgTimePerInvoice?.count,
+            data.avgTimePerInvoice.unit
+          )}
           description={data?.avgTimePerInvoice?.description}
           icon={<Calculator />}
         />

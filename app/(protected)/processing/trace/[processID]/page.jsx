@@ -7,7 +7,7 @@ import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
 import { PageContainers } from "@/components/invoice-ui/page-containers";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataItem } from "@/components/invoice-ui/typography";
-import { cn, humanizeDateTime } from "@/lib/utils";
+import { cn, formatFractionalHoursAuto, humanizeDateTime } from "@/lib/utils";
 import {
   ProcessIcons,
   ProcessStatusBadge,
@@ -202,7 +202,10 @@ export default function ProcessTracePage() {
                               <div className="flex-1">{message.name}</div>
                               <div className="min-w-10 text-xs">
                                 {message.processingTimeSeconds &&
-                                  message.processingTimeSeconds + " sec"}
+                                  formatFractionalHoursAuto(
+                                    message.processingTimeSeconds,
+                                    "seconds"
+                                  )}
                                 <div>Step {message.stepNum}</div>
                               </div>
                             </div>
