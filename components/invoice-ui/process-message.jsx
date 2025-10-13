@@ -7,6 +7,11 @@ import { Skeleton } from "../ui/skeleton";
 import { FileText, FileJson, FileImage } from "lucide-react";
 import { useFetchS3Json } from "@/services/hooks/useBatchProcessInvoice";
 import { invoiceJsonToMarkdown } from "@/lib/json-to-markdown";
+import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from "../ui/hover-card";
 
 export function ProcessMessage({ message, isLoading = false }) {
   const markdown = message.extraMetadata?.markdown;
@@ -52,9 +57,23 @@ export function ProcessMessage({ message, isLoading = false }) {
       <Tabs defaultValue={availableTabs[0]} className="h-full gap-0">
         <div className="grid grid-cols-5 gap-1 items-center py-4 px-6 border-b">
           <div className="col-span-3">
-            <h6 className="text-sm font-semibold truncate">{message.name}</h6>
-            <p className="text-xs col-span-5 text-muted-foreground">
-              {message.description}
+            <h6 className="text-sm font-semibold truncate">
+              <HoverCard>
+                <HoverCardTrigger>{message.name}</HoverCardTrigger>
+                <HoverCardContent>
+                  <p className="text-xs">{message.name}</p>
+                </HoverCardContent>
+              </HoverCard>
+            </h6>
+            <p className="text-xs col-span-5 text-muted-foreground line-clamp-2">
+              <HoverCard>
+                <HoverCardTrigger>
+                  <p className="line-clamp-2">{message.description}</p>
+                </HoverCardTrigger>
+                <HoverCardContent>
+                  <p className="text-xs">{message.description}</p>
+                </HoverCardContent>
+              </HoverCard>
             </p>
           </div>
           <div className="col-span-2 flex justify-end">
