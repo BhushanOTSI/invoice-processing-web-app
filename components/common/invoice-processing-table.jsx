@@ -46,7 +46,11 @@ export function InvoiceProcessingTable({
         cell: ({ row }) => {
           return (
             <RowRenderLink
-              showLink={row.original.status !== PROCESS_STATUS.PENDING}
+              showLink={
+                ![PROCESS_STATUS.PENDING, PROCESS_STATUS.CANCELLED].includes(
+                  row.original.status
+                )
+              }
               href={APP_ROUTES.getRoute(APP_ROUTES.PROCESSING.TRACE_PROCESS, {
                 processID: row.original.processId,
               })}
