@@ -222,12 +222,6 @@ export function FileProcessingFormContent() {
         {files.length > 0 ? (
           <div className="space-y-4">
             <Card>
-              <CardHeader className={"gap-1 border-b"}>
-                <CardTitle>Processing Configuration</CardTitle>
-                <CardDescription>
-                  Configure the processing options for the files.
-                </CardDescription>
-              </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 gap-y-6 items-start justify-start">
                   <div>
@@ -324,7 +318,9 @@ export function FileProcessingFormContent() {
                       name="human_in_loop"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Human in Loop(Beta)</FormLabel>
+                          <FormLabel>
+                            Human in Loop <sup>(Alpha)</sup>
+                          </FormLabel>
                           <FormControl>
                             <Switch
                               {...field}
