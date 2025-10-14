@@ -100,7 +100,7 @@ export default function ProcessTracePage() {
   return (
     <>
       <PageContainers>
-        <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
+        <div className="space-y-2 md:space-y-0 md:space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
           <DataItem
             label="Process ID"
             value={

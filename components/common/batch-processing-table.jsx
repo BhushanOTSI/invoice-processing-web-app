@@ -116,17 +116,13 @@ export function BatchProcessingTable({
             ? humanizeDateTime(row.original.triggerDateTime)
             : null;
 
-          const displayTriggerType =
-            triggerType === "now" ? "Immediately" : triggerType;
+          const isNow = triggerType === "now";
+          const displayTriggerType = isNow ? "Immediately" : triggerType;
 
           return (
             <div className="space-y-1">
-              <div className="font-medium">{displayTriggerType}</div>
-              {triggerDate && (
-                <div className="text-sm text-muted-foreground">
-                  {triggerDate}
-                </div>
-              )}
+              {isNow && <div className="font-medium">{displayTriggerType}</div>}
+              {triggerDate && <div className="text-sm">{triggerDate}</div>}
             </div>
           );
         },

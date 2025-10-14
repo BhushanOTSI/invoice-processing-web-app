@@ -60,7 +60,7 @@ export function ProcessStatusBadge({
       variant="outline"
       className={cn("font-semibold", variants({ variant: type }))}
     >
-      {type} {Icon && <Icon />}
+      {Icon && <Icon />} {type}
       {isScheduled && (
         <span className="text-xs">{humanizeDateTime(scheduledTime)}</span>
       )}

@@ -1,3 +1,3 @@
 export function PageContainers({ children }) {
-  return <div className="p-6 space-y-6">{children}</div>;
+  return <div className="px-6 py-4 space-y-6">{children}</div>;
 }

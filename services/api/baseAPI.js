@@ -16,6 +16,7 @@ export class BaseAPI {
     if (typeof window !== "undefined") {
       return localStorage.getItem("authToken") || null;
     }
+
     return null;
   }
 
