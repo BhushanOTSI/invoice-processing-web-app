@@ -2,7 +2,7 @@
 
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
 import { APP_ROUTES } from "@/app/constants/app-routes";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import {
   PageDescriptiveSection,
   PageSubdescription,
@@ -16,7 +16,7 @@ import { FilterProvider } from "@/app/providers/filter-provider";
 import { alwaysArray } from "@/lib/utils";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
 
-export default function Page() {
+function TracePageContent() {
   const { params = {} } = useSetSearchParams();
   const [page, setPage] = useState(1);
 
@@ -63,5 +63,13 @@ export default function Page() {
         />
       </PageContainers>
     </FilterProvider>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TracePageContent />
+    </Suspense>
   );
 }
