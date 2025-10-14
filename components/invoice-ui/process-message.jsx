@@ -13,12 +13,12 @@ import {
   HoverCardContent,
 } from "../ui/hover-card";
 
-export function ProcessMessage({ message, isLoading = false }) {
+export function ProcessMessage({ message, isLoading = false, onJsonLoad }) {
   const markdown = message.extraMetadata?.markdown;
   const s3PdfUrl = message.extraMetadata?.s3PdfUrl;
   const s3JsonUrl = message.extraMetadata?.s3JsonUrl;
 
-  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
+  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl, onJsonLoad);
 
   if (isLoading) {
     return (

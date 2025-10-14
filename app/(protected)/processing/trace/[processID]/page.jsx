@@ -20,10 +20,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
-import { ChevronRightIcon, CircleIcon } from "lucide-react";
+import { ChevronRightIcon, CircleIcon, LinkIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ProcessMessage } from "@/components/invoice-ui/process-message";
 import { useProcessingStream } from "@/services/hooks/useBatchProcessInvoice";
+import Link from "next/link";
+import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 
 const convertToMessage = (data) => {
   return {
@@ -67,6 +69,7 @@ export default function ProcessTracePage() {
   const { data: processTraceStatus, isLoading } =
     useProcessTraceStatus(processID);
 
+  const [documentNumber, setDocumentNumber] = useState("");
   const [activeTab, setActiveTab] = useState(1);
   const [messages, setMessages] = useState([]);
   const isProcessing = useMemo(
@@ -157,6 +160,27 @@ export default function ProcessTracePage() {
               <CircleIcon className="size-2 fill-current animate-pulse" />
             </div>
           )}
+          {documentNumber && (
+            <DataItem
+              label="Collabration Workspace"
+              value={(() => {
+                const href = `https://cw.otsiaistudio.com/invoice/${documentNumber}`;
+                return (
+                  <span className="flex items-center gap-1">
+                    <Link
+                      href={href}
+                      target="_blank"
+                      className="text-primary underline hover:no-underline"
+                    >
+                      {documentNumber}
+                    </Link>
+                    <CopyToClipboard value={href} />
+                  </span>
+                );
+              })()}
+              isLoading={isLoading}
+            />
+          )}
         </div>
       </PageContainers>
 
@@ -242,7 +266,17 @@ export default function ProcessTracePage() {
                       value={index + 1}
                       className="h-screen"
                     >
-                      <ProcessMessage message={message} />
+                      <ProcessMessage
+                        message={message}
+                        onJsonLoad={(json = {}) => {
+                          if (
+                            json.document_kind === "yes" &&
+                            json.DocumentNumber
+                          ) {
+                            setDocumentNumber(json.DocumentNumber);
+                          }
+                        }}
+                      />
                     </TabsContent>
                   ))
                 )}

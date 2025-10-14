@@ -68,7 +68,7 @@ export const useProcessingStream = (
   });
 };
 
-export const useFetchS3Json = (s3Url, enabled = false) => {
+export const useFetchS3Json = (s3Url, enabled = false, onJsonLoad) => {
   return useQuery({
     queryKey: ["s3Json", s3Url],
     queryFn: async () => {
@@ -76,7 +76,9 @@ export const useFetchS3Json = (s3Url, enabled = false) => {
       if (!response.ok) {
         throw new Error(`Failed to fetch JSON from S3: ${response.statusText}`);
       }
-      return response.json();
+      const json = await response.json();
+      onJsonLoad?.(json);
+      return json;
     },
     enabled: enabled && !!s3Url,
     retry: 2,
