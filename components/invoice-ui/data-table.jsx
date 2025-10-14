@@ -198,16 +198,16 @@ function Filter({ filter, onChange, type, header }) {
   );
 }
 
-export function RowRenderLink({ showLink = true, href, value }) {
+export function RowRenderLink({ showLink = true, href, value, header }) {
   return (
     <div className="flex items-center gap-0.5">
       <div className="max-w-24 truncate">
         {showLink ? (
           <Link href={href} className="underline">
-            <RowCell value={value} />
+            <RowCell value={value} href={href} header={header} />
           </Link>
         ) : (
-          <RowCell value={value} />
+          <RowCell value={value} header={header} />
         )}
       </div>
       <CopyToClipboard value={value} />
@@ -215,15 +215,28 @@ export function RowRenderLink({ showLink = true, href, value }) {
   );
 }
 
-export function RowCell({ value, className, header }) {
+export function RowCell({ value, className, header, href }) {
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
         <div className={cn("max-w-36 truncate", className)}>{value}</div>
       </HoverCardTrigger>
-      <HoverCardContent>
-        {header && <h3>{header}</h3>}
-        <div className="text-sm">{value}</div>
+      <HoverCardContent className={"space-y-2"}>
+        {header && <h3 className="text-base">{header}</h3>}
+        <div className="text-sm">
+          {href ? (
+            <Link href={href} className="underline">
+              {value}
+            </Link>
+          ) : (
+            value
+          )}
+        </div>
+        {href && (
+          <div className="text-xs">
+            <Link href={href}>Click to view details</Link>
+          </div>
+        )}
       </HoverCardContent>
     </HoverCard>
   );

@@ -34,6 +34,7 @@ export function InvoiceProcessingTable({
                       batchID: row.original.batchNo,
                     })}
                     value={row.original.batchNo}
+                    header="Batch ID"
                   />
                 );
               },
@@ -55,6 +56,7 @@ export function InvoiceProcessingTable({
                 processID: row.original.processId,
               })}
               value={row.original.processId}
+              header="Process ID"
             />
           );
         },
