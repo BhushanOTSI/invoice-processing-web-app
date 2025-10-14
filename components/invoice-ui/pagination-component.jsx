@@ -77,6 +77,8 @@ export function PaginationComponent({
                       >
                         {item.page}
                       </PaginationLink>
+                    ) : item.type === "ellipsis" ? (
+                      <PaginationEllipsis />
                     ) : null}
                   </PaginationItem>
                 )
