@@ -43,7 +43,6 @@ export const useBatchDetails = (batchID) => {
 };
 
 export const useTraces = (filters = {}) => {
-  console.log(["batch", "traces", ...Object.values(filters)]);
   return useQuery({
     queryKey: ["batch", "traces", ...Object.values(filters)],
     queryFn: () => BatchProcessInvoiceAPI.getTraces(filters),
