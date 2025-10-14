@@ -15,8 +15,13 @@ import { InvoiceFilter } from "@/components/invoice-ui/invoice-filter";
 import { FilterProvider } from "@/app/providers/filter-provider";
 import { alwaysArray } from "@/lib/utils";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
+import {
+  BusinessLoading,
+  InlineLoading,
+  PageLoadingSkeleton,
+} from "@/components/ui/loading";
 
-export default function TracePageContent() {
+function TracePageContent() {
   const { params = {} } = useSetSearchParams();
   const [page, setPage] = useState(1);
 
@@ -63,5 +68,13 @@ export default function TracePageContent() {
         />
       </PageContainers>
     </FilterProvider>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<PageLoadingSkeleton />}>
+      <TracePageContent />
+    </Suspense>
   );
 }
