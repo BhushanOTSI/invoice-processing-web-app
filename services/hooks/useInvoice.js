@@ -22,6 +22,7 @@ export const useProcessTraceStatus = (processID) => {
     queryKey: ["trace", "process", processID],
     queryFn: () => InvoiceAPI?.getProcessTraceStatus(processID),
     enabled: !!processID,
+    staleTime: 0,
     refetchInterval: ({ state }) => {
       if (
         state?.status === PROCESS_STATUS.FAILED ||

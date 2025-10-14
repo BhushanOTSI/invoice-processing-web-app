@@ -32,6 +32,7 @@ export const useBatchDetails = (batchID) => {
     queryKey: ["batch", "details", batchID],
     queryFn: () => BatchProcessInvoiceAPI.getBatchDetails(batchID),
     enabled: !!batchID,
+    staleTime: 0,
     refetchInterval: ({ state }) => {
       if (state?.status === "failed" || state.data?.status === "completed") {
         return false;

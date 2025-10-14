@@ -26,6 +26,7 @@ import { ProcessMessage } from "@/components/invoice-ui/process-message";
 import { useProcessingStream } from "@/services/hooks/useBatchProcessInvoice";
 import Link from "next/link";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const convertToMessage = (data) => {
   return {
@@ -175,7 +176,7 @@ export default function ProcessTracePage() {
                     >
                       {documentNumber}
                     </Link>
-                    <CopyToClipboard value={href} />
+                    <CopyToClipboard value={documentNumber} />
                   </span>
                 );
               })()}
@@ -193,8 +194,21 @@ export default function ProcessTracePage() {
         >
           <CardContent className={"p-0"}>
             <div className="flex w-full">
-              <div className="w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen">
+              <div
+                className={cn(
+                  "w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen",
+                  isLoading && "overflow-y-hidden"
+                )}
+              >
                 <TabsList className={"flex-col gap-0 p-3"}>
+                  {isLoading && (
+                    <div className="space-y-3">
+                      {Array.from({ length: 8 }).map((_, index) => (
+                        <Skeleton key={index} className="w-full h-14" />
+                      ))}
+                    </div>
+                  )}
+
                   {traceMessages.map((message, index) => {
                     const messageStatus = message.status?.toLowerCase();
                     const Icon =
