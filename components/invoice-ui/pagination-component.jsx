@@ -22,9 +22,9 @@ import {
 } from "@/lib/pagination-utils";
 
 export function PaginationComponent({
-  currentPage,
-  totalItems,
-  pageSize,
+  currentPage = 1,
+  totalItems = 0,
+  pageSize = 10,
   onPageChange,
   className,
   enablePagination = true,
