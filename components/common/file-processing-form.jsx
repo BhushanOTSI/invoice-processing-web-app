@@ -166,13 +166,13 @@ export function FileProcessingFormContent() {
           return (
             <Button
               size={"sm"}
-              className={"h-7 cursor-pointer"}
+              className={"size-6 cursor-pointer"}
               onClick={() => handleDeleteFile(row.index)}
               variant="destructive"
               type="button"
               disabled={isPending}
             >
-              <XIcon />
+              <XIcon className="size-4" />
             </Button>
           );
         },
@@ -381,7 +381,7 @@ export function FileProcessingFormContent() {
               </CardFooter>
             </Card>
             <Card className={"py-0 gap-0"}>
-              <CardHeader className={"border-b px-6 !py-4"}>
+              <CardHeader className={"border-b px-6 !py-4 items-center"}>
                 <CardTitle>Files to Process</CardTitle>
                 <CardAction>
                   <ButtonGroup>
@@ -401,7 +401,6 @@ export function FileProcessingFormContent() {
                         Clear all
                       </Button>
                       <Button
-                        variant="outline"
                         size="sm"
                         onClick={handleOpenFileInput}
                         type="button"
