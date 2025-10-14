@@ -140,18 +140,6 @@ export function BatchProcessingTable({
         },
       },
       {
-        header: "Updated Date",
-        accessorKey: "updatedDate",
-        cell: ({ row }) => {
-          return (
-            <RowCell
-              value={humanizeDateTime(row.original.updatedDate)}
-              header="Updated Date"
-            />
-          );
-        },
-      },
-      {
         header: "Actions",
         accessorKey: "actions",
         cell: ({ row }) => {
