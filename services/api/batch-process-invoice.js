@@ -43,4 +43,8 @@ export class BatchProcessInvoiceAPI {
   static async cancelBatch(batchID) {
     return BaseAPI.post(`/batch/${batchID}/cancel`);
   }
+
+  static async getBatches(filters = {}) {
+    return BaseAPI.get(`/batch/`, { params: filters });
+  }
 }

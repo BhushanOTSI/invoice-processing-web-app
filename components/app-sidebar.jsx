@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bot, LayoutDashboard } from "lucide-react";
+import { Bot, LayoutDashboard, MonitorIcon, PlusIcon } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -34,17 +34,22 @@ export function AppSidebar({ ...props }) {
           icon: LayoutDashboard,
         },
         {
-          title: "Processing",
-          icon: Bot,
+          title: "New Processing",
+          url: APP_ROUTES.PROCESSING.NEW,
+          icon: PlusIcon,
+        },
+        {
+          title: "Monitor",
+          icon: MonitorIcon,
           isActive: true,
           items: [
             {
-              title: "+ New Processing",
-              url: APP_ROUTES.PROCESSING.NEW,
+              title: "Traces",
+              url: APP_ROUTES.PROCESSING.TRACE,
             },
             {
-              title: "Monitor Traces",
-              url: APP_ROUTES.PROCESSING.TRACE,
+              title: "Batches",
+              url: APP_ROUTES.PROCESSING.MONITOR_BATCHES,
             },
           ],
         },

@@ -98,3 +98,10 @@ export const useCancelBatch = (batchID) => {
     },
   });
 };
+
+export const useBatches = (filters = {}) => {
+  return useQuery({
+    queryKey: ["batch", "list", ...Object.values(filters)],
+    queryFn: () => BatchProcessInvoiceAPI.getBatches(filters),
+  });
+};
