@@ -8,7 +8,7 @@ import { humanizeDateTime } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProcessStatusBadge } from "@/components/invoice-ui/process-status-badge";
 import { APP_ROUTES } from "@/app/constants/app-routes";
-import { CASE_TYPES } from "@/app/constants";
+import { CASE_TYPES, PROCESS_STATUS } from "@/app/constants";
 import { Button } from "@/components/ui/button";
 import { useCancelBatch } from "@/services/hooks/useBatchProcessInvoice";
 import { toast } from "sonner";
@@ -159,20 +159,21 @@ export function BatchProcessingTable({
         header: "Actions",
         accessorKey: "actions",
         cell: ({ row }) => {
-          const canCancel = row.original.canCancel;
-          const isCancelling = cancelBatchMutation.isPending;
+          const canCancel = row.original.status === PROCESS_STATUS.SCHEDULED;
 
           return (
             <div className="flex gap-2">
-              {canCancel && (
+              {canCancel ? (
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => handleCancelBatch(row.original.batchNo)}
-                  disabled={isCancelling}
+                  disabled={cancelBatchMutation.isPending}
                 >
-                  {isCancelling ? "Cancelling..." : "Cancel"}
+                  {cancelBatchMutation.isPending ? "Cancelling..." : "Cancel"}
                 </Button>
+              ) : (
+                <span className="text-gray-400">-</span>
               )}
             </div>
           );
@@ -180,7 +181,7 @@ export function BatchProcessingTable({
         enableColumnFilter: false,
       },
     ];
-  }, [cancelBatchMutation.isPending]);
+  }, [cancelBatchMutation]);
 
   return (
     <Card className="p-0 overflow-hidden">
