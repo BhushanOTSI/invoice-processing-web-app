@@ -18,7 +18,7 @@ export function KpiCard({
   isLoading,
 }) {
   return (
-    <Card className={cn(className)}>
+    <Card className={cn("gap-2", className)}>
       <CardHeader>
         <CardTitle>
           {isLoading && <Skeleton className="w-1/2 h-4" />}

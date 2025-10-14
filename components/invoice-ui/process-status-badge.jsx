@@ -8,7 +8,7 @@ import {
   BanIcon,
   CheckCheckIcon,
 } from "lucide-react";
-import { humanizeDateTime } from "@/lib/utils";
+import { cn, humanizeDateTime } from "@/lib/utils";
 import { PROCESS_STATUS } from "@/app/constants";
 
 export const ProcessIcons = {
@@ -56,7 +56,10 @@ export function ProcessStatusBadge({
   const Icon = ProcessIcons[type];
 
   return (
-    <Badge variant="outline" className={variants({ variant: type })}>
+    <Badge
+      variant="outline"
+      className={cn("font-semibold", variants({ variant: type }))}
+    >
       {type} {Icon && <Icon />}
       {isScheduled && (
         <span className="text-xs">{humanizeDateTime(scheduledTime)}</span>

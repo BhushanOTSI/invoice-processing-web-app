@@ -92,6 +92,11 @@ export default function ProcessTracePage() {
       ? messages
       : processTraceStatus?.messages) || [];
 
+  const isMainProcessCompleted = [
+    PROCESS_STATUS.COMPLETED,
+    PROCESS_STATUS.FAILED,
+  ].includes(processTraceStatus?.status);
+
   return (
     <>
       <PageContainers>
@@ -144,11 +149,7 @@ export default function ProcessTracePage() {
             isLoading={isLoading}
           />
           <DataItem
-            label={
-              processTraceStatus?.status === PROCESS_STATUS.PROCESSING
-                ? "Running Steps"
-                : "Steps"
-            }
+            label={isProcessing ? "Running Steps" : "Steps"}
             value={`${processTraceStatus?.currentStep || "-"} / ${
               processTraceStatus?.totalSteps || "-"
             }`}
@@ -195,7 +196,14 @@ export default function ProcessTracePage() {
               <div className="w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen">
                 <TabsList className={"flex-col gap-0 p-3"}>
                   {traceMessages.map((message, index) => {
-                    const Icon = ProcessIcons[message.status?.toLowerCase()];
+                    const messageStatus = message.status?.toLowerCase();
+                    const Icon =
+                      ProcessIcons[
+                        isMainProcessCompleted &&
+                        messageStatus === PROCESS_STATUS.PROCESSING
+                          ? PROCESS_STATUS.COMPLETED
+                          : messageStatus
+                      ];
 
                     return (
                       <TabsTrigger

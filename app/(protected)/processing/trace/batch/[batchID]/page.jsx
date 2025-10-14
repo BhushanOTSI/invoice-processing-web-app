@@ -34,71 +34,59 @@ export default function Page() {
 
   return (
     <PageContainers>
-      <Card>
-        <CardContent>
-          <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
+      <div className="space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
+        <DataItem
+          label="Batch No"
+          value={<RowCell value={batchDetails?.batchNo} header="Batch No" />}
+          allowCopy
+          isLoading={isLoading}
+        />
+
+        <DataItem
+          label="Created Date"
+          value={<span>{humanizeDateTime(batchDetails?.createdDate)}</span>}
+          isLoading={isLoading}
+        />
+        <DataItem
+          label="Status"
+          value={
+            <ProcessStatusBadge
+              status={batchDetails?.status}
+              isLoading={isLoading}
+              scheduledTime={batchDetails?.triggerDateTime}
+            />
+          }
+          isLoading={isLoading}
+        />
+
+        {PROCESS_STATUS.SCHEDULED !== batchDetails?.status &&
+          batchDetails?.triggerDateTime && (
             <DataItem
-              label="Batch No"
+              label="Scheduled Time"
               value={
-                <RowCell value={batchDetails?.batchNo} header="Batch No" />
-              }
-              allowCopy
-              isLoading={isLoading}
-            />
-
-            <DataItem
-              label="Created Date"
-              value={<span>{humanizeDateTime(batchDetails?.createdDate)}</span>}
-              isLoading={isLoading}
-            />
-            <DataItem
-              label="Status"
-              value={
-                <ProcessStatusBadge
-                  status={batchDetails?.status}
-                  isLoading={isLoading}
-                  scheduledTime={batchDetails?.triggerDateTime}
-                />
+                <span>{humanizeDateTime(batchDetails?.triggerDateTime)}</span>
               }
               isLoading={isLoading}
             />
+          )}
 
-            {PROCESS_STATUS.SCHEDULED !== batchDetails?.status &&
-              batchDetails?.triggerDateTime && (
-                <DataItem
-                  label="Scheduled Time"
-                  value={
-                    <span>
-                      {humanizeDateTime(batchDetails?.triggerDateTime)}
-                    </span>
-                  }
-                  isLoading={isLoading}
-                />
-              )}
-
-            {PROCESS_STATUS.SCHEDULED === batchDetails?.status && (
-              <div className="flex justify-end flex-1">
-                <Button
-                  variant="destructive"
-                  type="button"
-                  size="sm"
-                  onClick={async () => {
-                    await cancelBatch();
-                    refetch();
-                  }}
-                  disabled={isCancelling}
-                >
-                  {isCancelling ? (
-                    <span>Cancelling...</span>
-                  ) : (
-                    <span>Cancel</span>
-                  )}
-                </Button>
-              </div>
-            )}
+        {PROCESS_STATUS.SCHEDULED === batchDetails?.status && (
+          <div className="flex justify-end flex-1">
+            <Button
+              variant="destructive"
+              type="button"
+              size="sm"
+              onClick={async () => {
+                await cancelBatch();
+                refetch();
+              }}
+              disabled={isCancelling}
+            >
+              {isCancelling ? <span>Cancelling...</span> : <span>Cancel</span>}
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
 
       <InvoiceProcessingTable
         data={batchDetails?.details || []}
