@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bot, LayoutDashboard, MonitorIcon, PlusIcon } from "lucide-react";
+import { LayoutDashboard, MonitorIcon, PlusIcon } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {

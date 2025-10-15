@@ -1,5 +1,3 @@
-"use client";
-
 import { AppSidebar } from "@/components/app-sidebar";
 import {
   SidebarInset,
@@ -10,14 +8,17 @@ import { Separator } from "@/components/ui/separator";
 import { AppBreadcrumbs } from "@/components/app-breadcrumbs";
 import { LogoIBM } from "@/components/logos";
 import { ModeToggle } from "@/components/ui/mode-toggle";
-
+import { cookies } from "next/headers";
 import BreadcrumbProvider from "@/app/providers/breadcrumb-provider";
 import ProtectedRoutes from "@/components/protected-routes";
 
-export default function ProtectedLayout({ children }) {
+export default async function ProtectedLayout({ children }) {
+  const cookie = await cookies();
+  const sidebarState = cookie.get("sidebar_state")?.value;
+
   return (
     <ProtectedRoutes>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={sidebarState === "true"}>
         <BreadcrumbProvider>
           <AppSidebar />
           <SidebarInset className={"flex flex-col overflow-x-hidden"}>

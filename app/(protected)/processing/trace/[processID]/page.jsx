@@ -21,12 +21,13 @@ import {
   CollapsibleTrigger,
 } from "@radix-ui/react-collapsible";
 import { ChevronRightIcon, CircleIcon, LinkIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProcessMessage } from "@/components/invoice-ui/process-message";
 import { useProcessingStream } from "@/services/hooks/useBatchProcessInvoice";
 import Link from "next/link";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSidebar } from "@/components/ui/sidebar";
 
 const convertToMessage = (data) => {
   return {
@@ -54,6 +55,12 @@ const addOrUpdateMessage = (messages, data) => {
 };
 
 export default function ProcessTracePage() {
+  const { setOpen } = useSidebar();
+
+  useEffect(() => {
+    setOpen(false);
+  }, []);
+
   const { processID } = useParams();
   useSetBreadcrumbs([
     { title: "Home", url: APP_ROUTES.DASHBOARD },
