@@ -234,7 +234,7 @@ export function RowCell({ value, className, header, href }) {
         </div>
         {href && (
           <div className="text-xs">
-            <Link href={href}>Click to view details</Link>
+            <Link href={href}>Click to view logs</Link>
           </div>
         )}
       </HoverCardContent>
