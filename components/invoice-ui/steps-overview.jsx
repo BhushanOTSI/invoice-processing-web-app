@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertCircleIcon, FootprintsIcon } from "lucide-react";
+import { AlertCircleIcon, FootprintsIcon, LogsIcon, XIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -47,7 +48,7 @@ export default function StepsOverview({ process = {} }) {
         </Tooltip>
       </DrawerTrigger>
       <DrawerContent>
-        <DrawerHeader>
+        <DrawerHeader className="border-b">
           <DrawerTitle className={"truncate"}>
             {process?.detailsResponseJson?.message}
           </DrawerTitle>
@@ -55,8 +56,15 @@ export default function StepsOverview({ process = {} }) {
             <ProcessStatusBadge status={process?.status} />
           </DrawerDescription>
         </DrawerHeader>
+
         <StepsOverviewContent process={process} />
-        <DrawerFooter>
+        <DrawerFooter className="flex-row justify-between border-t">
+          <DrawerClose asChild>
+            <Button variant="outline">
+              <XIcon />
+              Close
+            </Button>
+          </DrawerClose>
           <Button
             variant="outline"
             onClick={() => {
@@ -70,6 +78,7 @@ export default function StepsOverview({ process = {} }) {
               router.push(url);
             }}
           >
+            <LogsIcon />
             View Logs
           </Button>
         </DrawerFooter>
@@ -85,7 +94,7 @@ export function StepsOverviewContent({ process }) {
   } = process?.detailsResponseJson || { processSession: { messages: [] } };
 
   return (
-    <div className="px-4 flex-1 text-sm space-y-6 overflow-auto">
+    <div className="px-4 py-6 flex-1 text-sm space-y-6 overflow-auto">
       {error && (
         <Alert variant="destructive">
           <AlertCircleIcon />
