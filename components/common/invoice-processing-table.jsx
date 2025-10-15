@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CASE_TYPES, PROCESS_STATUS } from "@/app/constants";
 import { ProcessStatusBadge } from "@/components/invoice-ui/process-status-badge";
 import { APP_ROUTES } from "@/app/constants/app-routes";
+import StepsOverview from "../invoice-ui/steps-overview";
 
 export function InvoiceProcessingTable({
   data,
@@ -72,7 +73,12 @@ export function InvoiceProcessingTable({
         header: "Process Status",
         accessorKey: "status",
         cell: ({ row }) => {
-          return <ProcessStatusBadge status={row.original.status} />;
+          return (
+            <div className="flex items-center gap-2">
+              <ProcessStatusBadge status={row.original.status} />
+              <StepsOverview process={row.original} />
+            </div>
+          );
         },
       },
       ...(showBatchId

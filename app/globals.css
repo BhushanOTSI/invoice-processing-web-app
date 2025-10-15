@@ -41,6 +41,29 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-color-fd-card: var(----color-fd-card);
+  --color-color-fd-background: var(----color-fd-background);
+  --color-hu-ring: var(----hu-ring);
+  --color-hu-input: var(----hu-input);
+  --color-hu-border: var(----hu-border);
+  --color-hu-destructive-foreground: var(----hu-destructive-foreground);
+  --color-hu-destructive: var(----hu-destructive);
+  --color-hu-accent-foreground: var(----hu-accent-foreground);
+  --color-hu-accent: var(----hu-accent);
+  --color-hu-muted-foreground: var(----hu-muted-foreground);
+  --color-hu-muted: var(----hu-muted);
+  --color-hu-secondary-foreground: var(----hu-secondary-foreground);
+  --color-hu-secondary: var(----hu-secondary);
+  --color-hu-primary-foreground: var(----hu-primary-foreground);
+  --color-hu-primary: var(----hu-primary);
+  --color-hu-card-foreground: var(----hu-card-foreground);
+  --color-hu-card: var(----hu-card);
+  --color-hu-foreground: var(----hu-foreground);
+  --color-hu-background: var(----hu-background);
+  --card-radius: var(----card-radius);
+  --radius: var(----radius);
+  --hu-font-jetbrains: var(----hu-font-jetbrains);
+  --hu-font-geist: var(----hu-font-geist);
 }
 
 :root {
@@ -77,6 +100,28 @@
   --sidebar-accent-foreground: oklch(0.09 0.01 256);
   --sidebar-border: oklch(0.88 0.006 256);
   --sidebar-ring: oklch(0.47 0.21 256);
+  --hu-font-geist: var(--font-geist);
+  --hu-font-jetbrains: var(--font-jetbrains-mono);
+  --card-radius: 1rem;
+  --hu-background: var(--background);
+  --hu-foreground: var(--foreground);
+  --hu-card: var(--card);
+  --hu-card-foreground: var(--card-foreground);
+  --hu-primary: var(--primary);
+  --hu-primary-foreground: var(--primary-foreground);
+  --hu-secondary: var(--secondary);
+  --hu-secondary-foreground: var(--secondary-foreground);
+  --hu-muted: var(--muted);
+  --hu-muted-foreground: var(--muted-foreground);
+  --hu-accent: var(--accent);
+  --hu-accent-foreground: var(--accent-foreground);
+  --hu-destructive: var(--destructive);
+  --hu-destructive-foreground: var(--destructive-foreground);
+  --hu-border: var(--border);
+  --hu-input: var(--input);
+  --hu-ring: var(--ring);
+  --color-fd-background: hsl(var(--hu-background));
+  --color-fd-card: hsl(var(--hu-background));
 }
 
 .dark {
@@ -112,6 +157,25 @@
   --sidebar-accent-foreground: oklch(0.98 0.002 256);
   --sidebar-border: oklch(0.28 0.014 256);
   --sidebar-ring: oklch(0.64 0.22 256);
+  --hu-background: var(--background);
+  --hu-foreground: var(--foreground);
+    --hu-card: var(--card);
+  --hu-card-foreground: var(--card-foreground);
+  --hu-primary: var(--primary);
+  --hu-primary-foreground: var(--primary-foreground);
+  --hu-secondary: var(--secondary);
+  --hu-secondary-foreground: var(--secondary-foreground);
+  --hu-muted: var(--muted);
+  --hu-muted-foreground: var(--muted-foreground);
+  --hu-accent: var(--accent);
+  --hu-accent-foreground: var(--accent-foreground);
+  --hu-destructive: var(--destructive);
+  --hu-destructive-foreground: var(--destructive-foreground);
+  --hu-border: var(--border);
+  --hu-input: var(--input);
+  --hu-ring: var(--ring);
+  --color-fd-background: hsl(var(--hu-background));
+  --color-fd-card: hsl(var(--hu-background));
 }
 
 @layer base {
@@ -133,5 +197,14 @@
   code, pre {
     @apply font-mono;
     letter-spacing: 0;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

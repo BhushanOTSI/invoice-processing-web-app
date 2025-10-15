@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -15,58 +16,54 @@ import {
 import { Blockquote } from "../ui/blockquote";
 import "highlight.js/styles/github-dark.css";
 
+const MarkdownHeading = ({ level, children }) => {
+  const sizes = [
+    "text-base",
+    "text-sm",
+    "text-sm",
+    "text-xs",
+    "text-xs",
+    "text-xs",
+  ];
+  const margins = [
+    "mb-2 mt-3",
+    "mb-2 mt-3",
+    "mb-1.5 mt-2",
+    "mb-1.5 mt-2",
+    "mb-1 mt-2",
+    "mb-1 mt-1.5",
+  ];
+  return React.createElement(
+    `h${level}`,
+    { className: `${sizes[level - 1]} font-semibold ${margins[level - 1]}` },
+    children
+  );
+};
+
 export function Markdown({ children, className }) {
   return (
     <div
-      className={cn(
-        "prose prose-sm dark:prose-invert max-w-none",
-        "prose-headings:font-semibold prose-headings:tracking-tight",
-        "prose-h1:text-base prose-h1:mb-2 prose-h1:mt-3",
-        "prose-h2:text-sm prose-h2:mb-2 prose-h2:mt-3",
-        "prose-h3:text-sm prose-h3:mb-1.5 prose-h3:mt-2",
-        "prose-h4:text-xs prose-h4:mb-1.5 prose-h4:mt-2",
-        "prose-p:leading-6 prose-p:mb-2 prose-p:text-sm",
-        "prose-a:text-primary prose-a:underline hover:prose-a:no-underline",
-        "prose-strong:font-semibold prose-strong:text-foreground",
-        "prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono prose-code:before:content-[''] prose-code:after:content-['']",
-        "prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 prose-pre:overflow-x-auto",
-        "prose-ul:list-disc prose-ul:pl-5 prose-ul:mb-2",
-        "prose-ol:list-decimal prose-ol:pl-5 prose-ol:mb-2",
-        "prose-li:mb-0.5 prose-li:text-sm",
-        "prose-img:rounded-lg prose-img:border prose-img:border-border",
-        "prose-hr:border-border prose-hr:my-4",
-        className
-      )}
+      className={cn("prose prose-sm dark:prose-invert max-w-none", className)}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
         components={{
-          h1: ({ node, ...props }) => (
-            <h1 className="text-base font-semibold mb-2 mt-3" {...props} />
-          ),
-          h2: ({ node, ...props }) => (
-            <h2 className="text-sm font-semibold mb-2 mt-3" {...props} />
-          ),
-          h3: ({ node, ...props }) => (
-            <h3 className="text-sm font-semibold mb-1.5 mt-2" {...props} />
-          ),
-          h4: ({ node, ...props }) => (
-            <h4 className="text-xs font-semibold mb-1.5 mt-2" {...props} />
-          ),
-          h5: ({ node, ...props }) => (
-            <h5 className="text-xs font-medium mb-1 mt-2" {...props} />
-          ),
-          h6: ({ node, ...props }) => (
-            <h6 className="text-xs font-medium mb-1 mt-1.5" {...props} />
-          ),
+          h1: (props) => <MarkdownHeading level={1} {...props} />,
+          h2: (props) => <MarkdownHeading level={2} {...props} />,
+          h3: (props) => <MarkdownHeading level={3} {...props} />,
+          h4: (props) => <MarkdownHeading level={4} {...props} />,
+          h5: (props) => <MarkdownHeading level={5} {...props} />,
+          h6: (props) => <MarkdownHeading level={6} {...props} />,
 
           p: ({ node, ...props }) => (
-            <p className="leading-6 mb-2 text-sm text-foreground" {...props} />
+            <p className="text-sm leading-6 mb-2 text-foreground" {...props} />
           ),
+
           strong: ({ node, ...props }) => (
             <strong className="font-semibold text-foreground" {...props} />
           ),
+
           em: ({ node, ...props }) => (
             <em className="italic text-foreground" {...props} />
           ),
@@ -87,7 +84,7 @@ export function Markdown({ children, className }) {
             <ol className="list-decimal pl-5 mb-2 space-y-0.5" {...props} />
           ),
           li: ({ node, ...props }) => (
-            <li className="text-foreground text-sm leading-6" {...props} />
+            <li className="text-sm leading-6 text-foreground" {...props} />
           ),
 
           blockquote: ({ node, ...props }) => <Blockquote {...props} />,
@@ -98,23 +95,21 @@ export function Markdown({ children, className }) {
               {...props}
             />
           ),
-          code: ({ node, inline, className, children, ...props }) => {
-            if (inline) {
-              return (
-                <code
-                  className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground"
-                  {...props}
-                >
-                  {children}
-                </code>
-              );
-            }
-            return (
+
+          code: ({ node, inline, className, children, ...props }) =>
+            inline ? (
+              <code
+                className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground"
+                {...props}
+              >
+                {children}
+              </code>
+            ) : (
               <code className={className} {...props}>
                 {children}
               </code>
-            );
-          },
+            ),
+
           table: ({ node, ...props }) => (
             <div className="mb-2 overflow-x-auto rounded-lg border border-border">
               <Table {...props} />
@@ -126,13 +121,14 @@ export function Markdown({ children, className }) {
           th: ({ node, ...props }) => (
             <TableHead className="font-semibold text-xs" {...props} />
           ),
+
           td: ({ node, ...props }) => (
             <TableCell className="text-sm" {...props} />
           ),
+
           hr: ({ node, ...props }) => (
             <hr className="border-border my-4" {...props} />
           ),
-
           img: ({ node, ...props }) => (
             <img
               className="rounded-lg border border-border max-w-full h-auto"
