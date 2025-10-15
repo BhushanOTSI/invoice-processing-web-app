@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import OtsiLogo from "@/public/logos/otsi.svg";
 import IBMLogo from "@/public/logos/ibm.svg";
