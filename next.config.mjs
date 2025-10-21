@@ -55,7 +55,7 @@ const nextConfig = {
               }`,
               `media-src ${allowedSources}`,
               `object-src 'self' ${s3BucketUrl}`,
-              "frame-src 'none'",
+              `frame-src 'self' ${s3BucketUrl}`,
               "base-uri 'self'",
               `form-action 'self'${apiUrl ? ` ${apiUrl}` : ""}`,
               "frame-ancestors 'none'",
