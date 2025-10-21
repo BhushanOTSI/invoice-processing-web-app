@@ -35,6 +35,8 @@ const FileInputProvider = ({
   maxFiles = 10,
   accept = "*",
   multiple = true,
+  maxFileSize = 5 * 1024 * 1024,
+  maxTotalSize = 25 * 1024 * 1024,
 }) => {
   const fileInputRef = useRef(null);
   const [files, setFiles] = useState([]);
@@ -68,23 +70,61 @@ const FileInputProvider = ({
     [files]
   );
 
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  };
+
   const handleSetFiles = useCallback(
     (userfiles = []) => {
       const filesState = [...files, ...Array.from(userfiles)];
       let invalidFiles = [];
+      let oversizedFiles = [];
+      let totalSize = 0;
+
       const validFiles = filesState.filter((file) => {
         let isValid = file.type.includes(accept);
+        let isSizeValid = file.size <= maxFileSize;
 
         if (!isValid) {
           invalidFiles.push(file);
         }
 
-        return isValid;
+        if (!isSizeValid) {
+          oversizedFiles.push(file);
+        }
+
+        if (isValid && isSizeValid) {
+          totalSize += file.size;
+        }
+
+        return isValid && isSizeValid;
       });
+
+      // Check total size limit
+      if (totalSize > maxTotalSize) {
+        toast.error(
+          `Total file size cannot exceed ${formatFileSize(
+            maxTotalSize
+          )}. Current total: ${formatFileSize(totalSize)}`
+        );
+        return;
+      }
 
       if (invalidFiles.length > 0) {
         toast.error(
           `You can only upload files with the following extensions: ${accept}`
+        );
+      }
+
+      if (oversizedFiles.length > 0) {
+        toast.error(
+          `Some files exceed the maximum size of ${formatFileSize(
+            maxFileSize
+          )}. Please reduce file size or remove them.`
         );
       }
 
@@ -98,7 +138,7 @@ const FileInputProvider = ({
       setFiles(filteredFiles);
       setFileInputValue(filteredFiles);
     },
-    [files, setFileInputValue, maxFiles, accept]
+    [files, setFileInputValue, maxFiles, accept, maxFileSize, maxTotalSize]
   );
 
   const handleChange = useCallback(
@@ -134,6 +174,25 @@ const FileInputProvider = ({
     fileInputRef.current.click();
   }, [fileInputRef]);
 
+  const handlePaste = useCallback(
+    (e) => {
+      e.preventDefault();
+      const items = e.clipboardData.items;
+      const files = Array.from(items)
+        .filter((item) => item.kind === "file")
+        .map((item) => item.getAsFile());
+
+      if (files.length > 0) {
+        handleSetFiles(files);
+      }
+    },
+    [handleSetFiles]
+  );
+
+  const getTotalSize = () => {
+    return files.reduce((total, file) => total + file.size, 0);
+  };
+
   return (
     <FileInputContext.Provider
       value={{
@@ -145,6 +204,7 @@ const FileInputProvider = ({
         handleOnDragLeave,
         isDragging,
         handleDrop,
+        handlePaste,
         hasFiles: files.length > 0,
         handleDeleteFile,
         handleClearFiles,
@@ -152,6 +212,11 @@ const FileInputProvider = ({
         handleOpenFileInput,
         accept,
         multiple,
+        maxFileSize,
+        maxTotalSize,
+        formatFileSize,
+        totalSize: getTotalSize(),
+        remainingSize: maxTotalSize - getTotalSize(),
       }}
     >
       {children}
@@ -164,10 +229,16 @@ const FileInput = ({ className }) => {
     handleOnDrag,
     handleOnDragLeave,
     handleDrop,
+    handlePaste,
     isDragging,
     maxFiles,
     handleOpenFileInput,
     accept,
+    maxFileSize,
+    maxTotalSize,
+    formatFileSize,
+    totalSize,
+    remainingSize,
   } = useFileInput();
 
   return (
@@ -200,6 +271,33 @@ const FileInput = ({ className }) => {
             <div>
               Allowed file types: <b>{accept}</b>
             </div>
+            <div>
+              Max file size: <b>{formatFileSize(maxFileSize)}</b>
+            </div>
+            <div>
+              Total upload limit: <b>{formatFileSize(maxTotalSize)}</b>
+            </div>
+            {totalSize > 0 && (
+              <div className="mt-2 p-2 bg-muted rounded-md">
+                <div className="text-sm">
+                  Current total: <b>{formatFileSize(totalSize)}</b>
+                </div>
+                <div className="text-sm">
+                  Remaining: <b>{formatFileSize(remainingSize)}</b>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2 mt-1">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.min(
+                        (totalSize / maxTotalSize) * 100,
+                        100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
