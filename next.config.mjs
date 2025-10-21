@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
-    const s3BucketUrl = process.env.NEXT_PUBLIC_S3_BUCKET_URL;
+    const s3BucketUrl =
+      process.env.NEXT_PUBLIC_S3_BUCKET_URL ||
+      "https://ibm-invoice-processing-pdf.s3.ap-south-1.amazonaws.com";
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
     const allowedSources = [
