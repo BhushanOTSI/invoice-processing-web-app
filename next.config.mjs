@@ -44,8 +44,8 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' https://vercel.live",
-              "style-src 'self' https://fonts.googleapis.com",
+              "script-src 'self' 'unsafe-inline' https://vercel.live",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               `img-src ${allowedSources}`,
               `connect-src 'self' https: wss: ${s3BucketUrl}${
