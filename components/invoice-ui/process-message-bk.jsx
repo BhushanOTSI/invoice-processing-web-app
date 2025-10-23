@@ -13,9 +13,6 @@ import {
   HoverCardContent,
 } from "../ui/hover-card";
 
-import dynamic from "next/dynamic";
-const InvoicePdf = dynamic(() => import("./invoice-pdf"), { ssr: false });
-
 export function ProcessMessage({ message, isLoading = false, onJsonLoad }) {
   const markdown = message.extraMetadata?.markdown;
   const s3PdfUrl = message.extraMetadata?.s3PdfUrl;
@@ -148,7 +145,23 @@ export function ProcessMessage({ message, isLoading = false, onJsonLoad }) {
 
         {hasPdf && (
           <TabsContent value="pdf" className="p-0 h-full">
-            <InvoicePdf fileUrl={s3PdfUrl} />
+            <object
+              data={s3PdfUrl}
+              type="application/pdf"
+              className="w-full h-full"
+            >
+              <p className="p-4">
+                Unable to display PDF.{" "}
+                <a
+                  href={s3PdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary underline hover:no-underline"
+                >
+                  Download PDF
+                </a>
+              </p>
+            </object>
           </TabsContent>
         )}
       </Tabs>
