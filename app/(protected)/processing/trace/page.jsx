@@ -13,6 +13,7 @@ import { useTraces } from "@/services/hooks/useBatchProcessInvoice";
 import { InvoiceProcessingTable } from "@/components/common/invoice-processing-table";
 import { InvoiceFilter } from "@/components/invoice-ui/invoice-filter";
 import { FilterProvider } from "@/app/providers/filter-provider";
+import { useFilter } from "@/app/providers/filter-provider";
 import { alwaysArray } from "@/lib/utils";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
 import {
@@ -20,6 +21,10 @@ import {
   InlineLoading,
   PageLoadingSkeleton,
 } from "@/components/ui/loading";
+import { Badge } from "@/components/ui/badge";
+import { humanizeDateTime } from "@/lib/utils";
+import FilterSummaryBlock from "@/components/common/filter-summary-block";
+import FilterSummary from "@/components/invoice-ui/filter-summary";
 
 function TracePageContent() {
   const { params = {} } = useSetSearchParams();
@@ -53,7 +58,7 @@ function TracePageContent() {
             </div>
           </div>
         </PageDescriptiveSection>
-
+        <FilterSummary />
         <InvoiceProcessingTable
           data={traces?.details || []}
           isLoading={isLoading}
@@ -78,3 +83,4 @@ export default function Page() {
     </Suspense>
   );
 }
+
