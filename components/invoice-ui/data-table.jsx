@@ -253,7 +253,7 @@ export function RowCell({
           <Link
             href={href}
             target={target}
-            className="text-xs bg-accent-foreground/10 p-2 flex gap-1 items-center"
+            className="text-sm bg-accent-foreground/10 p-2 flex gap-1 items-center"
           >
             <LinkIcon className="size-3" />
             {urlText}

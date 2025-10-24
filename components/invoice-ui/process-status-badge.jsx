@@ -43,13 +43,13 @@ export const statusBackgroundVariants = cva("", {
 export const statusTextVariants = cva("", {
   variants: {
     variant: {
-      processing: "text-blue-600",
-      pending: "text-yellow-600",
-      completed: "text-green-600",
-      failed: "text-red-600",
+      processing: "text-blue-700",
+      pending: "text-yellow-700",
+      completed: "text-green-700",
+      failed: "text-red-700",
       cancelled: "text-gray-600",
-      scheduled: "text-purple-600",
-      partially_completed: "text-orange-600",
+      scheduled: "text-purple-700",
+      partially_completed: "text-orange-700",
       default: "text-accent-foreground",
     },
   },
@@ -61,14 +61,14 @@ export const statusTextVariants = cva("", {
 export const statusBorderVariants = cva("", {
   variants: {
     variant: {
-      processing: "border dark:border-none border-blue-300",
-      pending: "border dark:border-none border-yellow-300",
-      completed: "border dark:border-none border-green-300",
-      failed: "border dark:border-none border-red-300",
-      cancelled: "border dark:border-none border-gray-300",
-      scheduled: "border dark:border-none border-purple-300",
-      partially_completed: "border dark:border-none border-orange-300",
-      default: "border dark:border-none border-accent",
+      processing: "border border-blue-300",
+      pending: "border border-yellow-300",
+      completed: "border border-green-300",
+      failed: "border border-red-300",
+      cancelled: "border border-gray-300",
+      scheduled: "border border-purple-300",
+      partially_completed: "border border-orange-300",
+      default: "border border-accent",
     },
   },
   defaultVariants: {
@@ -76,7 +76,7 @@ export const statusBorderVariants = cva("", {
   },
 });
 
-const variants = cva("rounded-lg capitalize text-xs", {
+const variants = cva("rounded-full capitalize text-xs", {
   variants: {
     variant: {
       processing: cn(

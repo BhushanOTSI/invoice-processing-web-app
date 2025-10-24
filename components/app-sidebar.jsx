@@ -72,12 +72,6 @@ export function AppSidebar({ ...props }) {
           setCloseByMouseEnter(true);
         }
       }}
-      onMouseLeave={() => {
-        if (closeByMouseEnter) {
-          setCloseByMouseEnter(false);
-          setOpen(false);
-        }
-      }}
     >
       <SidebarHeader>
         <div className="overflow-hidden">
