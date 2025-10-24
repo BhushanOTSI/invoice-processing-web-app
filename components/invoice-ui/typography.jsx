@@ -31,15 +31,11 @@ export function DataItem({
 }) {
   return (
     <div className={cn(className, isLoading && "min-w-36 space-y-2")}>
-      <div className="font-medium">
+      <div className="text-muted-foreground">
         {isLoading ? <Skeleton className="w-1/2 h-4" /> : label}
       </div>
       <div className="flex gap-2">
-        {isLoading ? (
-          <Skeleton className="w-full h-4" />
-        ) : (
-          <div className="text-muted-foreground">{value}</div>
-        )}
+        {isLoading ? <Skeleton className="w-full h-4" /> : <div>{value}</div>}
 
         {allowCopy && <CopyToClipboard value={value} isLoading={isLoading} />}
       </div>

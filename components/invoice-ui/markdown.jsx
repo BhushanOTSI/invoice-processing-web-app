@@ -18,8 +18,8 @@ import "highlight.js/styles/github-dark.css";
 
 const MarkdownHeading = ({ level, children }) => {
   const sizes = [
+    "text-lg",
     "text-base",
-    "text-sm",
     "text-sm",
     "text-xs",
     "text-xs",
@@ -35,7 +35,11 @@ const MarkdownHeading = ({ level, children }) => {
   ];
   return React.createElement(
     `h${level}`,
-    { className: `${sizes[level - 1]} font-semibold ${margins[level - 1]}` },
+    {
+      className: `${sizes[level - 1]} font-normal leading-snug ${
+        margins[level - 1]
+      }`,
+    },
     children
   );
 };
@@ -61,7 +65,7 @@ export function Markdown({ children, className }) {
           ),
 
           strong: ({ node, ...props }) => (
-            <strong className="font-semibold text-foreground" {...props} />
+            <strong className="text-foreground" {...props} />
           ),
 
           em: ({ node, ...props }) => (

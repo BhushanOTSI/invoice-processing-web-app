@@ -4,30 +4,72 @@ import { useParams } from "next/navigation";
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
-import { PageContainers } from "@/components/invoice-ui/page-containers";
-import { Card, CardContent } from "@/components/ui/card";
-import { DataItem } from "@/components/invoice-ui/typography";
-import { cn, formatFractionalHoursAuto, humanizeDateTime } from "@/lib/utils";
+import { cn, formatTimeDifference } from "@/lib/utils";
 import {
   ProcessIcons,
   ProcessStatusBadge,
+  statusTextVariants,
 } from "@/components/invoice-ui/process-status-badge";
-import { RowCell } from "@/components/invoice-ui/data-table";
+import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
 import { PROCESS_STATUS } from "@/app/constants";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+
+import {
+  BadgeCheckIcon,
+  BanIcon,
+  ChevronDownIcon,
+  CircleXIcon,
+  ClockIcon,
+  FileIcon,
+  FileQuestionMarkIcon,
+  HashIcon,
+  LinkIcon,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ProcessMessage } from "@/components/invoice-ui/process-message";
+import {
+  useFetchS3Json,
+  useProcessingStream,
+} from "@/services/hooks/useBatchProcessInvoice";
+import { useSidebar } from "@/components/ui/sidebar";
+import dynamic from "next/dynamic";
+import { Spinner } from "@/components/ui/spinner";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/scroll-area";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@radix-ui/react-collapsible";
-import { ChevronRightIcon, CircleIcon, LinkIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { ProcessMessage } from "@/components/invoice-ui/process-message";
-import { useProcessingStream } from "@/services/hooks/useBatchProcessInvoice";
-import Link from "next/link";
-import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSidebar } from "@/components/ui/sidebar";
+} from "@/components/ui/collapsible";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+const InvoicePdf = dynamic(
+  () => import("@/components/invoice-ui/invoice-pdf"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 justify-center items-center h-full flex flex-col">
+        <Spinner />
+      </div>
+    ),
+  }
+);
 
 const convertToMessage = (data) => {
   return {
@@ -77,8 +119,7 @@ export default function ProcessTracePage() {
   const { data: processTraceStatus, isLoading } =
     useProcessTraceStatus(processID);
 
-  const [documentNumber, setDocumentNumber] = useState("");
-  const [activeTab, setActiveTab] = useState(1);
+  const [activeTab, setActiveTab] = useState("step-1");
   const [messages, setMessages] = useState([]);
   const isProcessing = useMemo(
     () => processTraceStatus?.status === PROCESS_STATUS.PROCESSING,
@@ -95,225 +136,414 @@ export default function ProcessTracePage() {
     }
   );
 
-  let traceMessages =
-    (isProcessing || (messages.length && !processTraceStatus?.messages?.length)
-      ? messages
-      : processTraceStatus?.messages) || [];
+  const traceMessages = useMemo(() => {
+    return (
+      (isProcessing ||
+      (messages.length && !processTraceStatus?.messages?.length)
+        ? messages
+        : processTraceStatus?.messages) || []
+    );
+  }, [messages, processTraceStatus?.messages, isProcessing]);
+
+  const groupedTraceMessages = useMemo(() => {
+    const grouped = {
+      "step-1": traceMessages?.[0] ? traceMessages[0] : null,
+      "step-2": traceMessages?.[1] ? traceMessages[1] : null,
+      "step-3": traceMessages.slice(2, traceMessages.length),
+    };
+
+    return grouped;
+  }, [traceMessages]);
 
   const isMainProcessCompleted = [
     PROCESS_STATUS.COMPLETED,
     PROCESS_STATUS.FAILED,
   ].includes(processTraceStatus?.status);
 
+  const s3PdfUrl = useMemo(() => {
+    return groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl;
+  }, [groupedTraceMessages["step-1"]]);
+
+  const s3JsonUrl = useMemo(() => {
+    return groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl;
+  }, [groupedTraceMessages["step-1"]]);
+
+  const containerHeight = "h-[calc(100vh-3rem)]";
+
+  const stepStatus = useMemo(() => {
+    const step1 = groupedTraceMessages["step-1"];
+    const step2 = groupedTraceMessages["step-2"];
+    const step3 = groupedTraceMessages["step-3"];
+
+    return {
+      isStep1Processing: step1?.status === PROCESS_STATUS.PROCESSING,
+      isStep2Processing: step2?.status === PROCESS_STATUS.PROCESSING,
+      isStep3Processing: step3?.some(
+        (message) => message.status === PROCESS_STATUS.PROCESSING
+      ),
+      isStep1Completed: step1?.status === PROCESS_STATUS.COMPLETED,
+      isStep2Completed: step2?.status === PROCESS_STATUS.COMPLETED,
+      isStep3Completed: step3?.some(
+        (message) => message.status === PROCESS_STATUS.COMPLETED
+      ),
+      isStep1Failed: step1?.status === PROCESS_STATUS.FAILED,
+      isStep2Failed: step2?.status === PROCESS_STATUS.FAILED,
+      isStep3Failed: step3?.some(
+        (message) => message.status === PROCESS_STATUS.FAILED
+      ),
+      isStep1Cancelled: step1?.status === PROCESS_STATUS.CANCELLED,
+      isStep2Cancelled: step2?.status === PROCESS_STATUS.CANCELLED,
+      isStep3Cancelled: step3?.some(
+        (message) => message.status === PROCESS_STATUS.CANCELLED
+      ),
+    };
+  }, [groupedTraceMessages]);
+
+  const [view, setView] = useState("markdown");
+
+  const { data: jsonData, isLoading: isLoadingJson } = useFetchS3Json(
+    s3JsonUrl,
+    !!s3JsonUrl
+  );
+
   return (
     <>
-      <PageContainers>
-        <div className="space-y-2 md:space-y-0 md:space-x-4 flex flex-col gap-4 md:flex-row items-center text-sm">
-          <DataItem
-            label="Process ID"
-            value={
-              <RowCell
-                value={processTraceStatus?.processId}
-                header="Process ID"
-              />
-            }
-            allowCopy
-            isLoading={isLoading}
-          />
-
-          <DataItem
-            label="File Name"
-            value={
-              <RowCell
-                value={processTraceStatus?.filename || "-"}
-                header="File Name"
-              />
-            }
-            isLoading={isLoading}
-          />
-
-          <DataItem
-            label="Start Time"
-            value={
-              <span>{humanizeDateTime(processTraceStatus?.startTime)}</span>
-            }
-            isLoading={isLoading}
-          />
-          <DataItem
-            label="End Time"
-            value={
-              <span>{humanizeDateTime(processTraceStatus?.completedAt)}</span>
-            }
-            isLoading={isLoading}
-          />
-          <DataItem
-            label="Status"
-            value={
-              <ProcessStatusBadge
-                status={processTraceStatus?.status}
-                isLoading={isLoading}
-              />
-            }
-            isLoading={isLoading}
-          />
-          <DataItem
-            label={isProcessing ? "Running Steps" : "Steps"}
-            value={`${processTraceStatus?.currentStep || "-"} / ${
-              processTraceStatus?.totalSteps || "-"
-            }`}
-            isLoading={isLoading}
-          />
-          {isLoadingProcessingStream && (
-            <div className="flex items-center gap-1 text-xs text-green-500 flex-1 justify-end">
-              Streaming Live
-              <CircleIcon className="size-2 fill-current animate-pulse" />
-            </div>
+      <div className="@container grid grid-cols-5">
+        <div
+          className={cn(
+            "@md:col-span-2 bg-accent border-r",
+            containerHeight,
+            (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
+              "animate-pulse bg-accent/30"
           )}
-          {documentNumber && (
-            <DataItem
-              label="Collabration Workspace"
-              value={(() => {
-                const href = `https://cw.otsiaistudio.com/invoice/${documentNumber}`;
-                return (
-                  <span className="flex items-center gap-1">
-                    <Link
-                      href={href}
-                      target="_blank"
-                      className="text-primary underline hover:no-underline"
-                    >
-                      {documentNumber}
-                    </Link>
-                    <CopyToClipboard value={documentNumber} />
-                  </span>
-                );
-              })()}
-              isLoading={isLoading}
-            />
+        >
+          {s3PdfUrl && <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />}
+          {!isLoading && !isLoadingProcessingStream && !s3PdfUrl && (
+            <Empty className="h-full">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <FileQuestionMarkIcon />
+                </EmptyMedia>
+                <EmptyTitle>Nothing to Preview</EmptyTitle>
+                <EmptyDescription>
+                  The file has not been processed yet or the file is not
+                  available.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           )}
         </div>
-      </PageContainers>
 
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
-        <Card
-          className={
-            "p-0 gap-0 overflow-hidden sticky top-0 rounded-none border-x-0 "
-          }
-        >
-          <CardContent className={"p-0"}>
-            <div className="flex w-full">
-              <div
-                className={cn(
-                  "w-1/3 shrink-0 border-r dark:bg-muted/50 overflow-y-auto h-screen",
-                  isLoading && "overflow-y-hidden"
-                )}
-              >
-                <TabsList className={"flex-col gap-0 p-3"}>
-                  {isLoading && (
-                    <div className="space-y-3">
-                      {Array.from({ length: 8 }).map((_, index) => (
-                        <Skeleton key={index} className="w-full h-14" />
-                      ))}
-                    </div>
-                  )}
-
-                  {traceMessages.map((message, index) => {
-                    const messageStatus = message.status?.toLowerCase();
-                    const Icon =
-                      ProcessIcons[
-                        isMainProcessCompleted &&
-                        messageStatus === PROCESS_STATUS.PROCESSING
-                          ? PROCESS_STATUS.COMPLETED
-                          : messageStatus
-                      ];
-
-                    return (
-                      <TabsTrigger
-                        key={message.id}
-                        value={index + 1}
-                        asChild
-                        className="group/tab data-[state=active]:bg-primary/10 data-[state=active]:text-primary hover:bg-muted/70 data-[state=active]:hover:bg-primary/15 mb-3 last:mb-0 rounded-lg border border-border/50 data-[state=active]:border-primary/30 data-[state=active]:shadow-sm transition-all"
-                      >
-                        <Collapsible>
-                          <div className="w-full text-left cursor-pointer px-3 py-3 text-sm">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-4">
-                                <CollapsibleTrigger
-                                  className="hover:bg-transparent p-0 flex items-center justify-center group/step"
-                                  disabled={
-                                    ![
-                                      PROCESS_STATUS.COMPLETED,
-                                      PROCESS_STATUS.FAILED,
-                                    ].includes(message.status)
-                                  }
-                                >
-                                  <ChevronRightIcon className="size-4 group-data-[state=open]/step:rotate-90 transition-transform duration-200" />
-                                </CollapsibleTrigger>
-                              </div>
-                              <div className="w-6">
-                                <Icon
-                                  className={cn(
-                                    "size-4",
-                                    message.status ===
-                                      PROCESS_STATUS.COMPLETED &&
-                                      "text-green-500 group-data-[state=active]/tab:text-green-600",
-                                    message.status === PROCESS_STATUS.FAILED &&
-                                      "text-destructive"
-                                  )}
-                                />
-                              </div>
-                              <div className="flex-1 text-sm leading-tight">
-                                {message.name}
-                              </div>
-                              <div className="min-w-10 text-xs text-center opacity-70 group-data-[state=active]/tab:opacity-100">
-                                <div>Step {message.stepNum}</div>
-                                {message.processingTimeSeconds &&
-                                  formatFractionalHoursAuto(
-                                    message.processingTimeSeconds,
-                                    "seconds"
-                                  )}
-                              </div>
-                            </div>
-                          </div>
-                          <CollapsibleContent>
-                            <div className="px-3 pb-3 pt-2 text-xs bg-muted/30 text-muted-foreground border-t border-border/30 mx-0.5 rounded-b-md group-data-[state=active]/tab:bg-primary/5 group-data-[state=active]/tab:text-foreground group-data-[state=active]/tab:border-primary/20">
-                              {message.description}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-              </div>
-              <div className="flex-1 h-screen min-w-0">
-                {isLoading ? (
-                  <ProcessMessage message={{}} isLoading={isLoading} />
-                ) : (
-                  traceMessages.map((message, index) => (
-                    <TabsContent
-                      key={message.id}
-                      value={index + 1}
-                      className="h-screen"
+        <div className={cn("@md:col-span-3", containerHeight)}>
+          <Tabs
+            value={view === "markdown" ? activeTab : ""}
+            onValueChange={(value) => {
+              setActiveTab(value);
+              setView("markdown");
+            }}
+            className="flex flex-col h-full"
+          >
+            <div className="py-2 pt-3 px-6 space-y-3 border-b">
+              <div className="flex items-center w-full justify-between">
+                <div>
+                  <TabsList className="flex items-center">
+                    <StepTabTrigger
+                      value="step-1"
+                      key="step-1"
+                      isProcessing={stepStatus.isStep1Processing}
+                      isLoading={isLoading}
+                      isCompleted={stepStatus.isStep1Completed}
+                      isFailed={stepStatus.isStep1Failed}
+                      isCancelled={stepStatus.isStep1Cancelled}
+                      isPreviousStepCompleted={true}
                     >
-                      <ProcessMessage
-                        message={message}
-                        onJsonLoad={(json = {}) => {
-                          if (
-                            json.document_kind === "yes" &&
-                            json.DocumentNumber
-                          ) {
-                            setDocumentNumber(json.DocumentNumber);
-                          }
+                      <span>AI Invoice Extraction</span>
+                    </StepTabTrigger>
+                    <div className="w-6 h-px bg-foreground/10 inline-block" />
+                    <StepTabTrigger
+                      value="step-2"
+                      key="step-2"
+                      isProcessing={stepStatus.isStep2Processing}
+                      isLoading={isLoading}
+                      isCompleted={stepStatus.isStep2Completed}
+                      isFailed={
+                        stepStatus.isStep2Failed || stepStatus.isStep1Failed
+                      }
+                      isCancelled={stepStatus.isStep2Cancelled}
+                      isPreviousStepCompleted={stepStatus.isStep1Completed}
+                    >
+                      <span>Validate CW Invoice</span>
+                    </StepTabTrigger>
+                    <div className="w-6 h-px bg-foreground/10 inline-block" />
+                    <StepTabTrigger
+                      value="step-3"
+                      key="step-3"
+                      isProcessing={stepStatus.isStep3Processing}
+                      isLoading={isLoading}
+                      isCompleted={stepStatus.isStep3Completed}
+                      isFailed={
+                        stepStatus.isStep3Failed ||
+                        stepStatus.isStep2Failed ||
+                        stepStatus.isStep1Failed
+                      }
+                      isCancelled={stepStatus.isStep3Cancelled}
+                      isPreviousStepCompleted={stepStatus.isStep2Completed}
+                    >
+                      <span>Process Steps</span>
+                    </StepTabTrigger>
+                  </TabsList>
+                </div>
+                {jsonData && (
+                  <div>
+                    <Field
+                      orientation="horizontal"
+                      className="items-center gap-1"
+                    >
+                      <Checkbox
+                        className={"size-3.5"}
+                        checked={view === "json"}
+                        onCheckedChange={(checked) => {
+                          setView(checked ? "json" : "markdown");
                         }}
                       />
-                    </TabsContent>
-                  ))
+                      <FieldLabel className="text-xs">JSON</FieldLabel>
+                    </Field>
+                  </div>
                 )}
               </div>
+              <div className="flex justify-between">
+                <div className="flex items-center text-xs gap-3 flex-wrap transition-all">
+                  <InfoItem
+                    Icon={HashIcon}
+                    label="Process ID:"
+                    value={processTraceStatus?.processId}
+                    allowCopy
+                    isLoading={isLoading}
+                  />
+                  <InfoItem
+                    Icon={FileIcon}
+                    label="File Name:"
+                    value={processTraceStatus?.filename}
+                    allowCopy
+                    isLoading={isLoading}
+                  />
+                  {jsonData?.DocumentNumber && (
+                    <InfoItem
+                      Icon={LinkIcon}
+                      label="Document Number:"
+                      value={jsonData?.DocumentNumber}
+                      href={`https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`}
+                      allowCopy
+                      urlText="Collabration Workspace"
+                      isLoading={isLoading}
+                    />
+                  )}
+                  {isMainProcessCompleted && (
+                    <InfoItem
+                      Icon={ClockIcon}
+                      label="Completed in:"
+                      value={formatTimeDifference(
+                        processTraceStatus?.startTime,
+                        processTraceStatus?.completedAt
+                      )}
+                      isLoading={isLoading}
+                    />
+                  )}
+                </div>
+                <div>
+                  <ProcessStatusBadge
+                    status={processTraceStatus?.status}
+                    isLoading={isLoading}
+                    className="px-2"
+                  />
+                </div>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </Tabs>
+            <div className="flex-1 overflow-y-auto dark:text-foreground/90">
+              <ScrollArea className="px-6 py-4">
+                {view === "markdown" ? (
+                  <>
+                    <TabsContent value="step-1">
+                      <ProcessMessage
+                        message={groupedTraceMessages["step-1"]}
+                        isLoading={isLoading}
+                        jsonData={jsonData}
+                      />
+                    </TabsContent>
+                    <TabsContent value="step-2">
+                      <ProcessMessage
+                        message={groupedTraceMessages["step-2"]}
+                        isLoading={isLoading}
+                      />
+                    </TabsContent>
+                    <TabsContent value="step-3" className="space-y-4">
+                      {groupedTraceMessages["step-3"].map((message) => {
+                        const messageStatus = message.status?.toLowerCase();
+                        const Icon =
+                          ProcessIcons[
+                            isMainProcessCompleted &&
+                            messageStatus === PROCESS_STATUS.PROCESSING
+                              ? PROCESS_STATUS.COMPLETED
+                              : messageStatus
+                          ];
+
+                        return (
+                          <div key={message.id}>
+                            <Collapsible defaultOpen={true}>
+                              <Item variant="muted" className={cn("bg-accent")}>
+                                <ItemMedia>
+                                  <Icon
+                                    className={cn(
+                                      "size-4",
+                                      statusTextVariants({
+                                        variant: messageStatus,
+                                      })
+                                    )}
+                                  />
+                                </ItemMedia>
+                                <ItemContent>
+                                  <ItemTitle>{message.name}</ItemTitle>
+                                  <ItemDescription>
+                                    {message.description}
+                                  </ItemDescription>
+                                  <CollapsibleContent>
+                                    <ProcessMessage
+                                      message={message}
+                                      isLoading={isLoading}
+                                    />
+                                  </CollapsibleContent>
+                                </ItemContent>
+                                <ItemActions className="self-start">
+                                  <CollapsibleTrigger className="group/collapsible-trigger">
+                                    <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
+                                  </CollapsibleTrigger>
+                                </ItemActions>
+                              </Item>
+                            </Collapsible>
+                          </div>
+                        );
+                      })}
+                    </TabsContent>
+                  </>
+                ) : (
+                  <ProcessMessage
+                    message={groupedTraceMessages["step-1"]}
+                    isLoading={isLoading || isLoadingJson}
+                    view={view}
+                    jsonData={jsonData}
+                  />
+                )}
+              </ScrollArea>
+            </div>
+          </Tabs>
+        </div>
+      </div>
     </>
+  );
+}
+
+function InfoItem({
+  Icon,
+  label,
+  value,
+  allowCopy = false,
+  href = null,
+  copyValue,
+  showLabel = false,
+  urlText,
+  isLoading = false,
+}) {
+  if (isLoading) {
+    return <Skeleton className="w-30 h-4" />;
+  }
+  return (
+    <div className="flex items-center gap-1 text-foreground/80 ">
+      {Icon && <Icon className="size-3" />}
+      {label && showLabel && <span>{label}</span>}
+      <span className="font-medium text-foreground flex items-center gap-1">
+        {href ? (
+          <RowRenderLink
+            href={href}
+            value={value}
+            header={label}
+            allowCopy={false}
+            target="_blank"
+            urlText={urlText}
+          />
+        ) : (
+          <RowCell value={value} header={label} />
+        )}
+      </span>
+      {allowCopy && (
+        <CopyToClipboard value={copyValue || value} iconSize={"size-3"} />
+      )}
+    </div>
+  );
+}
+
+function StepTabTrigger({
+  children,
+  className,
+  isProcessing,
+  isLoading,
+  isCompleted,
+  isFailed,
+  isCancelled,
+  isPreviousStepCompleted = false,
+  ...props
+}) {
+  return (
+    <TabsTrigger
+      className={cn(
+        "group/tab",
+        "rounded-full",
+        "text-sm px-4 py-1",
+        "transition-all bg-foreground/10",
+        "hover:bg-foreground/20 hover:text-foreground",
+        "data-[state=active]:bg-foreground data-[state=active]:text-background data-[state=active]:shadow-sm",
+        className,
+        isLoading &&
+          "pointer-events-none animate-pulse !bg-accent !text-accent select-none",
+        "[&:disabled]:pointer-events-none [&:disabled]:opacity-50 [&:disabled]:cursor-not-allowed"
+      )}
+      disabled={isLoading || !isPreviousStepCompleted}
+      {...props}
+    >
+      <span className={cn("flex gap-2 items-center")}>
+        {isProcessing && (
+          <Spinner
+            className={cn(
+              "size-4 -ml-2",
+              statusTextVariants({ variant: "processing" })
+            )}
+          />
+        )}
+        {isCompleted && (
+          <BadgeCheckIcon
+            className={cn(
+              "size-4 -ml-2",
+              statusTextVariants({ variant: "completed" })
+            )}
+          />
+        )}
+        {isFailed && (
+          <CircleXIcon
+            className={cn(
+              "size-4 -ml-2",
+              statusTextVariants({ variant: "failed" })
+            )}
+          />
+        )}
+        {isCancelled && (
+          <BanIcon
+            className={cn(
+              "size-4 -ml-2",
+              statusTextVariants({ variant: "cancelled" })
+            )}
+          />
+        )}
+        {children}
+      </span>
+    </TabsTrigger>
   );
 }

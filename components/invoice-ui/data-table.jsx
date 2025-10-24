@@ -30,6 +30,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "../ui/hover-card";
+import { LinkIcon } from "lucide-react";
 
 export function DataTable({
   data,
@@ -198,44 +199,65 @@ function Filter({ filter, onChange, type, header }) {
   );
 }
 
-export function RowRenderLink({ showLink = true, href, value, header }) {
+export function RowRenderLink({
+  showLink = true,
+  href,
+  value,
+  header,
+  allowCopy = true,
+  target = "_self",
+  urlText = "Click to view  ",
+}) {
   return (
     <div className="flex items-center gap-0.5">
       <div className="max-w-24 truncate">
         {showLink ? (
-          <Link href={href} className="underline">
-            <RowCell value={value} href={href} header={header} />
+          <Link href={href} className="underline" target={target}>
+            <RowCell
+              value={value}
+              href={href}
+              header={header}
+              urlText={urlText}
+              target={target}
+            />
           </Link>
         ) : (
-          <RowCell value={value} header={header} />
+          <RowCell value={value} header={header} urlText={urlText} />
         )}
       </div>
-      <CopyToClipboard value={value} />
+      {allowCopy && <CopyToClipboard value={value} />}
     </div>
   );
 }
 
-export function RowCell({ value, className, header, href }) {
+export function RowCell({
+  value,
+  className,
+  header,
+  href,
+  urlText = "View logs",
+  target = "_self",
+}) {
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <div className={cn("max-w-36 truncate", className)}>{value}</div>
+        <div className={cn("max-w-32 truncate", className)}>{value}</div>
       </HoverCardTrigger>
-      <HoverCardContent className={"space-y-2"}>
-        {header && <h3 className="text-base">{header}</h3>}
-        <div className="text-sm">
-          {href ? (
-            <Link href={href} className="underline">
-              {value}
-            </Link>
-          ) : (
-            value
-          )}
+      <HoverCardContent className={"space-y-2 p-0"}>
+        <div className="p-4">
+          {header && <h3 className="text-base">{header}</h3>}
+          <div className="text-sm">{value}</div>
         </div>
+
         {href && (
-          <div className="text-xs">
-            <Link href={href}>Click to view logs</Link>
-          </div>
+          <Link
+            href={href}
+            target={target}
+            className="text-xs bg-accent-foreground/10 p-2 flex gap-1 items-center"
+          >
+            <LinkIcon className="size-3" />
+            {urlText}
+          </Link>
         )}
       </HoverCardContent>
     </HoverCard>

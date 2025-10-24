@@ -6,7 +6,12 @@ import { Button } from "./button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-export function CopyToClipboard({ value, className, isLoading = false }) {
+export function CopyToClipboard({
+  value,
+  className,
+  isLoading = false,
+  iconSize = "size-4",
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -33,13 +38,13 @@ export function CopyToClipboard({ value, className, isLoading = false }) {
       variant="ghost"
       size="sm"
       onClick={handleCopy}
-      className={cn(`size-4 p-0`, className)}
+      className={cn(`p-0`, className, iconSize)}
       title="Copy to clipboard"
     >
       {copied ? (
-        <Check className="h-4 w-4 text-green-600" />
+        <Check className={cn("text-green-600", iconSize)} />
       ) : (
-        <Copy className="h-4 w-4" />
+        <Copy className={cn(iconSize)} />
       )}
     </Button>
   );
