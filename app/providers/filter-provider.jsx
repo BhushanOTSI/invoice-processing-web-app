@@ -1,7 +1,7 @@
 "use client";
 
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useState, useEffect } from "react";
 
 const Context = createContext();
 
@@ -19,6 +19,25 @@ export function FilterProvider({ children }) {
   const { params, resetParams, updateParams } = useSetSearchParams();
   const [filters, setFilters] = useState(params);
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("status");
+
+  // keep filters in sync with URL params when not editing (popover closed)
+  // this ensures clearing params via updateParams reflects in filterCount
+  useEffect(() => {
+    if (!open) {
+      try {
+        const paramsStr = JSON.stringify(params || {});
+        const filtersStr = JSON.stringify(filters || {});
+        if (paramsStr !== filtersStr) {
+          setFilters(params);
+        }
+      } catch (e) {
+        // fallback: set directly if serialization fails
+        setFilters(params);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params, open]);
 
   const handleSetFilters = useCallback((filterKey, filterValue) => {
     setFilters((prevFilters) => {
@@ -46,6 +65,13 @@ export function FilterProvider({ children }) {
     setFilters(params);
   }, [params]);
 
+  const applyFilters = useCallback(
+    (newFilters) => {
+      updateParams(newFilters);
+    },
+    [updateParams]
+  );
+
   const filterCount = Object.values(filters).filter(Boolean).length;
   return (
     <Context.Provider
@@ -55,10 +81,13 @@ export function FilterProvider({ children }) {
         handleResetFilters,
         open,
         setOpen,
+        activeTab,
+        setActiveTab,
         onApply: useCallback(() => {
           updateParams(filters);
           setOpen(false);
         }, [filters]),
+        applyFilters,
         onClose,
         hasFilters: filterCount > 0,
         filterCount,

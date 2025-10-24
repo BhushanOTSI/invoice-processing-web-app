@@ -27,6 +27,8 @@ export function InvoiceFilter() {
     onClose,
     hasFilters,
     filterCount,
+    activeTab,
+    setActiveTab,
   } = useFilter();
 
   return (
@@ -50,7 +52,7 @@ export function InvoiceFilter() {
           </Button>
         </PopoverTrigger>
         <PopoverContent className={"w-auto p-0 transition-all"} align="end">
-          <Tabs defaultValue="status">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
             <div className="flex ">
               <div className="h-80">
                 <TabsList className="flex flex-col gap-2 w-50 border-r justify-start [&_button]:w-full [&_button]:justify-start [&_button]:max-h-9 h-full rounded-none">
