@@ -15,29 +15,11 @@ export function useFilter() {
   return context;
 }
 
-export function FilterProvider({ children }) {
+export function FilterProvider({ children, initialTab = "status" }) {
   const { params, resetParams, updateParams } = useSetSearchParams();
   const [filters, setFilters] = useState(params);
   const [open, setOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("status");
-
-  // keep filters in sync with URL params when not editing (popover closed)
-  // this ensures clearing params via updateParams reflects in filterCount
-  useEffect(() => {
-    if (!open) {
-      try {
-        const paramsStr = JSON.stringify(params || {});
-        const filtersStr = JSON.stringify(filters || {});
-        if (paramsStr !== filtersStr) {
-          setFilters(params);
-        }
-      } catch (e) {
-        // fallback: set directly if serialization fails
-        setFilters(params);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, open]);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleSetFilters = useCallback((filterKey, filterValue) => {
     setFilters((prevFilters) => {
@@ -73,6 +55,7 @@ export function FilterProvider({ children }) {
   );
 
   const filterCount = Object.values(filters).filter(Boolean).length;
+
   return (
     <Context.Provider
       value={{
@@ -91,6 +74,8 @@ export function FilterProvider({ children }) {
         onClose,
         hasFilters: filterCount > 0,
         filterCount,
+        activeTab,
+        setActiveTab,
       }}
     >
       {children}

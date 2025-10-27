@@ -10,13 +10,21 @@ import { FilterIcon, RotateCcwIcon } from "lucide-react";
 import { useFilter } from "@/app/providers/filter-provider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Calendar } from "../ui/calendar";
-import { alwaysArray, formatDate, getDateRange } from "@/lib/utils";
+import {
+  alwaysArray,
+  formatDate,
+  getDateRange,
+  humanizeDateRange,
+} from "@/lib/utils";
 import { PROCESS_STATUS } from "@/app/constants";
 import { Label } from "../ui/label";
 import { Checkbox } from "../ui/checkbox";
 import { Field, FieldLabel, FieldGroup } from "../ui/field";
 import { Input } from "../ui/input";
 import { ButtonGroup } from "../ui/button-group";
+import FilterChip from "./filter-chip";
+import { useSetSearchParams } from "@/hooks/use-set-search-params";
+import { useMemo } from "react";
 
 export function InvoiceFilter() {
   const {
@@ -27,8 +35,6 @@ export function InvoiceFilter() {
     onClose,
     hasFilters,
     filterCount,
-    activeTab,
-    setActiveTab,
   } = useFilter();
 
   return (
@@ -44,15 +50,15 @@ export function InvoiceFilter() {
         </Button>
       )}
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
+      <Popover open={open} onOpenChange={(ps) => !ps && setOpen(false)}>
+        <PopoverTrigger asChild onClick={() => setOpen(true)}>
           <Button type="button" size="sm">
             <FilterIcon className="size-4" />
             Filter {filterCount > 0 && `(${filterCount})`}
           </Button>
         </PopoverTrigger>
         <PopoverContent className={"w-auto p-0 transition-all"} align="end">
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+          <Tabs defaultValue="status">
             <div className="flex ">
               <div className="h-80">
                 <TabsList className="flex flex-col gap-2 w-50 border-r justify-start [&_button]:w-full [&_button]:justify-start [&_button]:max-h-9 h-full rounded-none">
@@ -87,7 +93,21 @@ export function InvoiceFilter() {
             </Button>
 
             <Button
-              onClick={() => handleResetFilters()}
+              onClick={() => {
+                switch (activeTab) {
+                  case "status":
+                    handleSetFilters({ status: null });
+                    break;
+                  case "date-range":
+                    handleSetFilters({ from: null, to: null });
+                    break;
+
+                  case "other":
+                  default:
+                    handleSetFilters({ batchNo: null, filename: null });
+                    break;
+                }
+              }}
               variant="outline"
               size="sm"
               type="button"
@@ -111,6 +131,7 @@ export function InvoiceFilter() {
 
 export function DateRangeFilter() {
   const { handleSetFilters, filters } = useFilter();
+
   const handleDateRangeClick = (type) => {
     handleSetFilters(getDateRange(type));
   };
@@ -254,6 +275,70 @@ export function OtherFilter() {
           />
         </Field>
       </FieldGroup>
+    </div>
+  );
+}
+
+export function InvoiceAppliedFilters() {
+  const { params, updateParams } = useSetSearchParams();
+  const { handleSetFilters, setActiveTab, setOpen } = useFilter();
+
+  const filters = useMemo(() => {
+    let filters = [
+      {
+        title: "Process Status",
+        value: alwaysArray(params.status, false),
+        key: "status",
+        tab: "status",
+      },
+      {
+        title: "Created Date Range",
+        value: humanizeDateRange(params.from, params.to),
+        key: ["from", "to"],
+        tab: "date-range",
+      },
+      {
+        title: "Batch No",
+        value: params.batchNo,
+        key: "batchNo",
+        tab: "other",
+      },
+      {
+        title: "Filename",
+        value: params.filename,
+        key: "filename",
+        tab: "other",
+      },
+    ];
+
+    return filters.filter((filter) => filter.value);
+  }, [params]);
+
+  if (filters.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {filters.map((filter) => (
+        <FilterChip
+          key={filter.title}
+          title={filter.title}
+          value={filter.value}
+          onClear={() => {
+            const keys = alwaysArray(filter.key);
+            const clearParams = keys.reduce((acc, key) => {
+              acc[key] = null;
+              return acc;
+            }, {});
+
+            updateParams(clearParams);
+            handleSetFilters(clearParams);
+          }}
+          onEdit={() => {
+            setActiveTab(filter.tab);
+            setOpen(true);
+          }}
+        />
+      ))}
     </div>
   );
 }
