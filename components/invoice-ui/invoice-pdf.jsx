@@ -18,6 +18,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ScrollArea } from "../ui/scroll-area";
 
+// Suppress TextLayer cancellation warnings
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  const message = args[0];
+  if (typeof message === 'string' && message.includes('TextLayer task cancelled')) {
+    return; // Silently ignore TextLayer cancellation warnings
+  }
+  originalConsoleWarn.apply(console, args);
+};
+
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
   const [numPages, setNumPages] = useState(1);
@@ -117,6 +127,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             className={"h-full [&>div]:h-full"}
+            onItemClick={() => { }} // Prevent console warnings
+            onPassword={() => { }} // Handle password protected PDFs
             loading={
               <div className="flex-1 justify-center items-center h-full min-h-[calc(100vh-4rem)] flex flex-col">
                 <Spinner />
@@ -145,6 +157,23 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                       renderAnnotationLayer={true}
                       renderTextLayer={true}
                       loading={null}
+                      onRenderError={(error) => {
+                        // Silently handle TextLayer and other cancellation errors
+                        if (error?.message?.includes("cancelled") ||
+                          error?.message?.includes("TextLayer") ||
+                          error?.name === "AbortException") {
+                          return;
+                        }
+                        console.warn(`PDF render error on page ${pageNumber}:`, error);
+                      }}
+                      onLoadError={(error) => {
+                        // Handle page load errors
+                        if (error?.message?.includes("cancelled") ||
+                          error?.name === "AbortException") {
+                          return;
+                        }
+                        console.warn(`PDF page load error on page ${pageNumber}:`, error);
+                      }}
                     />
                   )}
                 </div>
