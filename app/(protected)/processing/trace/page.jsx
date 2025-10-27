@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/loading";
 import { Badge } from "@/components/ui/badge";
 import { humanizeDateTime } from "@/lib/utils";
-import FilterSummaryBlock from "@/components/common/filter-summary-block";
+import FilterSummaryBlock from "@/components/common/filter-chip";
 import FilterSummary from "@/components/invoice-ui/filter-summary";
 
 function TracePageContent() {
