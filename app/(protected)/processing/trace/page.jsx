@@ -11,7 +11,10 @@ import {
 import { PageContainers } from "@/components/invoice-ui/page-containers";
 import { useTraces } from "@/services/hooks/useBatchProcessInvoice";
 import { InvoiceProcessingTable } from "@/components/common/invoice-processing-table";
-import { InvoiceFilter } from "@/components/invoice-ui/invoice-filter";
+import {
+  InvoiceAppliedFilters,
+  InvoiceFilter,
+} from "@/components/invoice-ui/invoice-filter";
 import { FilterProvider } from "@/app/providers/filter-provider";
 import { alwaysArray } from "@/lib/utils";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
@@ -20,6 +23,7 @@ import {
   InlineLoading,
   PageLoadingSkeleton,
 } from "@/components/ui/loading";
+import FilterChip from "@/components/invoice-ui/filter-chip";
 
 function TracePageContent() {
   const { params = {} } = useSetSearchParams();
@@ -53,6 +57,8 @@ function TracePageContent() {
             </div>
           </div>
         </PageDescriptiveSection>
+
+        <InvoiceAppliedFilters />
 
         <InvoiceProcessingTable
           data={traces?.details || []}

@@ -15,10 +15,11 @@ export function useFilter() {
   return context;
 }
 
-export function FilterProvider({ children }) {
+export function FilterProvider({ children, initialTab = "status" }) {
   const { params, resetParams, updateParams } = useSetSearchParams();
   const [filters, setFilters] = useState(params);
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleSetFilters = useCallback((filterKey, filterValue) => {
     setFilters((prevFilters) => {
@@ -63,6 +64,8 @@ export function FilterProvider({ children }) {
         onClose,
         hasFilters: filterCount > 0,
         filterCount,
+        activeTab,
+        setActiveTab,
       }}
     >
       {children}
