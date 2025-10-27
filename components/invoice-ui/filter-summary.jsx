@@ -6,7 +6,7 @@ import { useSetSearchParams } from "@/hooks/use-set-search-params";
 import { alwaysArray, humanizeDateTime } from "@/lib/utils";
 import FilterChip from "@/components/common/filter-chip";
 
-export default function FilterSummary({ className = "flex gap-2 items-start" }) {
+export default function FilterSummary({ }) {
     const { handleSetFilters, setOpen, setActiveTab } = useFilter();
     const { params = {}, updateParams } = useSetSearchParams();
     const filters = useMemo(() => {
@@ -20,7 +20,7 @@ export default function FilterSummary({ className = "flex gap-2 items-start" }) 
     }, [params, handleSetFilters, updateParams]);
 
     return filters.length > 0 && (
-        <div className={className}>
+        <div className='flex gap-2 items-start'>
             {filters.map(({ title, value, moreLabel, tab, clear }) => (
                 <FilterChip
                     key={title}
