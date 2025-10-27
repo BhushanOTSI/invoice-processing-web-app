@@ -1,20 +1,20 @@
 export const APP_ROUTES = {
-  DASHBOARD: "/dashboard",
-  PROCESSING: "/processing",
-  DOCUMENTATION: "/documentation",
+  DASHBOARD: "/products/invoice-parser/dashboard",
+  PROCESSING: "/products/invoice-parser/processing",
+  DOCUMENTATION: "/products/invoice-parser/documentation",
   LOGIN: "/login",
   PROCESSING: {
-    NEW: "/processing/new",
-    TRACE: "/processing/trace",
-    MONITOR_BATCHES: "/processing/trace/batch",
-    BATCH: "/processing/trace/batch/[batchID]",
-    TRACE_PROCESS: "/processing/trace/[processID]",
+    NEW: "/products/invoice-parser/processing/new",
+    TRACE: "/products/invoice-parser/processing/trace",
+    MONITOR_BATCHES: "/products/invoice-parser/processing/trace/batch",
+    BATCH: "/products/invoice-parser/processing/trace/batch/[batchID]",
+    TRACE_PROCESS: "/products/invoice-parser/processing/trace/[processID]",
   },
   DOCUMENTATION: {
-    INTRODUCTION: "/documentation/introduction",
-    GET_STARTED: "/documentation/get-started",
-    TUTORIALS: "/documentation/tutorials",
-    CHANGELOG: "/documentation/changelog",
+    INTRODUCTION: "/products/invoice-parser/documentation/introduction",
+    GET_STARTED: "/products/invoice-parser/documentation/get-started",
+    TUTORIALS: "/products/invoice-parser/documentation/tutorials",
+    CHANGELOG: "/products/invoice-parser/documentation/changelog",
   },
   getRoute: (route, params = {}) => {
     if (route.includes("[")) {

@@ -22,22 +22,22 @@ export default function FilterChip({ title, value, onClear, onEdit }) {
       <div className="flex items-center ">
         {onClear && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               onClear();
             }}
             className="p-1 text-muted-foreground hover:text-foreground"
+            type="button"
           >
             <X className="size-3" />
           </button>
         )}
         {onEdit && (
           <button
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               onEdit();
             }}
             className="p-1 text-muted-foreground hover:text-foreground"
+            type="button"
           >
             <Edit3 className="size-3" />
           </button>

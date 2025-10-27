@@ -18,12 +18,7 @@ import {
 import { FilterProvider } from "@/app/providers/filter-provider";
 import { alwaysArray } from "@/lib/utils";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
-import {
-  BusinessLoading,
-  InlineLoading,
-  PageLoadingSkeleton,
-} from "@/components/ui/loading";
-import FilterChip from "@/components/invoice-ui/filter-chip";
+import { PageLoadingSkeleton } from "@/components/ui/loading";
 
 function TracePageContent() {
   const { params = {} } = useSetSearchParams();
