@@ -1,157 +1,48 @@
 "use client";
 
 import { Markdown } from "./markdown";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "../ui/tabs";
 import JsonView from "@uiw/react-json-view";
 import { Skeleton } from "../ui/skeleton";
-import { FileText, FileJson, FileImage } from "lucide-react";
-import { useFetchS3Json } from "@/services/hooks/useBatchProcessInvoice";
 import { invoiceJsonToMarkdown } from "@/lib/json-to-markdown";
-import {
-  HoverCard,
-  HoverCardTrigger,
-  HoverCardContent,
-} from "../ui/hover-card";
 
-import dynamic from "next/dynamic";
-const InvoicePdf = dynamic(() => import("./invoice-pdf"), { ssr: false });
-
-export function ProcessMessage({ message, isLoading = false, onJsonLoad }) {
-  const markdown = message.extraMetadata?.markdown;
-  const s3PdfUrl = message.extraMetadata?.s3PdfUrl;
-  const s3JsonUrl = message.extraMetadata?.s3JsonUrl;
-
-  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl, onJsonLoad);
+export function ProcessMessage({
+  message,
+  isLoading = false,
+  view = "markdown",
+  jsonData,
+}) {
+  const markdown = message?.extraMetadata?.markdown;
 
   if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <div className="flex justify-between items-center flex-wrap py-4 px-6 border-b">
-          <div className="flex-1 space-y-2">
-            <Skeleton className="w-1/2 h-4" />
-            <Skeleton className="w-1/3 h-4" />
-          </div>
-          <div className="flex gap-2 w-1/3">
-            <Skeleton className="w-1/2 h-4" />
-            <Skeleton className="w-1/2 h-4" />
-            <Skeleton className="w-1/2 h-4" />
-          </div>
-        </div>
-        <div className="p-4">
-          <Skeleton className="w-full h-96" />
-        </div>
-      </div>
-    );
+    return <Skeleton className="w-full min-h-96 h-full mt-6" />;
   }
 
   const hasMarkdown = !!markdown;
-  const hasMessage = !!message.message;
-  const hasJson = !!s3JsonUrl;
-  const hasPdf = !!s3PdfUrl;
+  const hasJson = !!jsonData;
 
-  const availableTabs = [
-    hasMarkdown || hasMessage ? "content" : null,
-    hasJson ? "json" : null,
-    hasPdf ? "pdf" : null,
-  ].filter(Boolean);
+  if (view === "markdown") {
+    return hasMarkdown ? (
+      <>
+        <Markdown>{markdown}</Markdown>
+        {jsonData && <Markdown>{invoiceJsonToMarkdown(jsonData)}</Markdown>}
+      </>
+    ) : (
+      message?.message
+    );
+  }
 
   return (
-    <div className="h-full">
-      <Tabs defaultValue={availableTabs[0]} className="h-full gap-0">
-        <div className="grid grid-cols-5 gap-1 items-center py-4 px-6 border-b">
-          <div className="col-span-3">
-            <h6 className="text-sm font-semibold truncate">
-              <HoverCard>
-                <HoverCardTrigger>{message.name}</HoverCardTrigger>
-                <HoverCardContent>
-                  <span className="text-xs">{message.name}</span>
-                </HoverCardContent>
-              </HoverCard>
-            </h6>
-            <div className="text-xs col-span-5 text-muted-foreground line-clamp-2">
-              <HoverCard>
-                <HoverCardTrigger>
-                  <p className="line-clamp-2">{message.description}</p>
-                </HoverCardTrigger>
-                <HoverCardContent>
-                  <span className="text-xs">{message.description}</span>
-                </HoverCardContent>
-              </HoverCard>
-            </div>
-          </div>
-          <div className="col-span-2 flex justify-end">
-            <TabsList className="gap-2 bg-transparent">
-              {(hasMarkdown || hasMessage) && (
-                <TabsTrigger
-                  value="content"
-                  className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary/10 "
-                >
-                  <FileText className="size-3" />
-                  Content
-                </TabsTrigger>
-              )}
-              {hasJson && (
-                <TabsTrigger
-                  value="json"
-                  className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary/10 "
-                >
-                  <FileJson className="size-3" />
-                  JSON
-                </TabsTrigger>
-              )}
-              {hasPdf && (
-                <TabsTrigger
-                  value="pdf"
-                  className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-primary/10 "
-                >
-                  <FileImage className="size-3" />
-                  PDF
-                </TabsTrigger>
-              )}
-            </TabsList>
-          </div>
-        </div>
-
-        {(hasMarkdown || hasMessage) && (
-          <TabsContent
-            value="content"
-            className="pb-4 px-6 h-full overflow-auto"
-          >
-            {hasMarkdown ? (
-              <>
-                <Markdown>{markdown}</Markdown>
-                {jsonData && (
-                  <Markdown>{invoiceJsonToMarkdown(jsonData)}</Markdown>
-                )}
-              </>
-            ) : (
-              <p className="py-4 text-sm">{message.message}</p>
-            )}
-          </TabsContent>
-        )}
-
-        {hasJson && (
-          <TabsContent value="json" className="h-full overflow-auto p-4">
-            {jsonData ? (
-              <JsonView
-                value={jsonData}
-                displayDataTypes={false}
-                displayObjectSize={true}
-                className="dark:[&_.w-rjv-object-key]:text-white! dark:[&_.w-rjv-object-size]:text-blue-500!
+    hasJson &&
+    (jsonData ? (
+      <JsonView
+        value={jsonData}
+        displayDataTypes={false}
+        displayObjectSize={true}
+        className="dark:[&_.w-rjv-object-key]:text-white! dark:[&_.w-rjv-object-size]:text-blue-500!
                   dark:[&_.w-rjv-copied]:text-yellow-500!"
-              />
-            ) : (
-              <div className="p-4 text-muted-foreground">Loading JSON...</div>
-            )}
-          </TabsContent>
-        )}
-
-        {hasPdf && (
-          <TabsContent value="pdf" className="p-0 h-full">
-            <InvoicePdf fileUrl={s3PdfUrl} />
-          </TabsContent>
-        )}
-      </Tabs>
-    </div>
+      />
+    ) : (
+      <div className="p-4 text-muted-foreground">Loading JSON...</div>
+    ))
   );
 }

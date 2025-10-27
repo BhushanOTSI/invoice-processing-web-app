@@ -176,7 +176,7 @@
   --hu-ring: var(--ring);
   --color-fd-background: hsl(var(--hu-background));
   --color-fd-card: hsl(var(--hu-background));
-}
+  }
 
 @layer base {
   * {

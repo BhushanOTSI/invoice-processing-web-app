@@ -7,6 +7,7 @@ import {
   useEffect,
   useImperativeHandle,
   useCallback,
+  memo,
 } from "react";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -15,10 +16,11 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { Document, Page, pdfjs } from "react-pdf";
+import { ScrollArea } from "../ui/scroll-area";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
-  const [numPages, setNumPages] = useState(0);
+  const [numPages, setNumPages] = useState(1);
   const [pageWidths, setPageWidths] = useState(600);
   const [visiblePages, setVisiblePages] = useState(new Set());
   const pageRefs = useRef(new Map());
@@ -96,7 +98,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           }
         });
       },
-      { root: containerRef.current, rootMargin: "200px" }
+      { root: containerRef.current, rootMargin: "10%" }
     );
 
     pageRefs.current.forEach((el) => observer.observe(el));
@@ -106,48 +108,50 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   return (
     <div
       ref={containerRef}
-      className={cn("h-full w-full overflow-y-auto", className)}
+      className={cn("h-full w-full overflow-y-auto flex flex-row", className)}
     >
       <div className="flex-1">
-        <Document
-          file={fileUrl}
-          onLoadSuccess={onDocumentLoadSuccess}
-          onLoadError={onDocumentLoadError}
-          className={"h-full [&>div]:h-full"}
-          loading={
-            <div className="flex-1 justify-center items-center h-full flex flex-col min-h-screen">
-              <Spinner />
-            </div>
-          }
-          error={
-            <div className="flex-1 justify-center items-center text-sm text-red-500 h-full flex flex-col">
-              Unable to load this PDF document.
-            </div>
-          }
-        >
-          {Array.from({ length: numPages }, (_, index) => {
-            const pageNumber = index + 1;
-
-            return (
-              <div
-                key={pageNumber}
-                ref={registerPageRef(pageNumber)}
-                data-page={pageNumber}
-              >
-                {visiblePages.has(pageNumber) && (
-                  <Page
-                    pageNumber={pageNumber}
-                    width={pageWidths}
-                    renderAnnotationLayer={true}
-                    renderTextLayer={true}
-                    loading={null}
-                    className="border-b-4"
-                  />
-                )}
+        <ScrollArea className="h-full">
+          <Document
+            file={fileUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            onLoadError={onDocumentLoadError}
+            className={"h-full [&>div]:h-full"}
+            loading={
+              <div className="flex-1 justify-center items-center h-full min-h-[calc(100vh-4rem)] flex flex-col">
+                <Spinner />
               </div>
-            );
-          })}
-        </Document>
+            }
+            error={
+              <div className="flex-1 justify-center items-center text-sm text-red-500 h-full flex flex-col">
+                Unable to load this PDF document.
+              </div>
+            }
+          >
+            {Array.from({ length: numPages }, (_, index) => {
+              const pageNumber = index + 1;
+
+              return (
+                <div
+                  key={pageNumber}
+                  ref={registerPageRef(pageNumber)}
+                  data-page={pageNumber}
+                  className="p-2"
+                >
+                  {visiblePages.has(pageNumber) && (
+                    <Page
+                      pageNumber={pageNumber}
+                      width={pageWidths - 16}
+                      renderAnnotationLayer={true}
+                      renderTextLayer={true}
+                      loading={null}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </Document>
+        </ScrollArea>
       </div>
     </div>
   );
@@ -155,4 +159,4 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
 InvoicePdf.displayName = "InvoicePdf";
 
-export default InvoicePdf;
+export default memo(InvoicePdf);
