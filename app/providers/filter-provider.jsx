@@ -47,6 +47,7 @@ export function FilterProvider({ children }) {
   }, [params]);
 
   const filterCount = Object.values(filters).filter(Boolean).length;
+
   return (
     <Context.Provider
       value={{
