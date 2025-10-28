@@ -1,19 +1,52 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
+import { PROCESS_STATUS } from "@/app/constants";
 import { APP_ROUTES } from "@/app/constants/app-routes";
-import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
-import { cn, formatTimeDifference } from "@/lib/utils";
+import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
 import {
   ProcessIcons,
   ProcessStatusBadge,
   statusTextVariants,
 } from "@/components/invoice-ui/process-status-badge";
-import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
-import { PROCESS_STATUS } from "@/app/constants";
+import { usePersistentResize } from "@/hooks/use-persistent-resize";
+import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
+import { cn, formatTimeDifference } from "@/lib/utils";
+import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+import { useParams } from "next/navigation";
 
+import { ProcessMessage } from "@/components/invoice-ui/process-message";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useSidebar } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
+import {
+  useFetchS3Json,
+  useProcessingStream,
+} from "@/services/hooks/useBatchProcessInvoice";
 import {
   BadgeCheckIcon,
   BanIcon,
@@ -25,41 +58,8 @@ import {
   HashIcon,
   LinkIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { ProcessMessage } from "@/components/invoice-ui/process-message";
-import {
-  useFetchS3Json,
-  useProcessingStream,
-} from "@/services/hooks/useBatchProcessInvoice";
-import { useSidebar } from "@/components/ui/sidebar";
 import dynamic from "next/dynamic";
-import { Spinner } from "@/components/ui/spinner";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/scroll-area";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Switch } from "@/components/ui/switch";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { useEffect, useMemo, useState } from "react";
 const InvoicePdf = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
   {
@@ -99,35 +99,16 @@ const addOrUpdateMessage = (messages, data) => {
 
 export default function ProcessTracePage() {
   const { setOpen } = useSidebar();
-
-  // Always start with default for SSR compatibility
-  const [leftSize, setLeftSize] = useState(40);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const { leftSize, isLoaded, savePanelSize } = usePersistentResize('invoice-trace-panel-size', 40);
 
   useEffect(() => {
     setOpen(false);
-    // Prevent body scroll
     document.body.style.overflow = 'hidden';
-
-    // Load saved panel size on client only
-    const saved = localStorage.getItem('panel-size');
-    if (saved) {
-      setLeftSize(Number(saved));
-    }
-    setIsLoaded(true);
 
     return () => {
       document.body.style.overflow = 'unset';
     };
   }, []);
-
-  // Save panel size when changed
-  const savePanelSize = (sizes) => {
-    const newSize = sizes[0];
-    setLeftSize(newSize);
-    localStorage.setItem('panel-size', newSize);
-    localStorage.setItem('panel-size', newSize);
-  };
 
   const { processID } = useParams();
   useSetBreadcrumbs([
