@@ -1,9 +1,7 @@
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { usePersistentResize } from "@/hooks/use-persistent-resize";
 
-/**
- * Super simple resizable layout - just pass left and right content!
- */
+
 export const ResizableLayout = ({
     storageKey,
     leftPanel,
