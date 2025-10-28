@@ -4,11 +4,12 @@ import { usePersistentResize } from "@/hooks/use-persistent-resize";
 
 export const ResizableLayout = ({
     storageKey,
+    recordId,
     leftPanel,
     rightPanel,
     className = "h-full overflow-hidden"
 }) => {
-    const { leftSize, isLoaded, savePanelSize } = usePersistentResize(storageKey);
+    const { leftSize, isLoaded, savePanelSize } = usePersistentResize(storageKey, recordId);
 
     if (!isLoaded) {
         return null;

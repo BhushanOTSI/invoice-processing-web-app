@@ -99,7 +99,8 @@ const addOrUpdateMessage = (messages, data) => {
 
 export default function ProcessTracePage() {
   const { setOpen } = useSidebar();
-  const { leftSize, isLoaded, savePanelSize } = usePersistentResize('invoice-trace-panel-size', 40);
+  const { processID } = useParams();
+  const { leftSize, isLoaded, savePanelSize } = usePersistentResize('invoice-trace-panel-size', processID);
 
   useEffect(() => {
     setOpen(false);
@@ -109,8 +110,6 @@ export default function ProcessTracePage() {
       document.body.style.overflow = 'unset';
     };
   }, []);
-
-  const { processID } = useParams();
   useSetBreadcrumbs([
     { title: "Home", url: APP_ROUTES.DASHBOARD },
     { title: "Monitor Traces", url: APP_ROUTES.PROCESSING.TRACE },
