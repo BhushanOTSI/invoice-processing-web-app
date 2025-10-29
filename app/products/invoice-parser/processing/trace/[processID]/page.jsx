@@ -309,7 +309,7 @@ export default function ProcessTracePage() {
             <ResizablePanel>
               <div className="h-full flex flex-col">
                 <Tabs
-                  value={view === "markdown" ? activeTab : ""}
+                  value={activeTab}
                   onValueChange={(value) => {
                     setActiveTab(value);
                     setView("markdown");
@@ -317,9 +317,9 @@ export default function ProcessTracePage() {
                   className="flex flex-col h-full"
                 >
                   <div className="py-3 px-6 space-y-3 border-b flex-shrink-0">
-                    <div className="flex items-center w-full justify-between space-y-2">
-                      <div>
-                        <TabsList className="flex items-center flex-wrap space-y-2">
+                    <div className="flex items-center w-full justify-between">
+                      <div className="flex-1">
+                        <TabsList className="flex items-center flex-wrap gap-y-2">
                           <StepTabTrigger
                             value="step-1"
                             key="step-1"
@@ -391,6 +391,7 @@ export default function ProcessTracePage() {
                               checked={view === "json"}
                               onCheckedChange={(checked) => {
                                 setView(checked ? "json" : "markdown");
+                                setActiveTab("step-1");
                               }}
                             />
                             <FieldLabel className="text-xs">JSON</FieldLabel>
@@ -401,85 +402,71 @@ export default function ProcessTracePage() {
                   </div>
                   <div className="flex-1 min-h-0 overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4">
-                      {view === "markdown" ? (
-                        <>
-                          <TabsContent value="step-1" className="h-full">
-                            <ProcessMessage
-                              message={groupedTraceMessages["step-1"]}
-                              isLoading={isLoading}
-                              jsonData={jsonData}
-                            />
-                          </TabsContent>
-                          <TabsContent value="step-2" className="h-full">
-                            <ProcessMessage
-                              message={groupedTraceMessages["step-2"]}
-                              isLoading={isLoading}
-                            />
-                          </TabsContent>
-                          <TabsContent
-                            value="step-3"
-                            className="space-y-4 h-full"
-                          >
-                            {groupedTraceMessages["step-3"].map((message) => {
-                              const messageStatus =
-                                message.status?.toLowerCase();
-                              const Icon =
-                                ProcessIcons[
-                                  isMainProcessCompleted &&
-                                  messageStatus === PROCESS_STATUS.PROCESSING
-                                    ? PROCESS_STATUS.COMPLETED
-                                    : messageStatus
-                                ];
-
-                              return (
-                                <div key={message.id}>
-                                  <Collapsible defaultOpen={true}>
-                                    <Item
-                                      variant="muted"
-                                      className={cn("bg-accent")}
-                                    >
-                                      <ItemMedia>
-                                        <Icon
-                                          className={cn(
-                                            "size-4",
-                                            statusTextVariants({
-                                              variant: messageStatus,
-                                            })
-                                          )}
-                                        />
-                                      </ItemMedia>
-                                      <ItemContent>
-                                        <ItemTitle>{message.name}</ItemTitle>
-                                        <ItemDescription>
-                                          {message.description}
-                                        </ItemDescription>
-                                        <CollapsibleContent>
-                                          <ProcessMessage
-                                            message={message}
-                                            isLoading={isLoading}
-                                          />
-                                        </CollapsibleContent>
-                                      </ItemContent>
-                                      <ItemActions className="self-start">
-                                        <CollapsibleTrigger className="group/collapsible-trigger">
-                                          <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
-                                        </CollapsibleTrigger>
-                                      </ItemActions>
-                                    </Item>
-                                  </Collapsible>
-                                </div>
-                              );
-                            })}
-                          </TabsContent>
-                        </>
-                      ) : (
+                      <TabsContent value="step-1" className="h-full">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
-                          isLoading={isLoading || isLoadingJson}
-                          view={view}
+                          isLoading={isLoading}
                           jsonData={jsonData}
+                          view={view}
                         />
-                      )}
+                      </TabsContent>
+                      <TabsContent value="step-2" className="h-full">
+                        <ProcessMessage
+                          message={groupedTraceMessages["step-2"]}
+                          isLoading={isLoading}
+                        />
+                      </TabsContent>
+                      <TabsContent value="step-3" className="space-y-4 h-full">
+                        {groupedTraceMessages["step-3"].map((message) => {
+                          const messageStatus = message.status?.toLowerCase();
+                          const Icon =
+                            ProcessIcons[
+                              isMainProcessCompleted &&
+                              messageStatus === PROCESS_STATUS.PROCESSING
+                                ? PROCESS_STATUS.COMPLETED
+                                : messageStatus
+                            ];
+
+                          return (
+                            <div key={message.id}>
+                              <Collapsible defaultOpen={true}>
+                                <Item
+                                  variant="muted"
+                                  className={cn("bg-accent")}
+                                >
+                                  <ItemMedia>
+                                    <Icon
+                                      className={cn(
+                                        "size-4",
+                                        statusTextVariants({
+                                          variant: messageStatus,
+                                        })
+                                      )}
+                                    />
+                                  </ItemMedia>
+                                  <ItemContent>
+                                    <ItemTitle>{message.name}</ItemTitle>
+                                    <ItemDescription>
+                                      {message.description}
+                                    </ItemDescription>
+                                    <CollapsibleContent>
+                                      <ProcessMessage
+                                        message={message}
+                                        isLoading={isLoading}
+                                      />
+                                    </CollapsibleContent>
+                                  </ItemContent>
+                                  <ItemActions className="self-start">
+                                    <CollapsibleTrigger className="group/collapsible-trigger">
+                                      <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
+                                    </CollapsibleTrigger>
+                                  </ItemActions>
+                                </Item>
+                              </Collapsible>
+                            </div>
+                          );
+                        })}
+                      </TabsContent>
                     </div>
                   </div>
                 </Tabs>
