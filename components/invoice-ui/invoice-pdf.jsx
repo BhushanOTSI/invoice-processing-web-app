@@ -18,7 +18,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ScrollArea } from "../ui/scroll-area";
 
-
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
   const [numPages, setNumPages] = useState(1);
@@ -65,13 +64,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages(totalPages);
   }, []);
 
-  const onDocumentLoadError = useCallback(
-    (error) => {
-      resetPages();
-      setNumPages(0);
-    },
-    [resetPages]
-  );
+  const onDocumentLoadError = useCallback(() => {
+    resetPages();
+    setNumPages(0);
+  }, [resetPages]);
 
   const registerPageRef = useCallback(
     (pageNumber) => (node) => {
@@ -118,7 +114,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             onLoadSuccess={onDocumentLoadSuccess}
             onLoadError={onDocumentLoadError}
             className={"h-full [&>div]:h-full"}
-
             loading={
               <div className="flex-1 justify-center items-center h-full min-h-[calc(100vh-4rem)] flex flex-col">
                 <Spinner />
@@ -147,7 +142,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                       renderAnnotationLayer={true}
                       renderTextLayer={true}
                       loading={null}
-
                     />
                   )}
                 </div>

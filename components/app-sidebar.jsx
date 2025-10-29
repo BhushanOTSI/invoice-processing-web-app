@@ -18,7 +18,6 @@ import Link from "next/link";
 import { useUser } from "@/hooks/use-user";
 
 export function AppSidebar({ ...props }) {
-  const { open, setOpen } = useSidebar();
   const { user } = useUser();
 
   const data = React.useMemo(
@@ -55,19 +54,8 @@ export function AppSidebar({ ...props }) {
     [user.name]
   );
 
-  const [closeByMouseEnter, setCloseByMouseEnter] = React.useState(false);
-
   return (
-    <Sidebar
-      collapsible="icon"
-      {...props}
-      onMouseEnter={() => {
-        if (!open) {
-          setOpen(true);
-          setCloseByMouseEnter(true);
-        }
-      }}
-    >
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <div className="overflow-hidden">
           <Link href={APP_ROUTES.DASHBOARD}>

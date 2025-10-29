@@ -215,10 +215,7 @@ export default function ProcessTracePage() {
 
   const [view, setView] = useState("markdown");
 
-  const { data: jsonData, isLoading: isLoadingJson } = useFetchS3Json(
-    s3JsonUrl,
-    !!s3JsonUrl
-  );
+  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
 
   return (
     <div className="overflow-hidden flex flex-col">
@@ -292,16 +289,26 @@ export default function ProcessTracePage() {
                     </div>
                   </div>
                 )}
-                {!isLoading && !isLoadingProcessingStream && !s3PdfUrl && (
+                {!s3PdfUrl && (
                   <Empty className="h-full">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
-                        <FileQuestionMarkIcon />
+                        {(isLoading || isLoadingProcessingStream) &&
+                        !s3PdfUrl ? (
+                          <Spinner />
+                        ) : (
+                          <FileQuestionMarkIcon />
+                        )}
                       </EmptyMedia>
-                      <EmptyTitle>Nothing to Preview</EmptyTitle>
+                      <EmptyTitle>
+                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                          ? "Loading Invoice..."
+                          : "Nothing to Preview Yet"}
+                      </EmptyTitle>
                       <EmptyDescription>
-                        The file has not been processed yet or the file is not
-                        available.
+                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                          ? "Please wait while we load the invoice..."
+                          : "The invoice is not available for preview."}
                       </EmptyDescription>
                     </EmptyHeader>
                   </Empty>
@@ -387,14 +394,13 @@ export default function ProcessTracePage() {
                     </div>
                   </div>
                   {jsonData && activeTab === "step-1" && (
-                    <div className="flex items-center gap-1 py-2 px-6 border-b border-border/20 justify-end">
+                    <div className="flex items-center gap-1 py-2 px-6 border-b justify-end">
                       <Switch
                         checked={view === "json"}
                         onCheckedChange={(checked) => {
                           setView(checked ? "json" : "markdown");
                           setActiveTab("step-1");
                         }}
-                        className="h-3"
                       />
                       <FieldLabel className="text-xs">Preview Json</FieldLabel>
                     </div>
@@ -405,7 +411,7 @@ export default function ProcessTracePage() {
                       <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
-                          isLoading={isLoading}
+                          isLoading={isLoading || isLoadingProcessingStream}
                           jsonData={jsonData}
                           view={view}
                         />
@@ -538,8 +544,8 @@ function StepTabTrigger({
   return (
     <TabsTrigger
       className={cn(
-        "group/tab line-clamp-1",
-        "rounded-full",
+        "group/tab line-clamp-1 shadow-md shadow-accent",
+        "rounded-md",
         "text-sm px-4 py-1",
         "transition-all bg-primary/10",
         "hover:bg-foreground/20 hover:text-foreground",
@@ -553,6 +559,18 @@ function StepTabTrigger({
       {...props}
     >
       <span className={cn("flex gap-2 items-center ")}>
+        {!isProcessing &&
+          !isCompleted &&
+          !isFailed &&
+          !isCancelled &&
+          !isLoading && (
+            <ClockIcon
+              className={cn(
+                "size-4 -ml-2",
+                statusTextVariants({ variant: "pending" })
+              )}
+            />
+          )}
         {isProcessing && (
           <Spinner
             className={cn(
