@@ -288,7 +288,7 @@ export default function ProcessTracePage() {
                 {s3PdfUrl && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      {/* <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} /> */}
                     </div>
                   </div>
                 )}
@@ -384,28 +384,25 @@ export default function ProcessTracePage() {
                           </StepTabTrigger>
                         </TabsList>
                       </div>
-                      {jsonData && activeTab === "step-1" && (
-                        <div>
-                          <Field
-                            orientation="horizontal"
-                            className="items-center gap-1"
-                          >
-                            <Switch
-                              checked={view === "json"}
-                              onCheckedChange={(checked) => {
-                                setView(checked ? "json" : "markdown");
-                                setActiveTab("step-1");
-                              }}
-                            />
-                            <FieldLabel className="text-xs">JSON</FieldLabel>
-                          </Field>
-                        </div>
-                      )}
                     </div>
                   </div>
+                  {jsonData && activeTab === "step-1" && (
+                    <div className="flex items-center gap-1 py-2 px-6 border-b border-border/20 justify-end">
+                      <Switch
+                        checked={view === "json"}
+                        onCheckedChange={(checked) => {
+                          setView(checked ? "json" : "markdown");
+                          setActiveTab("step-1");
+                        }}
+                        className="h-3"
+                      />
+                      <FieldLabel className="text-xs">Preview Json</FieldLabel>
+                    </div>
+                  )}
+
                   <div className="flex-1 min-h-0 overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4">
-                      <TabsContent value="step-1" className="h-full">
+                      <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
                           isLoading={isLoading}
@@ -449,15 +446,9 @@ export default function ProcessTracePage() {
                                   </ItemMedia>
                                   <ItemContent>
                                     <ItemTitle>{message.name}</ItemTitle>
-                                    <ItemDescription>
+                                    <ItemDescription className="break-words">
                                       {message.description}
                                     </ItemDescription>
-                                    <CollapsibleContent>
-                                      <ProcessMessage
-                                        message={message}
-                                        isLoading={isLoading}
-                                      />
-                                    </CollapsibleContent>
                                   </ItemContent>
                                   <ItemActions className="self-start">
                                     <CollapsibleTrigger className="group/collapsible-trigger">
@@ -465,6 +456,13 @@ export default function ProcessTracePage() {
                                     </CollapsibleTrigger>
                                   </ItemActions>
                                 </Item>
+
+                                <CollapsibleContent>
+                                  <ProcessMessage
+                                    message={message}
+                                    isLoading={isLoading}
+                                  />
+                                </CollapsibleContent>
                               </Collapsible>
                             </div>
                           );
