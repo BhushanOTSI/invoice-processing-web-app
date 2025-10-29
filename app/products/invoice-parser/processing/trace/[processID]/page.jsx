@@ -152,7 +152,7 @@ export default function ProcessTracePage() {
   const traceMessages = useMemo(() => {
     return (
       (isProcessing ||
-      (messages.length && !processTraceStatus?.messages?.length)
+        (messages.length && !processTraceStatus?.messages?.length)
         ? messages
         : processTraceStatus?.messages) || []
     );
@@ -282,14 +282,12 @@ export default function ProcessTracePage() {
                 className={cn(
                   "bg-accent border-r h-full flex flex-col",
                   (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
-                    "animate-pulse bg-accent/30"
+                  "animate-pulse bg-accent/30"
                 )}
               >
                 {s3PdfUrl && (
-                  <div className="h-full overflow-hidden">
-                    <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
-                    </div>
+                  <div className="h-full overflow-auto">
+                    <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
                   </div>
                 )}
                 {!isLoading && !isLoadingProcessingStream && !s3PdfUrl && (
@@ -424,10 +422,10 @@ export default function ProcessTracePage() {
                           const messageStatus = message.status?.toLowerCase();
                           const Icon =
                             ProcessIcons[
-                              isMainProcessCompleted &&
+                            isMainProcessCompleted &&
                               messageStatus === PROCESS_STATUS.PROCESSING
-                                ? PROCESS_STATUS.COMPLETED
-                                : messageStatus
+                              ? PROCESS_STATUS.COMPLETED
+                              : messageStatus
                             ];
 
                           return (
@@ -543,7 +541,7 @@ function StepTabTrigger({
         "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
         className,
         isLoading &&
-          "pointer-events-none animate-pulse !bg-accent !text-accent select-none",
+        "pointer-events-none animate-pulse !bg-accent !text-accent select-none",
         "[&:disabled]:pointer-events-none [&:disabled]:opacity-50 [&:disabled]:cursor-not-allowed"
       )}
       disabled={isLoading || !isPreviousStepCompleted}
