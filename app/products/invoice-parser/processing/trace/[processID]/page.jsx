@@ -322,7 +322,7 @@ export default function ProcessTracePage() {
                   <div className="py-3 px-6 space-y-3 border-b flex-shrink-0">
                     <div className="flex items-center w-full justify-between">
                       <div className="flex-1">
-                        <TabsList className="flex items-center flex-wrap gap-y-2">
+                        <TabsList className="flex items-center gap-y-2">
                           <StepTabTrigger
                             value="step-1"
                             key="step-1"
@@ -400,7 +400,7 @@ export default function ProcessTracePage() {
                     </div>
                   )}
 
-                  <div className="flex-1 min-h-0 overflow-hidden">
+                  <div className="flex-1 min-h-0 overflow-hidden ">
                     <div className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4">
                       <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
