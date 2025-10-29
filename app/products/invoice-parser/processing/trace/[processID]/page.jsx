@@ -288,7 +288,7 @@ export default function ProcessTracePage() {
                 {s3PdfUrl && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      {/* <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} /> */}
+                      <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
                     </div>
                   </div>
                 )}
