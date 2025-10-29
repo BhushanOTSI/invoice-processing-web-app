@@ -268,13 +268,16 @@ export default function ProcessTracePage() {
         )}
       </div>
       <div className={cn("@container overflow-hidden", containerHeight)}>
-        {isLoaded && (
+        {
           <ResizablePanelGroup
             direction="horizontal"
             className="h-full"
             onLayout={savePanelSize}
           >
-            <ResizablePanel defaultSize={leftSize}>
+            <ResizablePanel
+              defaultSize={leftSize}
+              className={cn(containerHeight)}
+            >
               <div
                 className={cn(
                   "bg-accent border-r h-full flex flex-col",
@@ -306,7 +309,7 @@ export default function ProcessTracePage() {
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel>
+            <ResizablePanel className={cn(containerHeight)}>
               <div className="h-full flex flex-col">
                 <Tabs
                   value={activeTab}
@@ -473,7 +476,7 @@ export default function ProcessTracePage() {
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        )}
+        }
       </div>
     </div>
   );
