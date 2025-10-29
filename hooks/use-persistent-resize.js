@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 
-export const usePersistentResize = (storageKey = 'panel-size', recordId = null) => {
+export const usePersistentResize = (storageKey = 'panel-size', recordId ) => {
   const [leftSize, setLeftSize] = useState();
   const [isLoaded, setIsLoaded] = useState(false);
 
