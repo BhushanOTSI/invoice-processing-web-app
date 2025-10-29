@@ -3,8 +3,8 @@
 import * as React from "react";
 import { useTheme } from "next-themes";
 import * as SwitchPrimitive from "@radix-ui/react-switch";
-import { cn } from "@/lib/utils";
 import { Moon, Sun } from "lucide-react";
+import { Skeleton } from "./skeleton";
 
 export function ModeToggle() {
   const { setTheme, theme } = useTheme();
@@ -14,7 +14,7 @@ export function ModeToggle() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) return <Skeleton className="w-8 h-4 rounded-full" />;
 
   return (
     <SwitchPrimitive.Root

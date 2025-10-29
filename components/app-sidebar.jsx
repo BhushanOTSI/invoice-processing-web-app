@@ -14,21 +14,16 @@ import {
 } from "@/components/ui/sidebar";
 import { LogoOTS } from "./logos";
 import { APP_ROUTES } from "@/app/constants/app-routes";
+import Link from "next/link";
+import { useUser } from "@/hooks/use-user";
 
 export function AppSidebar({ ...props }) {
   const { open, setOpen } = useSidebar();
-  const [username, setUsername] = React.useState("Invoice Processing");
-
-  React.useEffect(() => {
-    const savedName = localStorage.getItem("username");
-    if (savedName) setUsername(savedName);
-  }, []);
+  const { user } = useUser();
 
   const data = React.useMemo(
     () => ({
-      user: {
-        name: username,
-      },
+      user,
       navMain: [
         {
           title: "Dashboard",
@@ -57,7 +52,7 @@ export function AppSidebar({ ...props }) {
         },
       ],
     }),
-    [username]
+    [user.name]
   );
 
   const [closeByMouseEnter, setCloseByMouseEnter] = React.useState(false);
@@ -75,7 +70,9 @@ export function AppSidebar({ ...props }) {
     >
       <SidebarHeader>
         <div className="overflow-hidden">
-          <LogoOTS className="w-24 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-[width] duration-200 ease-linear" />
+          <Link href={APP_ROUTES.DASHBOARD}>
+            <LogoOTS className="w-24 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-[width] duration-200 ease-linear" />
+          </Link>
         </div>
       </SidebarHeader>
       <SidebarContent>

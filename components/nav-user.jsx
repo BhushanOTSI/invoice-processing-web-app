@@ -16,11 +16,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { APP_ROUTES } from "@/app/constants/app-routes";
-import { BaseAPI } from "@/services/api/baseAPI";
+import { cn } from "@/lib/utils";
+import { useUser } from "@/hooks/use-user";
+import { capitalize } from "remeda";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
+  const { logout } = useUser();
 
   return (
     <SidebarMenu>
@@ -31,15 +33,7 @@ export function NavUser({ user }) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg uppercase">
-                  {user.name.slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-              </div>
+              <UserAvatar user={user} />
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -51,47 +45,10 @@ export function NavUser({ user }) {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg uppercase">
-                    {user.name.slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                </div>
+                <UserAvatar user={user} />
               </div>
             </DropdownMenuLabel>
-            {/* <DropdownMenuSeparator /> */}
-            {/* <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator /> */}
-            <DropdownMenuItem
-              onClick={() => {
-                localStorage.removeItem("username");
-                BaseAPI.clearAuthToken();
-                window.location.href = APP_ROUTES.LOGIN;
-              }}
-            >
+            <DropdownMenuItem onClick={() => logout()}>
               <LogOut />
               Log out
             </DropdownMenuItem>
@@ -99,5 +56,30 @@ export function NavUser({ user }) {
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  );
+}
+
+export function UserAvatar({ user, avatarOnly = false }) {
+  return (
+    <>
+      <Avatar
+        className={cn("h-8 w-8 rounded-lg", avatarOnly && "rounded-full")}
+      >
+        <AvatarImage src={user.avatar} alt={user.name} />
+        <AvatarFallback
+          className={cn("rounded-lg uppercase", avatarOnly && "rounded-full")}
+        >
+          {user.name.slice(0, 2)}
+        </AvatarFallback>
+      </Avatar>
+      <div
+        className={cn(
+          "grid flex-1 text-left text-sm leading-tight",
+          avatarOnly && "sr-only"
+        )}
+      >
+        <span className="truncate font-medium">{capitalize(user.name)}</span>
+      </div>
+    </>
   );
 }
