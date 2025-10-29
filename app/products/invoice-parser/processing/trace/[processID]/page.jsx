@@ -1,19 +1,56 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
+import { PROCESS_STATUS } from "@/app/constants";
 import { APP_ROUTES } from "@/app/constants/app-routes";
-import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
-import { cn, formatTimeDifference } from "@/lib/utils";
+import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
 import {
   ProcessIcons,
   ProcessStatusBadge,
   statusTextVariants,
 } from "@/components/invoice-ui/process-status-badge";
-import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
-import { PROCESS_STATUS } from "@/app/constants";
+import { usePersistentResize } from "@/hooks/use-persistent-resize";
+import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
+import { cn, formatTimeDifference } from "@/lib/utils";
+import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+import { useParams } from "next/navigation";
 
+import { ProcessMessage } from "@/components/invoice-ui/process-message";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+import { useSidebar } from "@/components/ui/sidebar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
+import {
+  useFetchS3Json,
+  useProcessingStream,
+} from "@/services/hooks/useBatchProcessInvoice";
 import {
   BadgeCheckIcon,
   BanIcon,
@@ -25,40 +62,8 @@ import {
   HashIcon,
   LinkIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { ProcessMessage } from "@/components/invoice-ui/process-message";
-import {
-  useFetchS3Json,
-  useProcessingStream,
-} from "@/services/hooks/useBatchProcessInvoice";
-import { useSidebar } from "@/components/ui/sidebar";
 import dynamic from "next/dynamic";
-import { Spinner } from "@/components/ui/spinner";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/scroll-area";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-import { Switch } from "@/components/ui/switch";
+import { useEffect, useMemo, useState } from "react";
 const InvoicePdf = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
   {
@@ -98,12 +103,20 @@ const addOrUpdateMessage = (messages, data) => {
 
 export default function ProcessTracePage() {
   const { setOpen } = useSidebar();
+  const { processID } = useParams();
+  const { leftSize, isLoaded, savePanelSize } = usePersistentResize(
+    "invoice-trace-panel-size",
+    processID
+  );
 
   useEffect(() => {
     setOpen(false);
-  }, []);
+    document.body.style.overflow = "hidden";
 
-  const { processID } = useParams();
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
   useSetBreadcrumbs([
     { title: "Home", url: APP_ROUTES.DASHBOARD },
     { title: "Monitor Traces", url: APP_ROUTES.PROCESSING.TRACE },
@@ -168,7 +181,8 @@ export default function ProcessTracePage() {
     return groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl;
   }, [groupedTraceMessages["step-1"]]);
 
-  const containerHeight = "h-[calc(100vh-7rem)]";
+  const containerHeight =
+    "h-[calc(100vh-7rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-6.4rem)] transition-all duration-200 ease-linear";
 
   const stepStatus = useMemo(() => {
     const step1 = groupedTraceMessages["step-1"];
@@ -207,8 +221,8 @@ export default function ProcessTracePage() {
   );
 
   return (
-    <>
-      <div className="flex items-center text-xs gap-3 flex-wrap transition-all p-4 border-b">
+    <div className="overflow-hidden flex flex-col">
+      <div className="flex items-center text-xs gap-3 flex-wrap transition-all p-4 border-b flex-shrink-0">
         <InfoItem
           Icon={HashIcon}
           label="Process ID:"
@@ -253,199 +267,228 @@ export default function ProcessTracePage() {
           />
         )}
       </div>
-      <div className="@container grid grid-cols-7">
-        <div
-          className={cn(
-            "@md:col-span-3 bg-accent border-r",
-            containerHeight,
-            (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
-              "animate-pulse bg-accent/30"
-          )}
-        >
-          {s3PdfUrl && <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />}
-          {!isLoading && !isLoadingProcessingStream && !s3PdfUrl && (
-            <Empty className="h-full">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <FileQuestionMarkIcon />
-                </EmptyMedia>
-                <EmptyTitle>Nothing to Preview</EmptyTitle>
-                <EmptyDescription>
-                  The file has not been processed yet or the file is not
-                  available.
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          )}
-        </div>
-
-        <div className={cn("@md:col-span-4", containerHeight)}>
-          <Tabs
-            value={view === "markdown" ? activeTab : ""}
-            onValueChange={(value) => {
-              setActiveTab(value);
-              setView("markdown");
-            }}
-            className="flex flex-col h-full"
+      <div className={cn("@container overflow-hidden", containerHeight)}>
+        {isLoaded && (
+          <ResizablePanelGroup
+            direction="horizontal"
+            className="h-full"
+            onLayout={savePanelSize}
           >
-            <div className="py-3 px-6 space-y-3 border-b">
-              <div className="flex items-center w-full justify-between">
-                <div>
-                  <TabsList className="flex items-center">
-                    <StepTabTrigger
-                      value="step-1"
-                      key="step-1"
-                      isProcessing={stepStatus.isStep1Processing}
-                      isLoading={isLoading}
-                      isCompleted={stepStatus.isStep1Completed}
-                      isFailed={stepStatus.isStep1Failed}
-                      isCancelled={stepStatus.isStep1Cancelled}
-                      isPreviousStepCompleted={true}
-                    >
-                      <span>AI Invoice Extraction</span>
-                    </StepTabTrigger>
-                    <div
-                      className={cn(
-                        "w-6 h-px bg-foreground inline-block",
-                        isLoading && "animate-pulse bg-accent"
-                      )}
-                    />
-                    <StepTabTrigger
-                      value="step-2"
-                      key="step-2"
-                      isProcessing={stepStatus.isStep2Processing}
-                      isLoading={isLoading}
-                      isCompleted={stepStatus.isStep2Completed}
-                      isFailed={
-                        stepStatus.isStep2Failed || stepStatus.isStep1Failed
-                      }
-                      isCancelled={stepStatus.isStep2Cancelled}
-                      isPreviousStepCompleted={stepStatus.isStep1Completed}
-                    >
-                      <span>Validate CW Invoice</span>
-                    </StepTabTrigger>
-                    <div
-                      className={cn(
-                        "w-6 h-px bg-foreground inline-block",
-                        isLoading && "animate-pulse bg-accent"
-                      )}
-                    />
-                    <StepTabTrigger
-                      value="step-3"
-                      key="step-3"
-                      isProcessing={stepStatus.isStep3Processing}
-                      isLoading={isLoading}
-                      isCompleted={stepStatus.isStep3Completed}
-                      isFailed={
-                        stepStatus.isStep3Failed ||
-                        stepStatus.isStep2Failed ||
-                        stepStatus.isStep1Failed
-                      }
-                      isCancelled={stepStatus.isStep3Cancelled}
-                      isPreviousStepCompleted={stepStatus.isStep2Completed}
-                    >
-                      <span>Process Steps</span>
-                    </StepTabTrigger>
-                  </TabsList>
-                </div>
-                {jsonData && activeTab === "step-1" && (
-                  <div>
-                    <Field
-                      orientation="horizontal"
-                      className="items-center gap-1"
-                    >
-                      <Switch
-                        checked={view === "json"}
-                        onCheckedChange={(checked) => {
-                          setView(checked ? "json" : "markdown");
-                        }}
-                      />
-                      <FieldLabel className="text-xs">JSON</FieldLabel>
-                    </Field>
+            <ResizablePanel defaultSize={leftSize}>
+              <div
+                className={cn(
+                  "bg-accent border-r h-full flex flex-col",
+                  (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
+                    "animate-pulse bg-accent/30"
+                )}
+              >
+                {s3PdfUrl && (
+                  <div className="h-full overflow-hidden">
+                    <div className="h-full overflow-y-auto overflow-x-hidden">
+                      <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                    </div>
                   </div>
                 )}
+                {!isLoading && !isLoadingProcessingStream && !s3PdfUrl && (
+                  <Empty className="h-full">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <FileQuestionMarkIcon />
+                      </EmptyMedia>
+                      <EmptyTitle>Nothing to Preview</EmptyTitle>
+                      <EmptyDescription>
+                        The file has not been processed yet or the file is not
+                        available.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                )}
               </div>
-            </div>
-            <div className="flex-1 overflow-y-auto dark:text-foreground/90 px-6 py-4">
-              {/* <ScrollArea className=""> */}
-              {view === "markdown" ? (
-                <>
-                  <TabsContent value="step-1">
-                    <ProcessMessage
-                      message={groupedTraceMessages["step-1"]}
-                      isLoading={isLoading}
-                      jsonData={jsonData}
-                    />
-                  </TabsContent>
-                  <TabsContent value="step-2">
-                    <ProcessMessage
-                      message={groupedTraceMessages["step-2"]}
-                      isLoading={isLoading}
-                    />
-                  </TabsContent>
-                  <TabsContent value="step-3" className="space-y-4">
-                    {groupedTraceMessages["step-3"].map((message) => {
-                      const messageStatus = message.status?.toLowerCase();
-                      const Icon =
-                        ProcessIcons[
-                          isMainProcessCompleted &&
-                          messageStatus === PROCESS_STATUS.PROCESSING
-                            ? PROCESS_STATUS.COMPLETED
-                            : messageStatus
-                        ];
-
-                      return (
-                        <div key={message.id}>
-                          <Collapsible defaultOpen={true}>
-                            <Item variant="muted" className={cn("bg-accent")}>
-                              <ItemMedia>
-                                <Icon
-                                  className={cn(
-                                    "size-4",
-                                    statusTextVariants({
-                                      variant: messageStatus,
-                                    })
-                                  )}
-                                />
-                              </ItemMedia>
-                              <ItemContent>
-                                <ItemTitle>{message.name}</ItemTitle>
-                                <ItemDescription>
-                                  {message.description}
-                                </ItemDescription>
-                                <CollapsibleContent>
-                                  <ProcessMessage
-                                    message={message}
-                                    isLoading={isLoading}
-                                  />
-                                </CollapsibleContent>
-                              </ItemContent>
-                              <ItemActions className="self-start">
-                                <CollapsibleTrigger className="group/collapsible-trigger">
-                                  <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
-                                </CollapsibleTrigger>
-                              </ItemActions>
-                            </Item>
-                          </Collapsible>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel>
+              <div className="h-full flex flex-col">
+                <Tabs
+                  value={view === "markdown" ? activeTab : ""}
+                  onValueChange={(value) => {
+                    setActiveTab(value);
+                    setView("markdown");
+                  }}
+                  className="flex flex-col h-full"
+                >
+                  <div className="py-3 px-6 space-y-3 border-b flex-shrink-0">
+                    <div className="flex items-center w-full justify-between space-y-2">
+                      <div>
+                        <TabsList className="flex items-center flex-wrap space-y-2">
+                          <StepTabTrigger
+                            value="step-1"
+                            key="step-1"
+                            isProcessing={stepStatus.isStep1Processing}
+                            isLoading={isLoading}
+                            isCompleted={stepStatus.isStep1Completed}
+                            isFailed={stepStatus.isStep1Failed}
+                            isCancelled={stepStatus.isStep1Cancelled}
+                            isPreviousStepCompleted={true}
+                          >
+                            <span>AI Invoice Extraction</span>
+                          </StepTabTrigger>
+                          <div
+                            className={cn(
+                              "w-6 h-px bg-foreground inline-block",
+                              isLoading && "animate-pulse bg-accent"
+                            )}
+                          />
+                          <StepTabTrigger
+                            value="step-2"
+                            key="step-2"
+                            isProcessing={stepStatus.isStep2Processing}
+                            isLoading={isLoading}
+                            isCompleted={stepStatus.isStep2Completed}
+                            isFailed={
+                              stepStatus.isStep2Failed ||
+                              stepStatus.isStep1Failed
+                            }
+                            isCancelled={stepStatus.isStep2Cancelled}
+                            isPreviousStepCompleted={
+                              stepStatus.isStep1Completed
+                            }
+                          >
+                            <span>Validate CW Invoice</span>
+                          </StepTabTrigger>
+                          <div
+                            className={cn(
+                              "w-6 h-px bg-foreground inline-block",
+                              isLoading && "animate-pulse bg-accent"
+                            )}
+                          />
+                          <StepTabTrigger
+                            value="step-3"
+                            key="step-3"
+                            isProcessing={stepStatus.isStep3Processing}
+                            isLoading={isLoading}
+                            isCompleted={stepStatus.isStep3Completed}
+                            isFailed={
+                              stepStatus.isStep3Failed ||
+                              stepStatus.isStep2Failed ||
+                              stepStatus.isStep1Failed
+                            }
+                            isCancelled={stepStatus.isStep3Cancelled}
+                            isPreviousStepCompleted={
+                              stepStatus.isStep2Completed
+                            }
+                          >
+                            <span>Process Steps</span>
+                          </StepTabTrigger>
+                        </TabsList>
+                      </div>
+                      {jsonData && activeTab === "step-1" && (
+                        <div>
+                          <Field
+                            orientation="horizontal"
+                            className="items-center gap-1"
+                          >
+                            <Switch
+                              checked={view === "json"}
+                              onCheckedChange={(checked) => {
+                                setView(checked ? "json" : "markdown");
+                              }}
+                            />
+                            <FieldLabel className="text-xs">JSON</FieldLabel>
+                          </Field>
                         </div>
-                      );
-                    })}
-                  </TabsContent>
-                </>
-              ) : (
-                <ProcessMessage
-                  message={groupedTraceMessages["step-1"]}
-                  isLoading={isLoading || isLoadingJson}
-                  view={view}
-                  jsonData={jsonData}
-                />
-              )}
-              {/* </ScrollArea> */}
-            </div>
-          </Tabs>
-        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-h-0 overflow-hidden">
+                    <div className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4">
+                      {view === "markdown" ? (
+                        <>
+                          <TabsContent value="step-1" className="h-full">
+                            <ProcessMessage
+                              message={groupedTraceMessages["step-1"]}
+                              isLoading={isLoading}
+                              jsonData={jsonData}
+                            />
+                          </TabsContent>
+                          <TabsContent value="step-2" className="h-full">
+                            <ProcessMessage
+                              message={groupedTraceMessages["step-2"]}
+                              isLoading={isLoading}
+                            />
+                          </TabsContent>
+                          <TabsContent
+                            value="step-3"
+                            className="space-y-4 h-full"
+                          >
+                            {groupedTraceMessages["step-3"].map((message) => {
+                              const messageStatus =
+                                message.status?.toLowerCase();
+                              const Icon =
+                                ProcessIcons[
+                                  isMainProcessCompleted &&
+                                  messageStatus === PROCESS_STATUS.PROCESSING
+                                    ? PROCESS_STATUS.COMPLETED
+                                    : messageStatus
+                                ];
+
+                              return (
+                                <div key={message.id}>
+                                  <Collapsible defaultOpen={true}>
+                                    <Item
+                                      variant="muted"
+                                      className={cn("bg-accent")}
+                                    >
+                                      <ItemMedia>
+                                        <Icon
+                                          className={cn(
+                                            "size-4",
+                                            statusTextVariants({
+                                              variant: messageStatus,
+                                            })
+                                          )}
+                                        />
+                                      </ItemMedia>
+                                      <ItemContent>
+                                        <ItemTitle>{message.name}</ItemTitle>
+                                        <ItemDescription>
+                                          {message.description}
+                                        </ItemDescription>
+                                        <CollapsibleContent>
+                                          <ProcessMessage
+                                            message={message}
+                                            isLoading={isLoading}
+                                          />
+                                        </CollapsibleContent>
+                                      </ItemContent>
+                                      <ItemActions className="self-start">
+                                        <CollapsibleTrigger className="group/collapsible-trigger">
+                                          <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
+                                        </CollapsibleTrigger>
+                                      </ItemActions>
+                                    </Item>
+                                  </Collapsible>
+                                </div>
+                              );
+                            })}
+                          </TabsContent>
+                        </>
+                      ) : (
+                        <ProcessMessage
+                          message={groupedTraceMessages["step-1"]}
+                          isLoading={isLoading || isLoadingJson}
+                          view={view}
+                          jsonData={jsonData}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </Tabs>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -516,7 +559,7 @@ function StepTabTrigger({
       disabled={isLoading || !isPreviousStepCompleted}
       {...props}
     >
-      <span className={cn("flex gap-2 items-center")}>
+      <span className={cn("flex gap-2 items-center ")}>
         {isProcessing && (
           <Spinner
             className={cn(
@@ -549,7 +592,7 @@ function StepTabTrigger({
             )}
           />
         )}
-        {children}
+        <span className="truncate max-w-40">{children}</span>
       </span>
     </TabsTrigger>
   );
