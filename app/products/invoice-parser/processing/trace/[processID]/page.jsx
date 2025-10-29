@@ -288,7 +288,7 @@ export default function ProcessTracePage() {
                 {s3PdfUrl && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      {/* <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} /> */}
                     </div>
                   </div>
                 )}
@@ -429,10 +429,15 @@ export default function ProcessTracePage() {
 
                           return (
                             <div key={message.id}>
-                              <Collapsible defaultOpen={true}>
+                              <Collapsible
+                                defaultOpen={true}
+                                className="group/collapsible"
+                              >
                                 <Item
                                   variant="muted"
-                                  className={cn("bg-accent")}
+                                  className={cn(
+                                    "bg-accent group-data-[state=open]/collapsible:rounded-b-none"
+                                  )}
                                 >
                                   <ItemMedia>
                                     <Icon
@@ -457,7 +462,7 @@ export default function ProcessTracePage() {
                                   </ItemActions>
                                 </Item>
 
-                                <CollapsibleContent>
+                                <CollapsibleContent className="px-4 border-t-0 py-2 border border-accent rounded-b-md transition-[height] duration-200 ease-linear">
                                   <ProcessMessage
                                     message={message}
                                     isLoading={isLoading}
