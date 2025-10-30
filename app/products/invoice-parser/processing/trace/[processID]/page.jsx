@@ -410,7 +410,7 @@ export default function ProcessTracePage() {
                     </div>
                   </div>
                   {jsonData && activeTab === "step-1" && (
-                    <div className="flex items-center gap-1 py-2 px-6 bg-muted border-b border-border/50 justify-end">
+                    <div className="flex items-center gap-1 py-2 px-6 bg-accent dark:bg-accent/50 border-b border-border/50 justify-end">
                       <Switch
                         checked={view === "json"}
                         onCheckedChange={(checked) => {
