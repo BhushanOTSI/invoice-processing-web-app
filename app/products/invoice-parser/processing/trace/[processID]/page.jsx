@@ -352,7 +352,7 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="py-3 px-6 space-y-3 border-b flex-shrink-0">
+                  <div className="py-3 px-6 space-y-3 border-b border-border/50 flex-shrink-0">
                     <div className="flex items-center w-full justify-between">
                       <div className="flex-1">
                         <TabsList className="flex items-center gap-y-2">
@@ -420,7 +420,7 @@ export default function ProcessTracePage() {
                     </div>
                   </div>
                   {jsonData && activeTab === "step-1" && (
-                    <div className="flex items-center gap-1 py-2 px-6 border-b justify-end">
+                    <div className="flex items-center gap-1 py-2 px-6 bg-muted border-b border-border/50 justify-end">
                       <Switch
                         checked={view === "json"}
                         onCheckedChange={(checked) => {
