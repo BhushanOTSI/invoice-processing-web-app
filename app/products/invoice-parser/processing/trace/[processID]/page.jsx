@@ -62,19 +62,8 @@ import {
   HashIcon,
   LinkIcon,
 } from "lucide-react";
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
-const InvoicePdf = dynamic(
-  () => import("@/components/invoice-ui/invoice-pdf"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 justify-center items-center h-full flex flex-col">
-        <Spinner />
-      </div>
-    ),
-  }
-);
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PdfPreview } from "@/components/invoice-ui/invoice-pdf";
 
 const convertToMessage = (data) => {
   return {
@@ -104,7 +93,7 @@ const addOrUpdateMessage = (messages, data) => {
 export default function ProcessTracePage() {
   const { setOpen } = useSidebar();
   const { processID } = useParams();
-  const { leftSize, isLoaded, savePanelSize } = usePersistentResize(
+  const { leftSize, savePanelSize } = usePersistentResize(
     "invoice-trace-panel-size",
     processID
   );
@@ -117,6 +106,7 @@ export default function ProcessTracePage() {
       document.body.style.overflow = "unset";
     };
   }, []);
+
   useSetBreadcrumbs([
     { title: "Home", url: APP_ROUTES.DASHBOARD },
     { title: "Monitor Traces", url: APP_ROUTES.PROCESSING.TRACE },
@@ -174,15 +164,40 @@ export default function ProcessTracePage() {
   ].includes(processTraceStatus?.status);
 
   const s3PdfUrl = useMemo(() => {
-    return groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl;
-  }, [groupedTraceMessages["step-1"]]);
+    return (
+      processTraceStatus?.sessionMetadata?.s3_pdf_url ||
+      groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl
+    );
+  }, [
+    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_pdf_url,
+  ]);
 
   const s3JsonUrl = useMemo(() => {
-    return groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl;
-  }, [groupedTraceMessages["step-1"]]);
+    return (
+      processTraceStatus?.sessionMetadata?.s3_json_url ||
+      groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl
+    );
+  }, [
+    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_json_url,
+  ]);
+
+  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
+
+  const cwWorkFlowUrl = useMemo(() => {
+    if (processTraceStatus?.sessionMetadata?.cw_url) {
+      return processTraceStatus?.sessionMetadata?.cw_url;
+    }
+    if (jsonData?.DocumentNumber) {
+      return `https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`;
+    }
+
+    return null;
+  }, [jsonData?.DocumentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
 
   const containerHeight =
-    "h-[calc(100vh-7rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-6.4rem)] transition-all duration-200 ease-linear";
+    "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
 
   const stepStatus = useMemo(() => {
     const step1 = groupedTraceMessages["step-1"];
@@ -215,14 +230,11 @@ export default function ProcessTracePage() {
 
   const [view, setView] = useState("markdown");
 
-  const { data: jsonData, isLoading: isLoadingJson } = useFetchS3Json(
-    s3JsonUrl,
-    !!s3JsonUrl
-  );
+  const containerRef = useRef(null);
 
   return (
-    <div className="overflow-hidden flex flex-col">
-      <div className="flex items-center text-xs gap-3 flex-wrap transition-all p-4 border-b flex-shrink-0">
+    <div className="overflow-hidden flex flex-col" ref={containerRef}>
+      <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b flex-shrink-0">
         <InfoItem
           Icon={HashIcon}
           label="Process ID:"
@@ -238,23 +250,24 @@ export default function ProcessTracePage() {
           isLoading={isLoading}
         />
 
+        {cwWorkFlowUrl && (
+          <InfoItem
+            Icon={LinkIcon}
+            label="Document Number:"
+            value={jsonData?.DocumentNumber}
+            href={cwWorkFlowUrl}
+            allowCopy
+            urlText="Collabration Workspace"
+            isLoading={isLoading}
+          />
+        )}
+
         <ProcessStatusBadge
           status={processTraceStatus?.status}
           isLoading={isLoading}
           className="px-2"
         />
 
-        {jsonData?.DocumentNumber && (
-          <InfoItem
-            Icon={LinkIcon}
-            label="Document Number:"
-            value={jsonData?.DocumentNumber}
-            href={`https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`}
-            allowCopy
-            urlText="Collabration Workspace"
-            isLoading={isLoading}
-          />
-        )}
         {isMainProcessCompleted && (
           <InfoItem
             Icon={ClockIcon}
@@ -280,26 +293,38 @@ export default function ProcessTracePage() {
             >
               <div
                 className={cn(
-                  "bg-accent border-r h-full flex flex-col",
+                  "bg-accent h-full flex flex-col",
                   (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
                   "animate-pulse bg-accent/30"
                 )}
               >
                 {s3PdfUrl && (
-                  <div className="h-full overflow-auto">
-                    <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                  <div className="h-full overflow-hidden">
+                    <div className="h-full overflow-y-auto overflow-x-hidden">
+                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                    </div>
                   </div>
                 )}
-                {!isLoading && !isLoadingProcessingStream && !s3PdfUrl && (
+                {!s3PdfUrl && (
                   <Empty className="h-full">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
-                        <FileQuestionMarkIcon />
+                        {(isLoading || isLoadingProcessingStream) &&
+                          !s3PdfUrl ? (
+                          <Spinner />
+                        ) : (
+                          <FileQuestionMarkIcon />
+                        )}
                       </EmptyMedia>
-                      <EmptyTitle>Nothing to Preview</EmptyTitle>
+                      <EmptyTitle>
+                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                          ? "Loading Invoice..."
+                          : "Nothing to Preview Yet"}
+                      </EmptyTitle>
                       <EmptyDescription>
-                        The file has not been processed yet or the file is not
-                        available.
+                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                          ? "Please wait while we load the invoice..."
+                          : "The invoice is not available for preview."}
                       </EmptyDescription>
                     </EmptyHeader>
                   </Empty>
@@ -317,10 +342,10 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="py-3 px-6 space-y-3 border-b flex-shrink-0">
+                  <div className="space-y-3 p-2 border-b border-border/50 flex-shrink-0">
                     <div className="flex items-center w-full justify-between">
                       <div className="flex-1">
-                        <TabsList className="flex items-center flex-wrap gap-y-2">
+                        <TabsList className="flex items-center gap-y-2">
                           <StepTabTrigger
                             value="step-1"
                             key="step-1"
@@ -382,31 +407,27 @@ export default function ProcessTracePage() {
                           </StepTabTrigger>
                         </TabsList>
                       </div>
-                      {jsonData && activeTab === "step-1" && (
-                        <div>
-                          <Field
-                            orientation="horizontal"
-                            className="items-center gap-1"
-                          >
-                            <Switch
-                              checked={view === "json"}
-                              onCheckedChange={(checked) => {
-                                setView(checked ? "json" : "markdown");
-                                setActiveTab("step-1");
-                              }}
-                            />
-                            <FieldLabel className="text-xs">JSON</FieldLabel>
-                          </Field>
-                        </div>
-                      )}
                     </div>
                   </div>
-                  <div className="flex-1 min-h-0 overflow-hidden">
+                  {jsonData && activeTab === "step-1" && (
+                    <div className="flex items-center gap-1 py-2 px-6 bg-accent dark:bg-accent/50 border-b border-border/50 justify-end">
+                      <Switch
+                        checked={view === "json"}
+                        onCheckedChange={(checked) => {
+                          setView(checked ? "json" : "markdown");
+                          setActiveTab("step-1");
+                        }}
+                      />
+                      <FieldLabel className="text-xs">Preview Json</FieldLabel>
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-h-0 overflow-hidden ">
                     <div className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4">
-                      <TabsContent value="step-1" className="h-full">
+                      <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
-                          isLoading={isLoading}
+                          isLoading={isLoading || isLoadingProcessingStream}
                           jsonData={jsonData}
                           view={view}
                         />
@@ -430,10 +451,15 @@ export default function ProcessTracePage() {
 
                           return (
                             <div key={message.id}>
-                              <Collapsible defaultOpen={true}>
+                              <Collapsible
+                                defaultOpen={true}
+                                className="group/collapsible"
+                              >
                                 <Item
                                   variant="muted"
-                                  className={cn("bg-accent")}
+                                  className={cn(
+                                    "bg-accent group-data-[state=open]/collapsible:rounded-b-none"
+                                  )}
                                 >
                                   <ItemMedia>
                                     <Icon
@@ -447,15 +473,9 @@ export default function ProcessTracePage() {
                                   </ItemMedia>
                                   <ItemContent>
                                     <ItemTitle>{message.name}</ItemTitle>
-                                    <ItemDescription>
+                                    <ItemDescription className="break-words">
                                       {message.description}
                                     </ItemDescription>
-                                    <CollapsibleContent>
-                                      <ProcessMessage
-                                        message={message}
-                                        isLoading={isLoading}
-                                      />
-                                    </CollapsibleContent>
                                   </ItemContent>
                                   <ItemActions className="self-start">
                                     <CollapsibleTrigger className="group/collapsible-trigger">
@@ -463,6 +483,13 @@ export default function ProcessTracePage() {
                                     </CollapsibleTrigger>
                                   </ItemActions>
                                 </Item>
+
+                                <CollapsibleContent className="px-4 border-t-0 py-2 border border-accent rounded-b-md transition-[height] duration-200 ease-linear">
+                                  <ProcessMessage
+                                    message={message}
+                                    isLoading={isLoading}
+                                  />
+                                </CollapsibleContent>
                               </Collapsible>
                             </div>
                           );
@@ -533,11 +560,10 @@ function StepTabTrigger({
   return (
     <TabsTrigger
       className={cn(
-        "group/tab line-clamp-1",
-        "rounded-full",
-        "text-sm px-4 py-1",
-        "transition-all bg-primary/10",
-        "hover:bg-foreground/20 hover:text-foreground",
+        "group/tab line-clamp-1 border border-inherit/50",
+        "text-sm px-4 py-1.5 rounded-md",
+        "transition-all bg-accent",
+        "hover:bg-primary/90 hover:text-primary-foreground hover:[&_svg]:text-primary-foreground",
         "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
         className,
         isLoading &&
@@ -548,6 +574,18 @@ function StepTabTrigger({
       {...props}
     >
       <span className={cn("flex gap-2 items-center ")}>
+        {!isProcessing &&
+          !isCompleted &&
+          !isFailed &&
+          !isCancelled &&
+          !isLoading && (
+            <ClockIcon
+              className={cn(
+                "size-4 -ml-2",
+                statusTextVariants({ variant: "pending" })
+              )}
+            />
+          )}
         {isProcessing && (
           <Spinner
             className={cn(
