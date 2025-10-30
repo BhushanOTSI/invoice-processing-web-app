@@ -104,7 +104,7 @@ const addOrUpdateMessage = (messages, data) => {
 export default function ProcessTracePage() {
   const { setOpen } = useSidebar();
   const { processID } = useParams();
-  const { leftSize, isLoaded, savePanelSize } = usePersistentResize(
+  const { leftSize, savePanelSize } = usePersistentResize(
     "invoice-trace-panel-size",
     processID
   );
@@ -117,6 +117,7 @@ export default function ProcessTracePage() {
       document.body.style.overflow = "unset";
     };
   }, []);
+
   useSetBreadcrumbs([
     { title: "Home", url: APP_ROUTES.DASHBOARD },
     { title: "Monitor Traces", url: APP_ROUTES.PROCESSING.TRACE },
@@ -174,12 +175,37 @@ export default function ProcessTracePage() {
   ].includes(processTraceStatus?.status);
 
   const s3PdfUrl = useMemo(() => {
-    return groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl;
-  }, [groupedTraceMessages["step-1"]]);
+    return (
+      processTraceStatus?.sessionMetadata?.s3_pdf_url ||
+      groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl
+    );
+  }, [
+    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_pdf_url,
+  ]);
 
   const s3JsonUrl = useMemo(() => {
-    return groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl;
-  }, [groupedTraceMessages["step-1"]]);
+    return (
+      processTraceStatus?.sessionMetadata?.s3_json_url ||
+      groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl
+    );
+  }, [
+    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_json_url,
+  ]);
+
+  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
+
+  const cwWorkFlowUrl = useMemo(() => {
+    if (processTraceStatus?.sessionMetadata?.cw_url) {
+      return processTraceStatus?.sessionMetadata?.cw_url;
+    }
+    if (jsonData?.DocumentNumber) {
+      return `https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`;
+    }
+
+    return null;
+  }, [jsonData?.DocumentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
 
   const containerHeight =
     "h-[calc(100vh-7rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-6.4rem)] transition-all duration-200 ease-linear";
@@ -215,8 +241,6 @@ export default function ProcessTracePage() {
 
   const [view, setView] = useState("markdown");
 
-  const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
-
   return (
     <div className="overflow-hidden flex flex-col">
       <div className="flex items-center text-xs gap-3 flex-wrap transition-all p-4 border-b flex-shrink-0">
@@ -241,12 +265,12 @@ export default function ProcessTracePage() {
           className="px-2"
         />
 
-        {jsonData?.DocumentNumber && (
+        {cwWorkFlowUrl && (
           <InfoItem
             Icon={LinkIcon}
             label="Document Number:"
             value={jsonData?.DocumentNumber}
-            href={`https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`}
+            href={cwWorkFlowUrl}
             allowCopy
             urlText="Collabration Workspace"
             isLoading={isLoading}
