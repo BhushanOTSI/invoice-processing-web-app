@@ -44,9 +44,7 @@ const nodeTypes = {
           className={cn(
             statusBorderVariants({ variant: data.status }),
             "max-w-96 min-w-96",
-            isActive &&
-              !isProcessingStatus &&
-              "bg-primary/20 border-primary border-2 transition-colors"
+            isActive && "border-6 transition-colors duration-300 ease-in-out"
           )}
           onClick={() => !isProcessingStatus && setActiveNodeIndex(data.index)}
         >

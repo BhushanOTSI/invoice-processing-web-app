@@ -140,7 +140,7 @@ export default function ProcessTracePage() {
   const { data: processTraceStatus, isLoading } =
     useProcessTraceStatus(processID);
 
-  const [activeTab, setActiveTab] = useState("step-3");
+  const [activeTab, setActiveTab] = useState("step-1");
   const [messages, setMessages] = useState([]);
   const isProcessing = useMemo(
     () => processTraceStatus?.status === PROCESS_STATUS.PROCESSING,
