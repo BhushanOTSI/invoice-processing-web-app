@@ -12,13 +12,12 @@ export function ProcessMessage({
   jsonData,
 }) {
   const markdown = message?.extraMetadata?.markdown;
+  const hasMarkdown = !!markdown;
+  const hasJson = !!jsonData;
 
   if (isLoading) {
     return <Skeleton className="w-full min-h-96 h-full mt-6" />;
   }
-
-  const hasMarkdown = !!markdown;
-  const hasJson = !!jsonData;
 
   if (view === "markdown") {
     return hasMarkdown ? (
