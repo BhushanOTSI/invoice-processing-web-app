@@ -10,7 +10,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { LogoOTS } from "./logos";
 import { APP_ROUTES } from "@/app/constants/app-routes";

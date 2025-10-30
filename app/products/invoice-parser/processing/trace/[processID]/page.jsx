@@ -63,7 +63,7 @@ import {
   LinkIcon,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 const InvoicePdf = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
   {
@@ -208,7 +208,7 @@ export default function ProcessTracePage() {
   }, [jsonData?.DocumentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
 
   const containerHeight =
-    "h-[calc(100vh-7rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-6.4rem)] transition-all duration-200 ease-linear";
+    "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
 
   const stepStatus = useMemo(() => {
     const step1 = groupedTraceMessages["step-1"];
@@ -241,9 +241,11 @@ export default function ProcessTracePage() {
 
   const [view, setView] = useState("markdown");
 
+  const containerRef = useRef(null);
+
   return (
-    <div className="overflow-hidden flex flex-col">
-      <div className="flex items-center text-xs gap-3 flex-wrap transition-all p-4 border-b flex-shrink-0">
+    <div className="overflow-hidden flex flex-col" ref={containerRef}>
+      <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b flex-shrink-0">
         <InfoItem
           Icon={HashIcon}
           label="Process ID:"

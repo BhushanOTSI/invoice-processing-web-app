@@ -133,12 +133,12 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                   key={pageNumber}
                   ref={registerPageRef(pageNumber)}
                   data-page={pageNumber}
-                  className="px-4 first:pt-4 pb-4"
+                  className="px-8 first:pt-8 pb-8"
                 >
                   {visiblePages.has(pageNumber) && (
                     <Page
                       pageNumber={pageNumber}
-                      width={pageWidths - 40}
+                      width={pageWidths - 80}
                       renderAnnotationLayer={true}
                       renderTextLayer={true}
                       loading={null}
