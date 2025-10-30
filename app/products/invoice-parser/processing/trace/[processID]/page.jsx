@@ -62,19 +62,8 @@ import {
   HashIcon,
   LinkIcon,
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-const InvoicePdf = dynamic(
-  () => import("@/components/invoice-ui/invoice-pdf"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 justify-center items-center h-full flex flex-col">
-        <Spinner />
-      </div>
-    ),
-  }
-);
+import { PdfPreview } from "@/components/invoice-ui/invoice-pdf";
 
 const convertToMessage = (data) => {
   return {
@@ -261,12 +250,6 @@ export default function ProcessTracePage() {
           isLoading={isLoading}
         />
 
-        <ProcessStatusBadge
-          status={processTraceStatus?.status}
-          isLoading={isLoading}
-          className="px-2"
-        />
-
         {cwWorkFlowUrl && (
           <InfoItem
             Icon={LinkIcon}
@@ -278,6 +261,13 @@ export default function ProcessTracePage() {
             isLoading={isLoading}
           />
         )}
+
+        <ProcessStatusBadge
+          status={processTraceStatus?.status}
+          isLoading={isLoading}
+          className="px-2"
+        />
+
         {isMainProcessCompleted && (
           <InfoItem
             Icon={ClockIcon}
@@ -311,7 +301,7 @@ export default function ProcessTracePage() {
                 {s3PdfUrl && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <InvoicePdf key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
                     </div>
                   </div>
                 )}
@@ -352,7 +342,7 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="py-3 px-6 space-y-3 border-b border-border/50 flex-shrink-0">
+                  <div className="space-y-3 p-2 border-b border-border/50 flex-shrink-0">
                     <div className="flex items-center w-full justify-between">
                       <div className="flex-1">
                         <TabsList className="flex items-center gap-y-2">
@@ -571,10 +561,9 @@ function StepTabTrigger({
     <TabsTrigger
       className={cn(
         "group/tab line-clamp-1 shadow-md shadow-accent",
-        "rounded-md",
-        "text-sm px-4 py-1",
-        "transition-all bg-primary/10",
-        "hover:bg-foreground/20 hover:text-foreground",
+        "text-sm px-4 py-2 rounded-full",
+        "transition-all bg-primary/10 ",
+        "hover:bg-primary/20 hover:text-foreground",
         "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
         className,
         isLoading &&

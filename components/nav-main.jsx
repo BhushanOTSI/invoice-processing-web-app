@@ -63,7 +63,7 @@ export function NavMain({ items }) {
 
           if (!open && !isMobile) {
             return (
-              <SidebarMenuItem>
+              <SidebarMenuItem key={item.title}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     {triggerButton}
