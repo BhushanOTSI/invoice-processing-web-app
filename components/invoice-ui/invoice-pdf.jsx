@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ScrollArea } from "../ui/scroll-area";
-import dynamic from "next/dynamic";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
@@ -158,12 +157,3 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 InvoicePdf.displayName = "InvoicePdf";
 
 export default memo(InvoicePdf);
-
-export const PdfPreview = dynamic(() => import("./invoice-pdf"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 justify-center items-center h-full flex flex-col">
-      <Spinner />
-    </div>
-  ),
-});
