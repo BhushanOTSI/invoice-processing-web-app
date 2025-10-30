@@ -293,7 +293,7 @@ export default function ProcessTracePage() {
             >
               <div
                 className={cn(
-                  "bg-accent border-r h-full flex flex-col",
+                  "bg-accent h-full flex flex-col",
                   (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
                     "animate-pulse bg-accent/30"
                 )}
@@ -560,10 +560,10 @@ function StepTabTrigger({
   return (
     <TabsTrigger
       className={cn(
-        "group/tab line-clamp-1 shadow-md shadow-accent",
-        "text-sm px-4 py-2 rounded-full",
-        "transition-all bg-primary/10 ",
-        "hover:bg-primary/20 hover:text-foreground",
+        "group/tab line-clamp-1 border border-inherit/50",
+        "text-sm px-4 py-1.5 rounded-md",
+        "transition-all bg-accent",
+        "hover:bg-primary/90 hover:text-primary-foreground hover:[&_svg]:text-primary-foreground",
         "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
         className,
         isLoading &&
