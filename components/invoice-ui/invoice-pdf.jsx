@@ -19,16 +19,14 @@ import { Document, Page, pdfjs } from "react-pdf";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { ZoomInIcon, ZoomOutIcon, RotateCwIcon, SearchIcon } from "lucide-react";
-
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
   const pdfViewerRef = useRef(null);
-  const scaleRef = useRef(1);
+  const pinchZoomRef = useRef(null);
   const pageRefsMap = useRef(new Map());
   const scrollTimeoutRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const lastMousePositionRef = useRef({ x: 0, y: 0 });
 
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,6 +35,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [rotation, setRotation] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   useEffect(() => {
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -47,7 +46,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     }
   }, []);
 
-  // Reset loading state when fileUrl changes
   useEffect(() => {
     if (fileUrl) {
       setIsLoading(true);
@@ -58,7 +56,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     }
   }, [fileUrl]);
 
-  // Fast resize handler
   useEffect(() => {
     const updatePageWidth = () => {
       if (containerRef.current) {
@@ -75,7 +72,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Document load success - no re-renders
   const onDocumentLoadSuccess = useCallback(({ numPages: totalPages }) => {
     setNumPages(totalPages);
     setCurrentPage(1);
@@ -90,38 +86,15 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages(0);
   }, []);
 
-  // Instant zoom functions - target the content wrapper, not scroll container
   const handleZoomIn = useCallback(() => {
-    scaleRef.current = Math.min(scaleRef.current + 0.25, 3);
-    const contentWrapper = pdfViewerRef.current?.querySelector('[data-pdf-content]');
-    if (contentWrapper) {
-      contentWrapper.style.transform = `scale(${scaleRef.current})`;
-    }
-    // Update cursor based on zoom level
-    if (pdfViewerRef.current) {
-      pdfViewerRef.current.style.cursor = scaleRef.current > 1 ? 'grab' : 'default';
-    }
-    // Update UI only
-    const zoomDisplay = document.querySelector('[data-zoom-display]');
-    if (zoomDisplay) {
-      zoomDisplay.textContent = `${Math.round(scaleRef.current * 100)}%`;
+    if (pinchZoomRef.current) {
+      pinchZoomRef.current.zoomIn(0.25);
     }
   }, []);
 
   const handleZoomOut = useCallback(() => {
-    scaleRef.current = Math.max(scaleRef.current - 0.25, 0.5);
-    const contentWrapper = pdfViewerRef.current?.querySelector('[data-pdf-content]');
-    if (contentWrapper) {
-      contentWrapper.style.transform = `scale(${scaleRef.current})`;
-    }
-    // Update cursor based on zoom level
-    if (pdfViewerRef.current) {
-      pdfViewerRef.current.style.cursor = scaleRef.current > 1 ? 'grab' : 'default';
-    }
-    // Update UI only
-    const zoomDisplay = document.querySelector('[data-zoom-display]');
-    if (zoomDisplay) {
-      zoomDisplay.textContent = `${Math.round(scaleRef.current * 100)}%`;
+    if (pinchZoomRef.current) {
+      pinchZoomRef.current.zoomOut(0.25);
     }
   }, []);
 
@@ -129,7 +102,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setRotation(prev => (prev + 90) % 360);
   }, []);
 
-  // Fast page navigation
   const goToPage = useCallback((pageNumber) => {
     const pageElement = pageRefsMap.current.get(pageNumber);
     if (pageElement && pdfViewerRef.current) {
@@ -140,21 +112,17 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
   const handlePageInputChange = useCallback((e) => {
     const value = e.target.value;
-
-    // Allow only numbers and empty string
     if (value === '' || /^\d+$/.test(value)) {
       setPageInputValue(value);
     }
   }, []);
 
   const handlePageInputKeyDown = useCallback((e) => {
-    // Prevent up/down arrow keys
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault();
       return;
     }
 
-    // Allow only numbers, backspace, delete, enter, tab
     const allowedKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'Backspace', 'Delete', 'Enter', 'Tab', 'ArrowLeft', 'ArrowRight'];
 
     if (!allowedKeys.includes(e.key)) {
@@ -167,7 +135,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       if (page >= 1 && page <= numPages) {
         goToPage(page);
       } else {
-        // Reset to current page if invalid
         setPageInputValue(currentPage.toString());
       }
     }
@@ -178,19 +145,16 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     if (page >= 1 && page <= numPages) {
       goToPage(page);
     } else {
-      // Reset to current page if invalid
       setPageInputValue(currentPage.toString());
     }
   }, [numPages, goToPage, currentPage]);
 
-  // Fast page ref registration
   const registerPageRef = useCallback((pageNumber) => (node) => {
     if (node) {
       pageRefsMap.current.set(pageNumber, node);
     }
   }, []);
 
-  // Throttled scroll handler for better performance
   useEffect(() => {
     if (!pdfViewerRef.current || numPages === 0) return;
 
@@ -229,73 +193,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     };
   }, [numPages]);
 
-  // Fast mouse wheel zoom
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const handleWheel = (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        if (e.deltaY < 0) {
-          handleZoomIn();
-        } else {
-          handleZoomOut();
-        }
-      }
-    };
-
-    const container = containerRef.current;
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => container?.removeEventListener('wheel', handleWheel);
-  }, [handleZoomIn, handleZoomOut]);
-
-  // Mouse dragging when zoomed
-  useEffect(() => {
-    if (!pdfViewerRef.current) return;
-
-    const handleMouseDown = (e) => {
-      if (scaleRef.current > 1) {
-        isDraggingRef.current = true;
-        lastMousePositionRef.current = { x: e.clientX, y: e.clientY };
-        pdfViewerRef.current.style.cursor = 'grabbing';
-        e.preventDefault();
-      }
-    };
-
-    const handleMouseMove = (e) => {
-      if (!isDraggingRef.current || scaleRef.current <= 1) return;
-
-      e.preventDefault();
-      const deltaX = e.clientX - lastMousePositionRef.current.x;
-      const deltaY = e.clientY - lastMousePositionRef.current.y;
-
-      pdfViewerRef.current.scrollLeft -= deltaX;
-      pdfViewerRef.current.scrollTop -= deltaY;
-
-      lastMousePositionRef.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const handleMouseUp = () => {
-      isDraggingRef.current = false;
-      if (pdfViewerRef.current) {
-        pdfViewerRef.current.style.cursor = scaleRef.current > 1 ? 'grab' : 'default';
-      }
-    };
-
-    const viewer = pdfViewerRef.current;
-    viewer.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      viewer?.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []); return (
-    <div className={cn("h-full w-full flex flex-col", className)}
-    >
+  return (
+    <div className={cn("h-full w-full flex flex-col", className)}>
       {/* PDF Controls Toolbar */}
       <div className="flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -303,7 +202,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             variant="outline"
             size="sm"
             onClick={handleZoomOut}
-            title="Zoom Out (Ctrl + Mouse Wheel)"
+            title="Zoom Out"
           >
             <ZoomOutIcon className="h-4 w-4" />
           </Button>
@@ -311,13 +210,13 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             data-zoom-display
             className="text-sm font-medium min-w-[60px] text-center"
           >
-            100%
+            {Math.round(zoomLevel * 100)}%
           </span>
           <Button
             variant="outline"
             size="sm"
             onClick={handleZoomIn}
-            title="Zoom In (Ctrl + Mouse Wheel)"
+            title="Zoom In"
           >
             <ZoomInIcon className="h-4 w-4" />
           </Button>
@@ -332,7 +231,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <SearchIcon className="h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
             inputMode="numeric"
@@ -385,24 +283,17 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           </div>
         )}
 
+        {/* PDF Content with Individual Page Zoom */}
         <div
           ref={pdfViewerRef}
           className="h-full overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
           style={{
             opacity: isLoading || error ? 0.3 : 1,
-            transition: 'opacity 0.2s ease'
+            transition: 'opacity 0.2s ease',
+            touchAction: 'pan-y' // Allow vertical scrolling
           }}
         >
-          <div
-            data-pdf-content
-            className="flex flex-col items-center py-4 px-4"
-            style={{
-              minHeight: '100%',
-              transformOrigin: 'top center',
-              willChange: 'transform',
-              backfaceVisibility: 'hidden'
-            }}
-          >
+          <div className="flex flex-col items-center py-4 px-4 w-full">
             <Document
               file={fileUrl}
               onLoadSuccess={onDocumentLoadSuccess}
@@ -410,30 +301,116 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
               loading={null}
               error={null}
             >
-              {Array.from({ length: numPages }, (_, index) => {
-                const pageNumber = index + 1;
-                return (
-                  <div
-                    key={`page-${pageNumber}`}
-                    ref={registerPageRef(pageNumber)}
-                    data-page={pageNumber}
-                    className="mb-4 shadow-md rounded-sm border bg-white"
-                  >
-                    <Page
-                      pageNumber={pageNumber}
-                      width={pageWidth}
-                      renderAnnotationLayer={false}
-                      renderTextLayer={false}
-                      rotate={rotation}
-                      loading={
-                        <div className="flex justify-center items-center h-40 bg-gray-50 border rounded">
-                          <div className="animate-pulse bg-gray-200 h-32 w-full rounded"></div>
-                        </div>
-                      }
-                    />
-                  </div>
-                );
-              })}
+              <div className="w-full flex flex-col items-center gap-4">
+                {Array.from({ length: numPages }, (_, index) => {
+                  const pageNumber = index + 1;
+                  return (
+                    <div
+                      key={`page-container-${pageNumber}`}
+                      className="relative w-fit"
+                      style={{
+                        touchAction: 'none',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <TransformWrapper
+                        ref={pageNumber === 1 ? pinchZoomRef : null}
+                        minScale={0.5}
+                        maxScale={3}
+                        initialScale={1}
+                        wheel={{
+                          step: 0.1,
+                          wheelDisabled: false,
+                          touchPadDisabled: false,
+                        }}
+                        pinch={{
+                          step: 5,
+                          disabled: false
+                        }}
+                        pan={{
+                          disabled: false,
+                          lockAxisX: false,
+                          lockAxisY: false,
+                          velocityDisabled: false
+                        }}
+                        doubleClick={{
+                          step: 0.7,
+                          disabled: false,
+                          mode: "toggle"
+                        }}
+                        limitToBounds={false}
+                        centerOnInit={false}
+                        centerZoomedOut={false}
+                        alignmentAnimation={{ disabled: true }}
+                        velocityAnimation={{ disabled: true }}
+                        smooth={false}
+                        onTransformed={(ref, state) => {
+                          if (pageNumber === 1) {
+                            setZoomLevel(state.scale);
+                            const zoomDisplay = document.querySelector('[data-zoom-display]');
+                            if (zoomDisplay) {
+                              zoomDisplay.textContent = `${Math.round(state.scale * 100)}%`;
+                            }
+                          }
+                        }}
+                        onPinchingStart={(ref, event) => {
+                          console.log('Pinch start detected, touches:', event.touches?.length);
+                          // Only allow pinch with exactly 2 fingers
+                          if (event.touches && event.touches.length === 2) {
+                            return true;
+                          }
+                          return false;
+                        }}
+                        onDoubleClick={(ref, event) => {
+                          console.log('Double click detected on page:', pageNumber);
+                          return true;
+                        }}
+                        onInit={(ref) => {
+                          console.log(`TransformWrapper initialized for page ${pageNumber}`, ref);
+                        }}
+                        wrapperStyle={{
+                          width: 'fit-content',
+                          height: 'auto',
+                        }}
+                        contentStyle={{
+                          width: 'fit-content',
+                          height: 'auto',
+                        }}
+                      >
+                        <TransformComponent
+                          wrapperStyle={{
+                            width: 'fit-content',
+                            height: 'auto',
+                          }}
+                          contentStyle={{
+                            width: 'fit-content',
+                            height: 'auto',
+                          }}
+                        >
+                          <div
+                            ref={registerPageRef(pageNumber)}
+                            data-page={pageNumber}
+                            className="shadow-md rounded-sm border bg-white"
+                          >
+                            <Page
+                              pageNumber={pageNumber}
+                              width={pageWidth}
+                              renderAnnotationLayer={false}
+                              renderTextLayer={false}
+                              rotate={rotation}
+                              loading={
+                                <div className="flex justify-center items-center h-40 bg-gray-50 border rounded">
+                                  <div className="animate-pulse bg-gray-200 h-32 w-full rounded"></div>
+                                </div>
+                              }
+                            />
+                          </div>
+                        </TransformComponent>
+                      </TransformWrapper>
+                    </div>
+                  );
+                })}
+              </div>
             </Document>
           </div>
         </div>
