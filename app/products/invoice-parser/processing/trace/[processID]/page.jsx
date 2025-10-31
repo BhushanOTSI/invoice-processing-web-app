@@ -63,7 +63,25 @@ import {
   LinkIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PdfPreview } from "@/components/invoice-ui/invoice-pdf";
+import {
+  ActiveProcessMessage,
+  ProcessingStepsFlow,
+  ProcessingStepsFlowProvider,
+  useProcessingStepsFlow,
+} from "@/components/invoice-ui/processing-steps-flow";
+import dynamic from "next/dynamic";
+
+const PdfPreview = dynamic(
+  () => import("@/components/invoice-ui/invoice-pdf"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 justify-center items-center h-full flex flex-col">
+        <Spinner />
+      </div>
+    ),
+  }
+);
 
 const convertToMessage = (data) => {
   return {
@@ -142,7 +160,7 @@ export default function ProcessTracePage() {
   const traceMessages = useMemo(() => {
     return (
       (isProcessing ||
-        (messages.length && !processTraceStatus?.messages?.length)
+      (messages.length && !processTraceStatus?.messages?.length)
         ? messages
         : processTraceStatus?.messages) || []
     );
@@ -280,8 +298,8 @@ export default function ProcessTracePage() {
           />
         )}
       </div>
-      <div className={cn("@container overflow-hidden", containerHeight)}>
-        {
+      <ProcessingStepsFlowProvider messages={groupedTraceMessages["step-3"]}>
+        <div className={cn("@container overflow-hidden", containerHeight)}>
           <ResizablePanelGroup
             direction="horizontal"
             className="h-full"
@@ -295,13 +313,17 @@ export default function ProcessTracePage() {
                 className={cn(
                   "bg-accent h-full flex flex-col",
                   (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
-                  "animate-pulse bg-accent/30"
+                    "animate-pulse bg-accent/30"
                 )}
               >
                 {s3PdfUrl && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      {activeTab === "step-3" ? (
+                        <ProcessingStepsFlow />
+                      ) : (
+                        <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      )}
                     </div>
                   </div>
                 )}
@@ -310,7 +332,7 @@ export default function ProcessTracePage() {
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
                         {(isLoading || isLoadingProcessingStream) &&
-                          !s3PdfUrl ? (
+                        !s3PdfUrl ? (
                           <Spinner />
                         ) : (
                           <FileQuestionMarkIcon />
@@ -439,61 +461,7 @@ export default function ProcessTracePage() {
                         />
                       </TabsContent>
                       <TabsContent value="step-3" className="space-y-4 h-full">
-                        {groupedTraceMessages["step-3"].map((message) => {
-                          const messageStatus = message.status?.toLowerCase();
-                          const Icon =
-                            ProcessIcons[
-                            isMainProcessCompleted &&
-                              messageStatus === PROCESS_STATUS.PROCESSING
-                              ? PROCESS_STATUS.COMPLETED
-                              : messageStatus
-                            ];
-
-                          return (
-                            <div key={message.id}>
-                              <Collapsible
-                                defaultOpen={true}
-                                className="group/collapsible"
-                              >
-                                <Item
-                                  variant="muted"
-                                  className={cn(
-                                    "bg-accent group-data-[state=open]/collapsible:rounded-b-none"
-                                  )}
-                                >
-                                  <ItemMedia>
-                                    <Icon
-                                      className={cn(
-                                        "size-4",
-                                        statusTextVariants({
-                                          variant: messageStatus,
-                                        })
-                                      )}
-                                    />
-                                  </ItemMedia>
-                                  <ItemContent>
-                                    <ItemTitle>{message.name}</ItemTitle>
-                                    <ItemDescription className="break-words">
-                                      {message.description}
-                                    </ItemDescription>
-                                  </ItemContent>
-                                  <ItemActions className="self-start">
-                                    <CollapsibleTrigger className="group/collapsible-trigger">
-                                      <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
-                                    </CollapsibleTrigger>
-                                  </ItemActions>
-                                </Item>
-
-                                <CollapsibleContent className="px-4 border-t-0 py-2 border border-accent rounded-b-md transition-[height] duration-200 ease-linear">
-                                  <ProcessMessage
-                                    message={message}
-                                    isLoading={isLoading}
-                                  />
-                                </CollapsibleContent>
-                              </Collapsible>
-                            </div>
-                          );
-                        })}
+                        <ActiveProcessMessage isLoading={isLoading} />
                       </TabsContent>
                     </div>
                   </div>
@@ -501,8 +469,8 @@ export default function ProcessTracePage() {
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        }
-      </div>
+        </div>
+      </ProcessingStepsFlowProvider>
     </div>
   );
 }
@@ -567,7 +535,7 @@ function StepTabTrigger({
         "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
         className,
         isLoading &&
-        "pointer-events-none animate-pulse !bg-accent !text-accent select-none",
+          "pointer-events-none animate-pulse !bg-accent !text-accent select-none",
         "[&:disabled]:pointer-events-none [&:disabled]:opacity-50 [&:disabled]:cursor-not-allowed"
       )}
       disabled={isLoading || !isPreviousStepCompleted}
