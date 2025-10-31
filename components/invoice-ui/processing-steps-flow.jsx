@@ -38,6 +38,7 @@ const nodeTypes = {
             type="target"
             position={Position.Top}
             handleClassName={cn(statusTextVariants({ variant: data.status }))}
+            isConnectable={false}
           />
         )}
         <BaseNode
@@ -68,6 +69,7 @@ const nodeTypes = {
             type="source"
             position={Position.Bottom}
             handleClassName={cn(statusTextVariants({ variant: data.status }))}
+            isConnectable={false}
           />
         )}
       </NodeStatusIndicator>
@@ -148,6 +150,7 @@ export const ProcessingStepsFlowProvider = ({ children, messages }) => {
           target: next.stepId,
           type: "processEdge",
           data: { status: message.status },
+          animated: true,
         });
       }
     });
