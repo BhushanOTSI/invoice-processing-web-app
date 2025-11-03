@@ -8,6 +8,7 @@ import React, {
   useImperativeHandle,
   useCallback,
   memo,
+  useMemo,
 } from "react";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -41,6 +42,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [zoomScale, setZoomScale] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [pageInput, setPageInput] = useState("1");
+  const [isManualScrolling, setIsManualScrolling] = useState(false);
+  const scrollTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -49,6 +52,20 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         import.meta.url
       ).toString();
     }
+
+    // Suppress annotation warnings by overriding console.warn for PDF worker
+    const originalWarn = console.warn;
+    console.warn = (...args) => {
+      const message = args.join(' ');
+      if (message.includes('AnnotationBorderStyle.setWidth - ignoring width')) {
+        return; // Suppress this specific warning
+      }
+      originalWarn.apply(console, args);
+    };
+
+    return () => {
+      console.warn = originalWarn;
+    };
   }, []);
 
   const resetPages = useCallback(() => {
@@ -60,6 +77,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   useEffect(() => {
     resetPages();
     setNumPages(0);
+    setIsManualScrolling(false);
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
   }, [fileUrl, resetPages]);
 
   // Sync zoom scale when current page changes
@@ -142,13 +163,24 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   }, []);
 
   const setPage = useCallback((pageNumber) => {
+    setIsManualScrolling(true);
     setCurrentPage(pageNumber);
     setPageInput(pageNumber.toString());
-    const pageElement = pageRefs.current.get(pageNumber);
 
+    // Clear any existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    const pageElement = pageRefs.current.get(pageNumber);
     if (pageElement) {
       pageElement.scrollIntoView({ behavior: "smooth", block: "start" });
     }
+
+    // Reset manual scrolling flag after a delay
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsManualScrolling(false);
+    }, 1000);
   }, []);
 
   const handlePreviousPage = useCallback(() => {
@@ -202,6 +234,30 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     []
   );
 
+  // Debounce function to limit frequent updates
+  const debounce = useCallback((func, wait) => {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }, []);
+
+  // Debounced function to update current page
+  const debouncedSetCurrentPage = useMemo(
+    () => debounce((pageNum) => {
+      if (!isManualScrolling) {
+        setCurrentPage(pageNum);
+        setPageInput(pageNum.toString());
+      }
+    }, 100),
+    [debounce, isManualScrolling]
+  );
+
   useEffect(() => {
     if (!containerRef.current || numPages === 0) return;
 
@@ -225,6 +281,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
           // Track the most visible page only for intersecting entries
           if (entry.isIntersecting && entry.intersectionRatio > maxIntersectionRatio) {
+            console.log("New most visible page candidate:", pageNum, "with ratio:", entry.intersectionRatio, entry.isIntersecting && entry.intersectionRatio > maxIntersectionRatio);
             maxIntersectionRatio = entry.intersectionRatio;
             mostVisiblePage = pageNum;
           }
@@ -232,8 +289,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
         // Update current page if a different page is most visible
         if (mostVisiblePage !== currentPage && maxIntersectionRatio > 0.5) {
-          setCurrentPage(mostVisiblePage);
-          setPageInput(mostVisiblePage.toString());
+          debouncedSetCurrentPage(mostVisiblePage);
         }
       },
       {
@@ -248,8 +304,14 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       if (el) observer.observe(el);
     });
 
-    return () => observer.disconnect();
-  }, [numPages]); // Removed currentPage dependency to prevent recreation
+    return () => {
+      observer.disconnect();
+      // Clear any pending timeouts
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [numPages, debouncedSetCurrentPage]); // Added debouncedSetCurrentPage to deps
 
   const PdfViewerHeader = () => (
     <div className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -351,10 +413,20 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         <div className="flex-1 overflow-hidden min-h-0 h-full">
           <ScrollArea
             className={cn(
-              "h-full w-full select-none touch-none",
-              zoomScale === 1 && "touch-pan-y"
+              "h-full w-full select-none",
+              zoomScale === 1 ? "touch-pan-y" : "touch-none"
             )}
             ref={containerRef}
+          // onScrollCapture={() => {
+          //   // Detect scroll events to manage manual scrolling state
+          //   setIsManualScrolling(true);
+          //   if (scrollTimeoutRef.current) {
+          //     clearTimeout(scrollTimeoutRef.current);
+          //   }
+          //   scrollTimeoutRef.current = setTimeout(() => {
+          //     setIsManualScrolling(false);
+          //   }, 300);
+          // }}
           >
             <Document
               file={fileUrl}
@@ -391,19 +463,19 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                           wheelDisabled: isAtDefaultZoom,
                           touchPadDisabled: false,
                           activationKeys: [],
-                          step: 0.05,
+                          step: 0.1,
                         }}
                         pinch={{
                           disabled: false,
-                          step: 0.05,
+                          step: 0.1,
                         }}
                         panning={{
                           disabled: isAtDefaultZoom,
-                          velocityDisabled: true,
+                          velocityDisabled: !isAtDefaultZoom,
                           lockAxisX: false,
-                          lockAxisY: false,
+                          lockAxisY: isAtDefaultZoom,
                           activationKeys: [],
-                          wheelPanning: false,
+                          wheelPanning: !isAtDefaultZoom,
                         }}
                         minScale={0.5}
                         maxScale={5}
@@ -416,6 +488,12 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                         centerOnInit={true}
                         centerZoomedOut={true}
                         smooth={true}
+                        alignmentAnimation={{
+                          disabled: false,
+                          sizeX: 100,
+                          sizeY: 100,
+                          velocityAlignmentTime: 200,
+                        }}
                         onZoom={(ref, event) => {
                           // Update zoom scale for the current page
                           if (pageNumber === currentPage && ref?.state?.scale) {
@@ -436,16 +514,20 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                         <TransformComponent
                           wrapperStyle={{
                             width: "100%",
+                            height: "100%",
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            touchAction: isAtDefaultZoom ? "auto" : "none",
+                            touchAction: isAtDefaultZoom ? "pan-y" : "none",
+                            overflow: "hidden",
                           }}
                           contentStyle={{
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            touchAction: isAtDefaultZoom ? "auto" : "none",
+                            touchAction: isAtDefaultZoom ? "pan-y" : "none",
+                            maxWidth: "100%",
+                            maxHeight: "100%",
                           }}
                         >
                           <Page
