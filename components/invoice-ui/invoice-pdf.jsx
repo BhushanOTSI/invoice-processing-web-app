@@ -477,12 +477,3 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
 InvoicePdf.displayName = "InvoicePdf";
 export default memo(InvoicePdf);
-
-export const PdfPreview = dynamic(() => import("./invoice-pdf"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex-1 justify-center items-center h-full flex flex-col">
-      <Spinner />
-    </div>
-  ),
-});

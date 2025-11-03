@@ -19,7 +19,7 @@ export function DataEdge({
   style,
   targetPosition,
   targetX,
-  targetY
+  targetY,
 }) {
   const nodeData = useStore((state) => state.nodeLookup.get(source)?.data);
   const [edgePath, labelX, labelY] = getPath({
@@ -59,7 +59,8 @@ export function DataEdge({
         <EdgeLabelRenderer>
           <div
             className="absolute rounded border bg-background px-1 text-foreground"
-            style={{ transform }}>
+            style={{ transform }}
+          >
             <pre className="text-xs">{label}</pre>
           </div>
         </EdgeLabelRenderer>
@@ -79,7 +80,7 @@ function getPath({
   targetX,
   targetY,
   sourcePosition,
-  targetPosition
+  targetPosition,
 }) {
   switch (type) {
     case "bezier":

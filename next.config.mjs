@@ -46,16 +46,17 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://unpkg.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               `img-src ${allowedSources}`,
               `connect-src 'self' https: wss: ${s3BucketUrl}${
                 apiUrl ? ` ${apiUrl}` : ""
-              }`,
+              } https://unpkg.com`,
               `media-src ${allowedSources}`,
               `object-src 'self' ${s3BucketUrl}`,
               `frame-src 'self' ${s3BucketUrl}`,
+              "worker-src 'self' blob: https://unpkg.com",
               "base-uri 'self'",
               `form-action 'self'${apiUrl ? ` ${apiUrl}` : ""}`,
               "frame-ancestors 'none'",
@@ -106,6 +107,22 @@ const nextConfig = {
         },
       ],
     });
+
+    // Handle PDF.js worker files
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+
+    // Ensure PDF.js workers are properly handled
+    config.module.rules.push({
+      test: /pdf\.worker\.(min\.)?js/,
+      type: "asset/resource",
+      generator: {
+        filename: "static/worker/[hash][ext][query]",
+      },
+    });
+
     return config;
   },
   turbopack: {

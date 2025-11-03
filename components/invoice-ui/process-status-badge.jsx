@@ -144,7 +144,7 @@ export function ProcessStatusBadge({
       variant="outline"
       className={cn("font-semibold", variants({ variant: type }), className)}
     >
-      {Icon && <Icon />}{" "}
+      {Icon && <Icon />}
       <span>
         {type}
         {isScheduled && (

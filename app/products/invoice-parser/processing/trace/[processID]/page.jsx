@@ -63,7 +63,25 @@ import {
   LinkIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PdfPreview } from "@/components/invoice-ui/invoice-pdf";
+import {
+  ActiveProcessMessage,
+  ProcessingStepsFlow,
+  ProcessingStepsFlowProvider,
+  useProcessingStepsFlow,
+} from "@/components/invoice-ui/processing-steps-flow";
+import dynamic from "next/dynamic";
+
+const PdfPreview = dynamic(
+  () => import("@/components/invoice-ui/invoice-pdf"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 justify-center items-center h-full flex flex-col">
+        <Spinner />
+      </div>
+    ),
+  }
+);
 
 const convertToMessage = (data) => {
   return {
@@ -280,8 +298,8 @@ export default function ProcessTracePage() {
           />
         )}
       </div>
-      <div className={cn("@container overflow-hidden", containerHeight)}>
-        {
+      <ProcessingStepsFlowProvider messages={groupedTraceMessages["step-3"]}>
+        <div className={cn("@container overflow-hidden", containerHeight)}>
           <ResizablePanelGroup
             direction="horizontal"
             className="h-full"
@@ -301,7 +319,11 @@ export default function ProcessTracePage() {
                 {s3PdfUrl && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      {activeTab === "step-3" ? (
+                        <ProcessingStepsFlow />
+                      ) : (
+                        <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      )}
                     </div>
                   </div>
                 )}
@@ -494,6 +516,7 @@ export default function ProcessTracePage() {
                             </div>
                           );
                         })}
+                        <ActiveProcessMessage isLoading={isLoading} />
                       </TabsContent>
                     </div>
                   </div>
@@ -501,8 +524,8 @@ export default function ProcessTracePage() {
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        }
-      </div>
+        </div>
+      </ProcessingStepsFlowProvider>
     </div>
   );
 }
