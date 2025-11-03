@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
 "use client";
 
 import React, {
@@ -21,10 +17,6 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ScrollArea } from "../ui/scroll-area";
-<<<<<<< HEAD
-import dynamic from "next/dynamic";
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,10 +44,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [pageInput, setPageInput] = useState("1");
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   useEffect(() => {
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
       pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -80,10 +68,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages: (n) => setNumPages(n),
   }));
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   useEffect(() => {
     if (!containerRef.current) return;
     const resizeObserver = new ResizeObserver((entries) => {
@@ -105,10 +89,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages(0);
   }, [resetPages]);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   const handleZoomIn = useCallback(() => {
     if (transformRef.current && zoomScale < 5) {
       transformRef.current.zoomIn(0.25);
@@ -127,10 +107,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     }
   }, []);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   const handleRotate = useCallback(() => {
     setRotation((prev) => (prev + 90) % 360);
   }, []);
@@ -147,33 +123,13 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
   const handlePreviousPage = useCallback(() => {
     if (currentPage > 1) {
-<<<<<<< HEAD
-      const newPage = currentPage - 1;
-      setCurrentPage(newPage);
-      setPageInput(newPage.toString());
-      const pageElement = pageRefs.current.get(newPage);
-      if (pageElement) {
-        pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-=======
       setPage(currentPage - 1);
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
     }
   }, [currentPage, setPage]);
 
   const handleNextPage = useCallback(() => {
     if (currentPage < numPages) {
-<<<<<<< HEAD
-      const newPage = currentPage + 1;
-      setCurrentPage(newPage);
-      setPageInput(newPage.toString());
-      const pageElement = pageRefs.current.get(newPage);
-      if (pageElement) {
-        pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-=======
       setPage(currentPage + 1);
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
     }
   }, [currentPage, numPages, setPage]);
 
@@ -249,10 +205,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     return () => observer.disconnect();
   }, [numPages, currentPage]);
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   const PdfViewerHeader = () => (
     <div className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 shadow-sm">
       <div className="flex items-center gap-2">
