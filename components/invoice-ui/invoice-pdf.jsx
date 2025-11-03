@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
 "use client";
 
 import React, {
@@ -18,7 +21,10 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { Document, Page, pdfjs } from "react-pdf";
 import { ScrollArea } from "../ui/scroll-area";
+<<<<<<< HEAD
 import dynamic from "next/dynamic";
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +37,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  MoreHorizontal
 } from "lucide-react";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
@@ -47,7 +52,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [pageInput, setPageInput] = useState("1");
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   useEffect(() => {
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
       pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -72,7 +80,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages: (n) => setNumPages(n),
   }));
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   useEffect(() => {
     if (!containerRef.current) return;
     const resizeObserver = new ResizeObserver((entries) => {
@@ -94,7 +105,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages(0);
   }, [resetPages]);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   const handleZoomIn = useCallback(() => {
     if (transformRef.current && zoomScale < 5) {
       transformRef.current.zoomIn(0.25);
@@ -113,13 +127,27 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     }
   }, []);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   const handleRotate = useCallback(() => {
-    setRotation(prev => (prev + 90) % 360);
+    setRotation((prev) => (prev + 90) % 360);
+  }, []);
+
+  const setPage = useCallback((pageNumber) => {
+    setCurrentPage(pageNumber);
+    setPageInput(pageNumber.toString());
+    const pageElement = pageRefs.current.get(pageNumber);
+
+    if (pageElement) {
+      pageElement.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   }, []);
 
   const handlePreviousPage = useCallback(() => {
     if (currentPage > 1) {
+<<<<<<< HEAD
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
       setPageInput(newPage.toString());
@@ -127,11 +155,15 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       if (pageElement) {
         pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+=======
+      setPage(currentPage - 1);
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
     }
-  }, [currentPage]);
+  }, [currentPage, setPage]);
 
   const handleNextPage = useCallback(() => {
     if (currentPage < numPages) {
+<<<<<<< HEAD
       const newPage = currentPage + 1;
       setCurrentPage(newPage);
       setPageInput(newPage.toString());
@@ -139,26 +171,28 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       if (pageElement) {
         pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+=======
+      setPage(currentPage + 1);
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
     }
-  }, [currentPage, numPages]);
+  }, [currentPage, numPages, setPage]);
 
   const handlePageInputChange = useCallback((e) => {
     setPageInput(e.target.value);
   }, []);
 
-  const handlePageInputSubmit = useCallback((e) => {
-    e.preventDefault();
-    const pageNum = parseInt(pageInput, 10);
-    if (pageNum >= 1 && pageNum <= numPages) {
-      setCurrentPage(pageNum);
-      const pageElement = pageRefs.current.get(pageNum);
-      if (pageElement) {
-        pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handlePageInputSubmit = useCallback(
+    (e) => {
+      e.preventDefault();
+      const pageNum = parseInt(pageInput, 10);
+      if (pageNum >= 1 && pageNum <= numPages) {
+        setPage(pageNum);
+      } else {
+        setPageInput(currentPage.toString());
       }
-    } else {
-      setPageInput(currentPage.toString());
-    }
-  }, [pageInput, numPages, currentPage]);
+    },
+    [pageInput, numPages, currentPage, setPage]
+  );
 
   const registerPageRef = useCallback(
     (pageNumber) => (node) => {
@@ -171,7 +205,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     []
   );
 
-  // IntersectionObserver to lazy-render visible pages
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new IntersectionObserver(
@@ -216,10 +249,12 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     return () => observer.disconnect();
   }, [numPages, currentPage]);
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23946d76cb6ce9990f9e48946f504a4ae46de837
   const PdfViewerHeader = () => (
     <div className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 shadow-sm">
-      {/* Left side - Page Navigation */}
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -232,7 +267,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           <ChevronLeft className="h-4 w-4" />
         </Button>
 
-        <form onSubmit={handlePageInputSubmit} className="flex items-center gap-1">
+        <form
+          onSubmit={handlePageInputSubmit}
+          className="flex items-center gap-1"
+        >
           <Input
             type="text"
             value={pageInput}
@@ -241,7 +279,9 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             onBlur={handlePageInputSubmit}
             title="Enter page number"
           />
-          <span className="text-sm text-muted-foreground font-medium">/ {numPages}</span>
+          <span className="text-sm text-muted-foreground font-medium">
+            / {numPages}
+          </span>
         </form>
 
         <Button
@@ -256,7 +296,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         </Button>
       </div>
 
-      {/* Center - Zoom Controls */}
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
@@ -268,7 +307,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         >
           <ZoomOut className="h-4 w-4" />
         </Button>
-
         <Badge
           variant="secondary"
           className="px-3 py-1 text-xs font-mono cursor-pointer hover:bg-secondary/80 transition-colors min-w-[65px] text-center border"
@@ -277,7 +315,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         >
           {(zoomScale * 100).toFixed(0)}%
         </Badge>
-
         <Button
           variant="outline"
           size="sm"
@@ -287,8 +324,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           title="Zoom In (25%)"
         >
           <ZoomIn className="h-4 w-4" />
-        </Button>        <Separator orientation="vertical" className="h-6" />
-
+        </Button>{" "}
+        <Separator orientation="vertical" className="h-6" />
         <Button
           variant="outline"
           size="sm"
@@ -300,52 +337,35 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         </Button>
       </div>
 
-
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search in PDF..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-8 w-44 pl-7 text-sm border focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+      </div>
     </div>
   );
 
   return (
     <div
-      className={cn("h-full w-full flex flex-col", className)}
-      style={{
-        overflow: 'hidden',
-        height: '100%',
-        maxHeight: '100%'
-      }}
+      className={cn("h-full w-full flex flex-col overflow-hidden", className)}
     >
-      {/* PDF Viewer Header */}
       <PdfViewerHeader />
 
-      {/* PDF Content */}
-      <div
-        className="flex-1 w-full flex flex-row"
-        style={{
-          overflow: 'hidden',
-          flex: 1,
-          minHeight: 0
-        }}
-      >
-        <div
-          className="flex-1"
-          style={{
-            overflow: 'hidden',
-            position: 'relative',
-            height: '100%'
-          }}
-        >
+      <div className="flex-1 w-full flex flex-row overflow-hidden min-h-0">
+        <div className="flex-1 overflow-hidden min-h-0 h-full">
           <ScrollArea
-            className="h-full w-full"
+            className={cn(
+              "h-full w-full select-none touch-none",
+              zoomScale === 1 && "touch-pan-y"
+            )}
             ref={containerRef}
-          // style={{
-          //   height: '100%',
-          //   width: '100%',
-
-          //   touchAction: zoomScale === 1 ? "pan-y" : "none",
-          //   WebkitUserSelect: "none",
-          //   MozUserSelect: "none",
-          //   msUserSelect: "none",
-          //   userSelect: "none",
-          // }}
           >
             <Document
               file={fileUrl}
@@ -366,7 +386,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
               {Array.from({ length: numPages }, (_, index) => {
                 const pageNumber = index + 1;
 
-                // Conditionally disable wheel & panning when scale == 1
                 const isAtDefaultZoom = zoomScale === 1;
 
                 return (
@@ -379,11 +398,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                     {visiblePages.has(pageNumber) && (
                       <TransformWrapper
                         ref={transformRef}
-                        // When unzoomed, disable wheel and panning so outer scroll works.
                         wheel={{
-                          wheelDisabled: isAtDefaultZoom, // true when scale === 1
+                          wheelDisabled: isAtDefaultZoom,
                           touchPadDisabled: false,
-                          activationKeys: [], // no modifier required for touchpad pinch when enabled
+                          activationKeys: [],
                           step: 0.05,
                         }}
                         pinch={{
@@ -391,7 +409,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                           step: 0.05,
                         }}
                         panning={{
-                          disabled: isAtDefaultZoom, // disable panning when unzoomed
+                          disabled: isAtDefaultZoom,
                           velocityDisabled: true,
                           lockAxisX: false,
                           lockAxisY: false,
@@ -420,7 +438,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            // When unzoomed we want the transform child to allow default touch actions
                             touchAction: isAtDefaultZoom ? "auto" : "none",
                           }}
                           contentStyle={{

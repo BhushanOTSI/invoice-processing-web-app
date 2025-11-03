@@ -461,61 +461,6 @@ export default function ProcessTracePage() {
                         />
                       </TabsContent>
                       <TabsContent value="step-3" className="space-y-4 h-full">
-                        {groupedTraceMessages["step-3"].map((message) => {
-                          const messageStatus = message.status?.toLowerCase();
-                          const Icon =
-                            ProcessIcons[
-                            isMainProcessCompleted &&
-                              messageStatus === PROCESS_STATUS.PROCESSING
-                              ? PROCESS_STATUS.COMPLETED
-                              : messageStatus
-                            ];
-
-                          return (
-                            <div key={message.id}>
-                              <Collapsible
-                                defaultOpen={true}
-                                className="group/collapsible"
-                              >
-                                <Item
-                                  variant="muted"
-                                  className={cn(
-                                    "bg-accent group-data-[state=open]/collapsible:rounded-b-none"
-                                  )}
-                                >
-                                  <ItemMedia>
-                                    <Icon
-                                      className={cn(
-                                        "size-4",
-                                        statusTextVariants({
-                                          variant: messageStatus,
-                                        })
-                                      )}
-                                    />
-                                  </ItemMedia>
-                                  <ItemContent>
-                                    <ItemTitle>{message.name}</ItemTitle>
-                                    <ItemDescription className="break-words">
-                                      {message.description}
-                                    </ItemDescription>
-                                  </ItemContent>
-                                  <ItemActions className="self-start">
-                                    <CollapsibleTrigger className="group/collapsible-trigger">
-                                      <ChevronDownIcon className="size-4 group-data-[state=open]/collapsible-trigger:rotate-180 transition-transform duration-200" />
-                                    </CollapsibleTrigger>
-                                  </ItemActions>
-                                </Item>
-
-                                <CollapsibleContent className="px-4 border-t-0 py-2 border border-accent rounded-b-md transition-[height] duration-200 ease-linear">
-                                  <ProcessMessage
-                                    message={message}
-                                    isLoading={isLoading}
-                                  />
-                                </CollapsibleContent>
-                              </Collapsible>
-                            </div>
-                          );
-                        })}
                         <ActiveProcessMessage isLoading={isLoading} />
                       </TabsContent>
                     </div>
