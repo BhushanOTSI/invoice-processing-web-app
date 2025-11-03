@@ -1,4 +1,4 @@
-// invoice-pdf.jsx
+
 "use client";
 
 import React, {
@@ -47,7 +47,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [pageInput, setPageInput] = useState("1");
 
-  // pdf.worker setup
+
   useEffect(() => {
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
       pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -72,7 +72,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages: (n) => setNumPages(n),
   }));
 
-  // Observe container width to set PDF page width
+
   useEffect(() => {
     if (!containerRef.current) return;
     const resizeObserver = new ResizeObserver((entries) => {
@@ -94,7 +94,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages(0);
   }, [resetPages]);
 
-  // Zoom control handlers
+
   const handleZoomIn = useCallback(() => {
     if (transformRef.current && zoomScale < 5) {
       transformRef.current.zoomIn(0.25);
@@ -113,18 +113,16 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     }
   }, []);
 
-  // Rotation handler
+
   const handleRotate = useCallback(() => {
     setRotation(prev => (prev + 90) % 360);
   }, []);
 
-  // Page navigation handlers
   const handlePreviousPage = useCallback(() => {
     if (currentPage > 1) {
       const newPage = currentPage - 1;
       setCurrentPage(newPage);
       setPageInput(newPage.toString());
-      // Scroll to page
       const pageElement = pageRefs.current.get(newPage);
       if (pageElement) {
         pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -137,7 +135,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       const newPage = currentPage + 1;
       setCurrentPage(newPage);
       setPageInput(newPage.toString());
-      // Scroll to page
       const pageElement = pageRefs.current.get(newPage);
       if (pageElement) {
         pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -219,14 +216,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     return () => observer.disconnect();
   }, [numPages, currentPage]);
 
-  // === KEY IDEA ===
-  // When zoomScale === 1:
-  //   - let outer container handle vertical scroll
-  //   - disable TransformWrapper's wheel and panning (so it doesn't intercept)
-  // When zoomScale > 1:
-  //   - enable wheel/panning so user can pan/zoom the page
 
-  // PDF Viewer Header Component
   const PdfViewerHeader = () => (
     <div className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 shadow-sm">
       {/* Left side - Page Navigation */}
@@ -310,23 +300,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         </Button>
       </div>
 
-      {/* Right side - Search */}
-      <div className="flex items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search in PDF..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8 w-44 pl-7 text-sm border focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-      </div>
+
     </div>
   );
 
-  // Note: we set touchAction on the outer container so browser knows vertical pan is allowed when unzoomed
   return (
     <div
       className={cn("h-full w-full flex flex-col", className)}
@@ -345,7 +322,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         style={{
           overflow: 'hidden',
           flex: 1,
-          minHeight: 0 // This is crucial for flex children with overflow
+          minHeight: 0
         }}
       >
         <div
@@ -362,7 +339,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             style={{
               height: '100%',
               width: '100%',
-              // allow vertical scrolling by default when unzoomed; block when zoomed
+
               touchAction: zoomScale === 1 ? "pan-y" : "none",
               WebkitUserSelect: "none",
               MozUserSelect: "none",
