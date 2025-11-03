@@ -289,7 +289,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* <div className="flex items-center gap-2">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -300,7 +300,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             className="h-8 w-44 pl-7 text-sm border focus:ring-2 focus:ring-primary/20"
           />
         </div>
-      </div>
+      </div> */}
     </div>
   );
 
