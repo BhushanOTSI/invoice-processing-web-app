@@ -336,16 +336,16 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           <ScrollArea
             className="h-full w-full"
             ref={containerRef}
-            style={{
-              height: '100%',
-              width: '100%',
+          // style={{
+          //   height: '100%',
+          //   width: '100%',
 
-              touchAction: zoomScale === 1 ? "pan-y" : "none",
-              WebkitUserSelect: "none",
-              MozUserSelect: "none",
-              msUserSelect: "none",
-              userSelect: "none",
-            }}
+          //   touchAction: zoomScale === 1 ? "pan-y" : "none",
+          //   WebkitUserSelect: "none",
+          //   MozUserSelect: "none",
+          //   msUserSelect: "none",
+          //   userSelect: "none",
+          // }}
           >
             <Document
               file={fileUrl}
