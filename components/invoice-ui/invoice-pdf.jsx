@@ -28,12 +28,11 @@ import {
   RotateCw,
   ChevronLeft,
   ChevronRight,
-  Search,
 } from "lucide-react";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
-  const transformRef = useRef(null);
+  const transformRefs = useRef(new Map());
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageWidths, setPageWidths] = useState(600);
@@ -41,7 +40,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const pageRefs = useRef(new Map());
   const [zoomScale, setZoomScale] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
   const [pageInput, setPageInput] = useState("1");
 
   useEffect(() => {
@@ -55,6 +53,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
   const resetPages = useCallback(() => {
     pageRefs.current.clear();
+    transformRefs.current.clear();
     setVisiblePages(new Set());
   }, []);
 
@@ -62,6 +61,17 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     resetPages();
     setNumPages(0);
   }, [fileUrl, resetPages]);
+
+  // Sync zoom scale when current page changes
+  useEffect(() => {
+    const transformRef = transformRefs.current.get(currentPage);
+    if (transformRef && transformRef.instance) {
+      const currentScale = transformRef.instance.transformState.scale;
+      if (currentScale !== zoomScale) {
+        setZoomScale(currentScale);
+      }
+    }
+  }, [currentPage, zoomScale]);
 
   useImperativeHandle(ref, () => ({
     getNumPages: () => numPages,
@@ -90,22 +100,25 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   }, [resetPages]);
 
   const handleZoomIn = useCallback(() => {
-    if (transformRef.current && zoomScale < 5) {
-      transformRef.current.zoomIn(0.25);
+    const transformRef = transformRefs.current.get(currentPage);
+    if (transformRef && zoomScale < 5) {
+      transformRef.zoomIn(0.25);
     }
-  }, [zoomScale]);
+  }, [zoomScale, currentPage]);
 
   const handleZoomOut = useCallback(() => {
-    if (transformRef.current && zoomScale > 0.5) {
-      transformRef.current.zoomOut(0.25);
+    const transformRef = transformRefs.current.get(currentPage);
+    if (transformRef && zoomScale > 0.5) {
+      transformRef.zoomOut(0.25);
     }
-  }, [zoomScale]);
+  }, [zoomScale, currentPage]);
 
   const handleResetZoom = useCallback(() => {
-    if (transformRef.current) {
-      transformRef.current.resetTransform();
+    const transformRef = transformRefs.current.get(currentPage);
+    if (transformRef) {
+      transformRef.resetTransform();
     }
-  }, []);
+  }, [currentPage]);
 
   const handleRotate = useCallback(() => {
     setRotation((prev) => (prev + 90) % 360);
@@ -161,8 +174,20 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     []
   );
 
+  const registerTransformRef = useCallback(
+    (pageNumber) => (ref) => {
+      if (!ref) {
+        transformRefs.current.delete(pageNumber);
+        return;
+      }
+      transformRefs.current.set(pageNumber, ref);
+    },
+    []
+  );
+
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || numPages === 0) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         let mostVisiblePage = currentPage;
@@ -170,18 +195,21 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
         entries.forEach((entry) => {
           const pageNum = Number(entry.target.getAttribute("data-page"));
-          if (entry.isIntersecting) {
-            setVisiblePages((prev) => {
-              const next = new Set(prev);
-              next.add(pageNum);
-              return next;
-            });
 
-            // Track the most visible page
-            if (entry.intersectionRatio > maxIntersectionRatio) {
-              maxIntersectionRatio = entry.intersectionRatio;
-              mostVisiblePage = pageNum;
+          setVisiblePages((prev) => {
+            const next = new Set(prev);
+            if (entry.isIntersecting) {
+              next.add(pageNum);
+            } else {
+              next.delete(pageNum);
             }
+            return next;
+          });
+
+          // Track the most visible page only for intersecting entries
+          if (entry.isIntersecting && entry.intersectionRatio > maxIntersectionRatio) {
+            maxIntersectionRatio = entry.intersectionRatio;
+            mostVisiblePage = pageNum;
           }
         });
 
@@ -198,12 +226,13 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       }
     );
 
+    // Observe all existing page elements
     pageRefs.current.forEach((el) => {
       if (el) observer.observe(el);
     });
 
     return () => observer.disconnect();
-  }, [numPages, currentPage]);
+  }, [numPages]); // Removed currentPage dependency to prevent recreation
 
   const PdfViewerHeader = () => (
     <div className="sticky top-0 z-50 flex items-center justify-between p-3 border-b bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/60 shadow-sm">
@@ -289,18 +318,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         </Button>
       </div>
 
-      {/* <div className="flex items-center gap-2">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search in PDF..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-8 w-44 pl-7 text-sm border focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-      </div> */}
+
     </div>
   );
 
@@ -349,7 +367,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                   >
                     {visiblePages.has(pageNumber) && (
                       <TransformWrapper
-                        ref={transformRef}
+                        ref={registerTransformRef(pageNumber)}
                         wheel={{
                           wheelDisabled: isAtDefaultZoom,
                           touchPadDisabled: false,
@@ -380,8 +398,11 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                         centerZoomedOut={true}
                         smooth={true}
                         onZoomChange={(payload) => {
-                          const currentScale = payload?.state?.scale ?? 1;
-                          setZoomScale(currentScale);
+                          // Only update zoom scale if this is the current page
+                          if (pageNumber === currentPage) {
+                            const currentScale = payload?.state?.scale ?? 1;
+                            setZoomScale(currentScale);
+                          }
                         }}
                       >
                         <TransformComponent
