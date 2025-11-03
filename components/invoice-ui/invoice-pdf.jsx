@@ -65,13 +65,25 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   // Sync zoom scale when current page changes
   useEffect(() => {
     const transformRef = transformRefs.current.get(currentPage);
-    if (transformRef && transformRef.instance) {
-      const currentScale = transformRef.instance.transformState.scale;
-      if (currentScale !== zoomScale) {
-        setZoomScale(currentScale);
+
+    if (transformRef) {
+      let currentScale = 1;
+
+      if (transformRef.state?.scale) {
+        currentScale = transformRef.state.scale;
+      } else if (transformRef.instance?.transformState?.scale) {
+        currentScale = transformRef.instance.transformState.scale;
+      } else if (transformRef.getContext && transformRef.getContext()?.transformState?.scale) {
+        currentScale = transformRef.getContext().transformState.scale;
       }
+
+      setZoomScale(currentScale);
+    } else {
+      setZoomScale(1);
     }
-  }, [currentPage, zoomScale]);
+  }, [currentPage]);
+
+
 
   useImperativeHandle(ref, () => ({
     getNumPages: () => numPages,
@@ -102,6 +114,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const handleZoomIn = useCallback(() => {
     const transformRef = transformRefs.current.get(currentPage);
     if (transformRef && zoomScale < 5) {
+      const newZoomLevel = Math.min(zoomScale * 1.25, 5);
+      setZoomScale(newZoomLevel);
       transformRef.zoomIn(0.25);
     }
   }, [zoomScale, currentPage]);
@@ -109,6 +123,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const handleZoomOut = useCallback(() => {
     const transformRef = transformRefs.current.get(currentPage);
     if (transformRef && zoomScale > 0.5) {
+      const newZoomLevel = Math.max(zoomScale / 1.25, 0.5);
+      setZoomScale(newZoomLevel);
       transformRef.zoomOut(0.25);
     }
   }, [zoomScale, currentPage]);
@@ -116,6 +132,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const handleResetZoom = useCallback(() => {
     const transformRef = transformRefs.current.get(currentPage);
     if (transformRef) {
+      setZoomScale(1);
       transformRef.resetTransform();
     }
   }, [currentPage]);
@@ -288,6 +305,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         >
           <ZoomOut className="h-4 w-4" />
         </Button>
+
         <Badge
           variant="secondary"
           className="px-3 py-1 text-xs font-mono cursor-pointer hover:bg-secondary/80 transition-colors min-w-[65px] text-center border"
@@ -296,6 +314,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
         >
           {(zoomScale * 100).toFixed(0)}%
         </Badge>
+
         <Button
           variant="outline"
           size="sm"
@@ -305,8 +324,10 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           title="Zoom In (25%)"
         >
           <ZoomIn className="h-4 w-4" />
-        </Button>{" "}
+        </Button>
+
         <Separator orientation="vertical" className="h-6" />
+
         <Button
           variant="outline"
           size="sm"
@@ -317,8 +338,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           <RotateCw className="h-4 w-4" />
         </Button>
       </div>
-
-
     </div>
   );
 
@@ -397,11 +416,20 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                         centerOnInit={true}
                         centerZoomedOut={true}
                         smooth={true}
-                        onZoomChange={(payload) => {
-                          // Only update zoom scale if this is the current page
-                          if (pageNumber === currentPage) {
-                            const currentScale = payload?.state?.scale ?? 1;
+                        onZoom={(ref, event) => {
+                          // Update zoom scale for the current page
+                          if (pageNumber === currentPage && ref?.state?.scale) {
+                            const currentScale = ref.state.scale;
                             setZoomScale(currentScale);
+                          }
+                        }}
+                        onPanning={(ref, event) => {
+                          // Also update on panning as it might affect zoom
+                          if (pageNumber === currentPage && ref?.state?.scale) {
+                            const currentScale = ref.state.scale;
+                            if (Math.abs(zoomScale - currentScale) > 0.001) {
+                              setZoomScale(currentScale);
+                            }
                           }
                         }}
                       >
