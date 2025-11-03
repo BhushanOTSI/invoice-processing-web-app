@@ -44,6 +44,21 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [pageInput, setPageInput] = useState("1");
   const [isManualScrolling, setIsManualScrolling] = useState(false);
   const scrollTimeoutRef = useRef(null);
+  const lastTapRef = useRef(null);
+
+  // Function to sync zoom across all visible pages
+  const syncZoomToAllPages = useCallback((targetScale, centerPoint) => {
+    visiblePages.forEach(pageNum => {
+      const transformRef = transformRefs.current.get(pageNum);
+      if (transformRef && pageNum !== currentPage) {
+        transformRef.setTransform(
+          transformRef.state.positionX,
+          transformRef.state.positionY,
+          targetScale
+        );
+      }
+    });
+  }, [visiblePages, currentPage]);
 
   useEffect(() => {
     if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -137,7 +152,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     if (transformRef && zoomScale < 5) {
       const newZoomLevel = Math.min(zoomScale * 1.25, 5);
       setZoomScale(newZoomLevel);
-      transformRef.zoomIn(0.25);
+      transformRef.zoomIn(0.2);
     }
   }, [zoomScale, currentPage]);
 
@@ -146,7 +161,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     if (transformRef && zoomScale > 0.5) {
       const newZoomLevel = Math.max(zoomScale / 1.25, 0.5);
       setZoomScale(newZoomLevel);
-      transformRef.zoomOut(0.25);
+      transformRef.zoomOut(0.2);
     }
   }, [zoomScale, currentPage]);
 
@@ -156,9 +171,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       setZoomScale(1);
       transformRef.resetTransform();
     }
-  }, [currentPage]);
-
-  const handleRotate = useCallback(() => {
+  }, [currentPage]); const handleRotate = useCallback(() => {
     setRotation((prev) => (prev + 90) % 360);
   }, []);
 
@@ -415,19 +428,12 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
           <ScrollArea
             className={cn(
               "h-full w-full select-none",
-              zoomScale === 1 ? "touch-pan-y" : "touch-none"
+              zoomScale <= 1 ? "touch-pan-y" : "touch-none"
             )}
             ref={containerRef}
-          // onScrollCapture={() => {
-          //   // Detect scroll events to manage manual scrolling state
-          //   setIsManualScrolling(true);
-          //   if (scrollTimeoutRef.current) {
-          //     clearTimeout(scrollTimeoutRef.current);
-          //   }
-          //   scrollTimeoutRef.current = setTimeout(() => {
-          //     setIsManualScrolling(false);
-          //   }, 300);
-          // }}
+            style={{
+              overflow: zoomScale > 1 ? 'hidden' : 'auto'
+            }}
           >
             <Document
               file={fileUrl}
@@ -448,8 +454,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
               {Array.from({ length: numPages }, (_, index) => {
                 const pageNumber = index + 1;
 
-                const isAtDefaultZoom = zoomScale === 1;
-
                 return (
                   <div
                     key={pageNumber}
@@ -460,19 +464,19 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                     {visiblePages.has(pageNumber) && (
                       <TransformWrapper
                         ref={registerTransformRef(pageNumber)}
-                        // When unzoomed, disable wheel and panning so outer scroll works.
+                        // Enhanced zoom configuration
                         wheel={{
-                          wheelDisabled: isAtDefaultZoom, // true when scale === 1
-                          touchPadDisabled: false,
-                          activationKeys: [], // no modifier required for touchpad pinch when enabled
-                          step: 0.05,
+                          wheelDisabled: zoomScale <= 1, // Allow wheel events when at default zoom for scrolling
+                          touchPadDisabled: false, // Always allow touchpad gestures
+                          activationKeys: [],
+                          step: 0.1, // Smoother zoom steps
                         }}
                         pinch={{
-                          disabled: false,
+                          disabled: false, // Enable pinch to zoom
                           step: 0.05,
                         }}
                         panning={{
-                          disabled: isAtDefaultZoom, // disable panning when unzoomed
+                          disabled: zoomScale <= 1, // Allow panning only when zoomed in
                           velocityDisabled: true,
                           lockAxisX: false,
                           lockAxisY: false,
@@ -483,27 +487,57 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                         maxScale={5}
                         doubleClick={{
                           disabled: false,
-                          step: 0.7,
-                          mode: "zoomIn",
+                          step: 1, // Double tap zooms to 2x or resets to 1x
+                          mode: "zoomToPoint",
                         }}
                         limitToBounds={true}
                         centerOnInit={true}
                         centerZoomedOut={true}
                         smooth={true}
                         onZoomChange={(payload) => {
-                          // Update zoom scale for the current page
+                          // Update zoom scale and sync to other pages
+                          const currentScale = payload?.state?.scale ?? 1;
                           if (pageNumber === currentPage) {
-                            const currentScale = payload?.state?.scale ?? 1;
                             setZoomScale(currentScale);
+                            // Sync zoom to other visible pages (optional)
+                            // syncZoomToAllPages(currentScale);
                           }
                         }}
                         onPanning={(ref, event) => {
-                          // Also update on panning as it might affect zoom
+                          // Update zoom scale if it changes during panning
                           if (pageNumber === currentPage && ref?.state?.scale) {
                             const currentScale = ref.state.scale;
-                            if (Math.abs(zoomScale - currentScale) > 0.001) {
+                            if (Math.abs(zoomScale - currentScale) > 0.01) {
                               setZoomScale(currentScale);
                             }
+                          }
+                        }}
+                        onPinchingStart={() => {
+                          // Prevent scrolling during pinch
+                          setIsManualScrolling(true);
+                        }}
+                        onPinchingStop={(ref) => {
+                          // Re-enable scrolling after pinch and update zoom
+                          setIsManualScrolling(false);
+                          if (pageNumber === currentPage && ref?.state?.scale) {
+                            setZoomScale(ref.state.scale);
+                          }
+                        }}
+                        onDoubleClick={(ref, event) => {
+                          // Enhanced double tap: cycle between 1x, 2x, and fit
+                          const currentScale = ref?.state?.scale ?? 1;
+                          let targetScale;
+
+                          if (currentScale < 1.5) {
+                            targetScale = 2; // Zoom to 2x
+                          } else if (currentScale < 2.5) {
+                            targetScale = 3; // Zoom to 3x
+                          } else {
+                            targetScale = 1; // Reset to 1x
+                          }
+
+                          if (pageNumber === currentPage) {
+                            setZoomScale(targetScale);
                           }
                         }}
                       >
@@ -513,14 +547,14 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            // When unzoomed we want the transform child to allow default touch actions
-                            touchAction: isAtDefaultZoom ? "auto" : "none",
+                            // Dynamic touch action based on zoom level
+                            touchAction: zoomScale <= 1 ? "pan-y pinch-zoom" : "pinch-zoom pan-x pan-y",
                           }}
                           contentStyle={{
                             display: "flex",
                             justifyContent: "center",
                             alignItems: "center",
-                            touchAction: isAtDefaultZoom ? "auto" : "none",
+                            touchAction: zoomScale <= 1 ? "pan-y pinch-zoom" : "pinch-zoom pan-x pan-y",
                           }}
                         >
                           <Page
