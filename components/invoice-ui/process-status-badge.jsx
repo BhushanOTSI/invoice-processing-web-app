@@ -57,21 +57,21 @@ export const statusBackgroundVariants = cva("", {
 export const statusTextVariants = cva("", {
   variants: {
     variant: {
-      processing: "text-blue-700",
-      pending: "text-yellow-700",
-      completed: "text-green-700",
-      failed: "text-red-700",
-      cancelled: "text-gray-600",
-      scheduled: "text-purple-700",
-      partially_completed: "text-orange-700",
+      processing: "text-blue-900",
+      pending: "text-yellow-900",
+      completed: "text-green-900",
+      failed: "text-red-900",
+      cancelled: "text-gray-900",
+      scheduled: "text-purple-900",
+      partially_completed: "text-orange-900",
       default: "text-accent-foreground",
-      queued: "text-blue-700",
-      running: "text-green-700",
-      skipped: "text-gray-600",
-      deferred: "text-purple-700",
-      up_for_retry: "text-orange-700",
-      upstream_failed: "text-red-700",
-      success: "text-green-700",
+      queued: "text-blue-900",
+      running: "text-green-900",
+      skipped: "text-gray-900",
+      deferred: "text-purple-900",
+      up_for_retry: "text-orange-900",
+      upstream_failed: "text-red-900",
+      success: "text-green-900",
     },
   },
   defaultVariants: {
@@ -82,21 +82,21 @@ export const statusTextVariants = cva("", {
 export const statusBorderVariants = cva("", {
   variants: {
     variant: {
-      processing: "border border-blue-300",
-      pending: "border border-yellow-300",
-      completed: "border border-green-300",
-      failed: "border border-red-300",
-      cancelled: "border border-gray-300",
-      scheduled: "border border-purple-300",
-      partially_completed: "border border-orange-300",
+      processing: "border-blue-300",
+      pending: "border-yellow-300",
+      completed: "border-green-300",
+      failed: "border-red-300",
+      cancelled: "border-gray-300",
+      scheduled: "border-purple-300",
+      partially_completed: "border-orange-300",
       default: "border border-accent",
-      queued: "border border-blue-300",
-      running: "border border-green-300",
-      skipped: "border border-gray-300",
-      deferred: "border border-purple-300",
-      up_for_retry: "border border-orange-300",
-      upstream_failed: "border border-red-300",
-      success: "border border-green-300",
+      queued: "border-blue-300",
+      running: "border-green-300",
+      skipped: "border-gray-300",
+      deferred: "border-purple-300",
+      up_for_retry: "border-orange-300",
+      upstream_failed: "border-red-300",
+      success: "border-green-300",
     },
   },
   defaultVariants: {
@@ -104,7 +104,7 @@ export const statusBorderVariants = cva("", {
   },
 });
 
-const variants = cva("rounded-full capitalize text-xs", {
+const variants = cva("rounded-full capitalize text-xs border", {
   variants: {
     variant: {
       processing: cn(
@@ -194,6 +194,7 @@ export function ProcessStatusBadge({
   scheduledTime,
   className,
   status,
+  iconClassName,
 }) {
   const isScheduled = status === PROCESS_STATUS.SCHEDULED;
   if (isLoading) {
@@ -216,7 +217,7 @@ export function ProcessStatusBadge({
       variant="outline"
       className={cn("font-semibold", variants({ variant: type }), className)}
     >
-      {Icon && <Icon />}
+      {Icon && <Icon className={iconClassName} />}
       <span>
         {type}
         {isScheduled && (

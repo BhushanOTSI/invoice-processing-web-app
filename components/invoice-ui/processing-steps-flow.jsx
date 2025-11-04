@@ -10,6 +10,7 @@ import {
   isSkippedProcessing,
 } from "@/lib/utils";
 import {
+  statusBackgroundVariants,
   statusBorderVariants,
   statusTextVariants,
 } from "./process-status-badge";
@@ -34,6 +35,12 @@ import { DataEdge } from "../data-edge";
 import { LabeledHandle } from "../labeled-handle";
 import { ProcessMessage } from "./process-message";
 
+const getBorderColor = (status) => {
+  return `var(--${statusTextVariants({ variant: status })
+    .replace("text", "color")
+    .replace("900", "500")})`;
+};
+
 const nodeTypes = {
   step: ({ data, width }) => {
     const { isFirstNode, isLastNode } = data;
@@ -47,7 +54,6 @@ const nodeTypes = {
           <LabeledHandle
             type="target"
             position={Position.Top}
-            handleClassName={cn(statusTextVariants({ variant: data.status }))}
             isConnectable={false}
           />
         )}
@@ -63,11 +69,17 @@ const nodeTypes = {
           onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
         >
           <BaseNodeHeader>
-            <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
+            <BaseNodeHeaderTitle className="uppercase">
+              {data.name}
+            </BaseNodeHeaderTitle>
           </BaseNodeHeader>
           <BaseNodeFooter className="flex flex-row items-center justify-between gap-x-4 pt-3">
             <div>
-              <ProcessStatusBadge status={data.status}>
+              <ProcessStatusBadge
+                status={data.status}
+                className={"text-sm"}
+                iconClassName={"size-4!"}
+              >
                 {data.status}
               </ProcessStatusBadge>
             </div>
@@ -79,7 +91,6 @@ const nodeTypes = {
           <LabeledHandle
             type="source"
             position={Position.Bottom}
-            handleClassName={cn(statusTextVariants({ variant: data.status }))}
             isConnectable={false}
           />
         )}
@@ -96,10 +107,7 @@ const edgeTypes = {
         data={data}
         style={{
           strokeWidth: 2,
-          stroke: `var(--${statusTextVariants({ variant: data.status }).replace(
-            "text",
-            "color"
-          )})`,
+          stroke: getBorderColor(data.status),
         }}
       />
     );
