@@ -53,9 +53,9 @@ const nodeTypes = {
         )}
         <BaseNode
           className={cn(
-            isActive && "bg-accent-foreground text-accent",
+            isActive && "border-2 border-accent-foreground",
             isSkippedStatus && "opacity-50",
-            isProcessing(data.status) && "bg-primary text-primary-foreground"
+            isProcessing(data.status) && "border-2 border-primary"
           )}
           style={{
             width,
@@ -146,15 +146,28 @@ export const getLayoutedElements = (nodes, edges, options) => {
   );
 
   Dagre.layout(g);
-
+  const nodesLength = nodes.length;
   return {
-    nodes: nodes.map((node) => {
-      const position = g.node(node.id);
-      const x = position.x - (node.measured?.width ?? 0) / 2;
-      const y = position.y - (node.measured?.height ?? 0) / 2;
+    nodes: nodes
+      .map((node) => {
+        const position = g.node(node.id);
+        const x = position.x - (node.measured?.width ?? 0) / 2;
+        const y = position.y - (node.measured?.height ?? 0) / 2;
 
-      return { ...node, position: { x, y } };
-    }),
+        return { ...node, position: { x, y } };
+      })
+      .sort((a, b) => a.position.y - b.position.y)
+      .map((node, index) => {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            index,
+            isFirstNode: index === 0,
+            isLastNode: index === nodesLength - 1,
+          },
+        };
+      }),
     edges,
   };
 };
@@ -211,7 +224,6 @@ export const ProcessingStepsFlowProvider = ({
         }
       });
     } else {
-      const dagNodesLength = dag_nodes.length;
       const dagSet = new Map();
       dag_nodes.forEach((node, index) => {
         dagSet.set(node.id, node);
@@ -221,10 +233,8 @@ export const ProcessingStepsFlowProvider = ({
           type: "step",
           data: {
             ...(node.data || {}),
-            isFirstNode: false,
-            isLastNode: index === dagNodesLength - 1,
-            index,
             name: (node.data?.label || "").replace(/_/g, " "),
+            label: node.data?.label,
           },
           measured: {
             width: 350,
