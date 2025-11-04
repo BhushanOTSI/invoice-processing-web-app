@@ -22,7 +22,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const containerRef = useRef(null);
   const [numPages, setNumPages] = useState(1);
   const [pageWidths, setPageWidths] = useState(600);
-  const [visiblePages, setVisiblePages] = useState(new Set());
   const pageRefs = useRef(new Map());
 
   useEffect(() => {
@@ -36,7 +35,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
   const resetPages = useCallback(() => {
     pageRefs.current.clear();
-    setVisiblePages(new Set());
   }, []);
 
   useEffect(() => {
@@ -51,6 +49,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
 
   useEffect(() => {
     if (!containerRef.current) return;
+
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) setPageWidths(entry.contentRect.width);
     });
@@ -80,27 +79,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     },
     []
   );
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          const pageNum = Number(entry.target.getAttribute("data-page"));
-          if (entry.isIntersecting) {
-            setVisiblePages((prev) => {
-              const next = new Set(prev);
-              next.add(pageNum);
-              return next;
-            });
-          }
-        });
-      },
-      { root: containerRef.current, rootMargin: "10%" }
-    );
-
-    pageRefs.current.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [numPages]);
 
   return (
     <div
@@ -135,15 +113,13 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
                   data-page={pageNumber}
                   className="px-8 first:pt-8 pb-8"
                 >
-                  {visiblePages.has(pageNumber) && (
-                    <Page
-                      pageNumber={pageNumber}
-                      width={pageWidths - 80}
-                      renderAnnotationLayer={true}
-                      renderTextLayer={true}
-                      loading={null}
-                    />
-                  )}
+                  <Page
+                    pageNumber={pageNumber}
+                    width={pageWidths - 80}
+                    renderAnnotationLayer={true}
+                    renderTextLayer={true}
+                    loading={null}
+                  />
                 </div>
               );
             })}

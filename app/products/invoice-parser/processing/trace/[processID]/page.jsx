@@ -1,26 +1,30 @@
 "use client";
 
-import { PROCESS_STATUS } from "@/app/constants";
+import { CASE_TYPES, PROCESS_STATUS } from "@/app/constants";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
 import {
-  ProcessIcons,
   ProcessStatusBadge,
   statusTextVariants,
 } from "@/components/invoice-ui/process-status-badge";
 import { usePersistentResize } from "@/hooks/use-persistent-resize";
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
-import { cn, formatTimeDifference } from "@/lib/utils";
-import { useProcessTraceStatus } from "@/services/hooks/useInvoice";
+import {
+  cn,
+  formatTimeDifference,
+  isCancelledProcessing,
+  isCompletedProcessing,
+  isDeferredProcessing,
+  isFailedProcessing,
+  isProcessing,
+} from "@/lib/utils";
+import {
+  useProcessTraceDag,
+  useProcessTraceStatus,
+} from "@/services/hooks/useInvoice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import { useParams } from "next/navigation";
-
 import { ProcessMessage } from "@/components/invoice-ui/process-message";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 import {
   Empty,
@@ -29,15 +33,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  Item,
-  ItemActions,
-  ItemContent,
-  ItemDescription,
-  ItemMedia,
-  ItemTitle,
-} from "@/components/ui/item";
+import { FieldLabel } from "@/components/ui/field";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -54,7 +50,6 @@ import {
 import {
   BadgeCheckIcon,
   BanIcon,
-  ChevronDownIcon,
   CircleXIcon,
   ClockIcon,
   FileIcon,
@@ -67,7 +62,6 @@ import {
   ActiveProcessMessage,
   ProcessingStepsFlow,
   ProcessingStepsFlowProvider,
-  useProcessingStepsFlow,
 } from "@/components/invoice-ui/processing-steps-flow";
 import dynamic from "next/dynamic";
 
@@ -142,14 +136,14 @@ export default function ProcessTracePage() {
 
   const [activeTab, setActiveTab] = useState("step-1");
   const [messages, setMessages] = useState([]);
-  const isProcessing = useMemo(
-    () => processTraceStatus?.status === PROCESS_STATUS.PROCESSING,
+  const isMainProcessProcessing = useMemo(
+    () => isProcessing(processTraceStatus?.status),
     [processTraceStatus?.status]
   );
 
   const { isLoading: isLoadingProcessingStream } = useProcessingStream(
     processID,
-    processID && !isLoading && isProcessing,
+    processID && !isLoading && isMainProcessProcessing,
     {
       onData: (data) => {
         setMessages((prev) => addOrUpdateMessage(prev || [], data));
@@ -159,12 +153,12 @@ export default function ProcessTracePage() {
 
   const traceMessages = useMemo(() => {
     return (
-      (isProcessing ||
+      (isMainProcessProcessing ||
       (messages.length && !processTraceStatus?.messages?.length)
         ? messages
         : processTraceStatus?.messages) || []
     );
-  }, [messages, processTraceStatus?.messages, isProcessing]);
+  }, [messages, processTraceStatus?.messages, isMainProcessProcessing]);
 
   const groupedTraceMessages = useMemo(() => {
     const grouped = {
@@ -217,34 +211,70 @@ export default function ProcessTracePage() {
   const containerHeight =
     "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
 
+  const considerDag =
+    CASE_TYPES[processTraceStatus?.sessionMetadata?.case_type] &&
+    ![CASE_TYPES.case1, CASE_TYPES.case2, CASE_TYPES.case3].includes(
+      CASE_TYPES[processTraceStatus?.sessionMetadata?.case_type]
+    );
+
+  const { data: processTraceDag } = useProcessTraceDag(
+    processID,
+    !isLoading &&
+      considerDag &&
+      isCompletedProcessing(groupedTraceMessages["step-1"]?.status, true) &&
+      isCompletedProcessing(groupedTraceMessages["step-2"]?.status, true)
+  );
+
+  const { dagNodes = [], dagEdges = [] } = useMemo(() => {
+    return {
+      dagNodes: processTraceDag?.data?.nodes,
+      dagEdges: processTraceDag?.data?.edges,
+    };
+  }, [processTraceDag]);
+
   const stepStatus = useMemo(() => {
     const step1 = groupedTraceMessages["step-1"];
     const step2 = groupedTraceMessages["step-2"];
-    const step3 = groupedTraceMessages["step-3"];
+    const step3 = considerDag ? dagNodes : groupedTraceMessages["step-3"];
+
+    const step3Status = step3?.map(
+      (message) => message?.data?.status || message?.status
+    );
 
     return {
-      isStep1Processing: step1?.status === PROCESS_STATUS.PROCESSING,
-      isStep2Processing: step2?.status === PROCESS_STATUS.PROCESSING,
-      isStep3Processing: step3?.some(
-        (message) => message.status === PROCESS_STATUS.PROCESSING
-      ),
-      isStep1Completed: step1?.status === PROCESS_STATUS.COMPLETED,
-      isStep2Completed: step2?.status === PROCESS_STATUS.COMPLETED,
-      isStep3Completed: step3?.some(
-        (message) => message.status === PROCESS_STATUS.COMPLETED
-      ),
-      isStep1Failed: step1?.status === PROCESS_STATUS.FAILED,
-      isStep2Failed: step2?.status === PROCESS_STATUS.FAILED,
-      isStep3Failed: step3?.some(
-        (message) => message.status === PROCESS_STATUS.FAILED
-      ),
-      isStep1Cancelled: step1?.status === PROCESS_STATUS.CANCELLED,
-      isStep2Cancelled: step2?.status === PROCESS_STATUS.CANCELLED,
-      isStep3Cancelled: step3?.some(
-        (message) => message.status === PROCESS_STATUS.CANCELLED
-      ),
+      isStep1Processing: isProcessing(step1?.status),
+      isStep1Completed: isCompletedProcessing(step1?.status),
+      isStep1Failed: isFailedProcessing(step1?.status),
+      isStep1Cancelled: isCancelledProcessing(step1?.status),
+
+      isStep2Processing: isProcessing(step2?.status),
+      isStep2Completed: isCompletedProcessing(step2?.status),
+      isStep2Failed: isFailedProcessing(step2?.status),
+      isStep2Cancelled: isCancelledProcessing(step2?.status),
+
+      isStep3Completed:
+        step3Status?.length > 0 &&
+        step3Status?.every((s) => isCompletedProcessing(s, true)),
+      isStep3Processing: isProcessing(step3Status),
+      isStep3Failed: isFailedProcessing(step3Status),
+      isStep3Cancelled: isCancelledProcessing(step3Status),
+      isStep3Deferred: isDeferredProcessing(step3Status),
     };
-  }, [groupedTraceMessages]);
+  }, [groupedTraceMessages, dagNodes, considerDag]);
+
+  useEffect(() => {
+    if (stepStatus.isStep1Processing) {
+      setActiveTab("step-1");
+    }
+
+    if (stepStatus.isStep2Processing) {
+      setActiveTab("step-2");
+    }
+
+    if (stepStatus.isStep3Processing) {
+      setActiveTab("step-3");
+    }
+  }, [stepStatus]);
 
   const [view, setView] = useState("markdown");
 
@@ -252,7 +282,7 @@ export default function ProcessTracePage() {
 
   return (
     <div className="overflow-hidden flex flex-col" ref={containerRef}>
-      <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b flex-shrink-0">
+      <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b shrink-0">
         <InfoItem
           Icon={HashIcon}
           label="Process ID:"
@@ -298,7 +328,11 @@ export default function ProcessTracePage() {
           />
         )}
       </div>
-      <ProcessingStepsFlowProvider messages={groupedTraceMessages["step-3"]}>
+      <ProcessingStepsFlowProvider
+        messages={groupedTraceMessages["step-3"]}
+        dag_nodes={dagNodes}
+        dag_edges={dagEdges}
+      >
         <div className={cn("@container overflow-hidden", containerHeight)}>
           <ResizablePanelGroup
             direction="horizontal"
@@ -364,7 +398,7 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="space-y-3 p-2 border-b border-border/50 flex-shrink-0">
+                  <div className="space-y-3 p-2 border-b border-border/50 shrink-0">
                     <div className="flex items-center w-full justify-between">
                       <div className="flex-1">
                         <TabsList className="flex items-center gap-y-2">
@@ -529,14 +563,14 @@ function StepTabTrigger({
     <TabsTrigger
       className={cn(
         "group/tab line-clamp-1 border border-inherit/50",
-        "text-sm px-4 py-1.5 rounded-md",
+        "text-sm px-4 py-1.5 rounded-full",
         "transition-all bg-accent",
         "hover:bg-primary/90 hover:text-primary-foreground hover:[&_svg]:text-primary-foreground",
         "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
         className,
         isLoading &&
-          "pointer-events-none animate-pulse !bg-accent !text-accent select-none",
-        "[&:disabled]:pointer-events-none [&:disabled]:opacity-50 [&:disabled]:cursor-not-allowed"
+          "pointer-events-none animate-pulse bg-accent! text-accent! select-none **:text-transparent!",
+        "disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed"
       )}
       disabled={isLoading || !isPreviousStepCompleted}
       {...props}
@@ -562,7 +596,7 @@ function StepTabTrigger({
             )}
           />
         )}
-        {isCompleted && (
+        {isCompleted && !isFailed && !isCancelled && (
           <BadgeCheckIcon
             className={cn(
               "size-4 -ml-2",

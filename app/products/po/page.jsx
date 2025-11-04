@@ -23,7 +23,7 @@ import {
 
 export default function Page() {
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="mx-auto space-y-8">
       {/* Header Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -130,7 +130,7 @@ export default function Page() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Contracts */}
         <div className="lg:col-span-2">
-          <Card>
+          <Card className="h-full">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="w-5 h-5" />

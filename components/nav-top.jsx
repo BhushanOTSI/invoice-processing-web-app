@@ -22,10 +22,10 @@ export function NavTop() {
   const { user, logout, isLoggedIn, isMounted } = useUser();
 
   return (
-    <header className="h-14 flex shrink-0 gap-2 transition-[width,height] ease-linear justify-between items-center px-6 border-b border-border/50">
+    <header className="h-14 flex shrink-0 gap-2 transition-[width,height] ease-linear justify-between items-center px-8 ">
       <div>
         <Link href={"/"}>
-          <LogoOTS className="w-24 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-[width] duration-200 ease-linear" />
+          <LogoOTS className="w-20 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-[width] duration-200 ease-linear" />
         </Link>
       </div>
       <div className="flex items-center gap-3">

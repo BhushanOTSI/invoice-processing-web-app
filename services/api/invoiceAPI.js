@@ -20,4 +20,10 @@ export class InvoiceAPI {
   static async getProcessTraceStatus(processID) {
     return BaseAPI.get(`/process-invoice/${processID}/status`);
   }
+
+  static async getProcessTraceDag(processID) {
+    return BaseAPI.post(`/airflow/get-dag-status-by-process-id`, {
+      process_id: processID,
+    });
+  }
 }

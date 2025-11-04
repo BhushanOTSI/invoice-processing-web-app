@@ -3,7 +3,7 @@
 import { Markdown } from "./markdown";
 import JsonView from "@uiw/react-json-view";
 import { Skeleton } from "../ui/skeleton";
-import { invoiceJsonToMarkdown } from "@/lib/json-to-markdown";
+import { jsonToMarkdown } from "@/lib/json-to-markdown";
 
 export function ProcessMessage({
   message,
@@ -23,7 +23,7 @@ export function ProcessMessage({
     return hasMarkdown ? (
       <>
         <Markdown>{markdown}</Markdown>
-        {jsonData && <Markdown>{invoiceJsonToMarkdown(jsonData)}</Markdown>}
+        {jsonData && <Markdown>{jsonToMarkdown(jsonData)}</Markdown>}
       </>
     ) : (
       message?.message

@@ -20,6 +20,13 @@ export const ProcessIcons = {
   cancelled: BanIcon,
   scheduled: Clock1Icon,
   partially_completed: CheckIcon,
+  queued: Clock1Icon,
+  running: Spinner,
+  skipped: XIcon,
+  deferred: Clock1Icon,
+  up_for_retry: Clock1Icon,
+  upstream_failed: XIcon,
+  success: BadgeCheckIcon,
 };
 
 export const statusBackgroundVariants = cva("", {
@@ -33,6 +40,13 @@ export const statusBackgroundVariants = cva("", {
       scheduled: "bg-purple-50",
       partially_completed: "bg-orange-50",
       default: "bg-accent",
+      queued: "bg-blue-50",
+      running: "bg-green-50",
+      skipped: "bg-gray-50",
+      deferred: "bg-purple-50",
+      up_for_retry: "bg-orange-50",
+      upstream_failed: "bg-red-50",
+      success: "bg-green-50",
     },
   },
   defaultVariants: {
@@ -51,6 +65,13 @@ export const statusTextVariants = cva("", {
       scheduled: "text-purple-700",
       partially_completed: "text-orange-700",
       default: "text-accent-foreground",
+      queued: "text-blue-700",
+      running: "text-green-700",
+      skipped: "text-gray-600",
+      deferred: "text-purple-700",
+      up_for_retry: "text-orange-700",
+      upstream_failed: "text-red-700",
+      success: "text-green-700",
     },
   },
   defaultVariants: {
@@ -69,6 +90,13 @@ export const statusBorderVariants = cva("", {
       scheduled: "border border-purple-300",
       partially_completed: "border border-orange-300",
       default: "border border-accent",
+      queued: "border border-blue-300",
+      running: "border border-green-300",
+      skipped: "border border-gray-300",
+      deferred: "border border-purple-300",
+      up_for_retry: "border border-orange-300",
+      upstream_failed: "border border-red-300",
+      success: "border border-green-300",
     },
   },
   defaultVariants: {
@@ -114,18 +142,58 @@ const variants = cva("rounded-full capitalize text-xs", {
         statusTextVariants({ variant: "partially_completed" }),
         statusBorderVariants({ variant: "partially_completed" })
       ),
+      queued: cn(
+        statusBackgroundVariants({ variant: "queued" }),
+        statusTextVariants({ variant: "queued" }),
+        statusBorderVariants({ variant: "queued" })
+      ),
+      running: cn(
+        statusBackgroundVariants({ variant: "running" }),
+        statusTextVariants({ variant: "running" }),
+        statusBorderVariants({ variant: "running" })
+      ),
+      skipped: cn(
+        statusBackgroundVariants({ variant: "skipped" }),
+        statusTextVariants({ variant: "skipped" }),
+        statusBorderVariants({ variant: "skipped" })
+      ),
+      deferred: cn(
+        statusBackgroundVariants({ variant: "deferred" }),
+        statusTextVariants({ variant: "deferred" }),
+        statusBorderVariants({ variant: "deferred" })
+      ),
+      up_for_retry: cn(
+        statusBackgroundVariants({ variant: "up_for_retry" }),
+        statusTextVariants({ variant: "up_for_retry" }),
+        statusBorderVariants({ variant: "up_for_retry" })
+      ),
+      upstream_failed: cn(
+        statusBackgroundVariants({ variant: "upstream_failed" }),
+        statusTextVariants({ variant: "upstream_failed" }),
+        statusBorderVariants({ variant: "upstream_failed" })
+      ),
+      success: cn(
+        statusBackgroundVariants({ variant: "success" }),
+        statusTextVariants({ variant: "success" }),
+        statusBorderVariants({ variant: "success" })
+      ),
+      default: cn(
+        statusBackgroundVariants({ variant: "default" }),
+        statusTextVariants({ variant: "default" }),
+        statusBorderVariants({ variant: "default" })
+      ),
     },
   },
   defaultVariants: {
-    variant: "processing",
+    variant: "default",
   },
 });
 
 export function ProcessStatusBadge({
-  status,
   isLoading = false,
   scheduledTime,
   className,
+  status,
 }) {
   const isScheduled = status === PROCESS_STATUS.SCHEDULED;
   if (isLoading) {
@@ -133,7 +201,11 @@ export function ProcessStatusBadge({
   }
 
   if (!status) {
-    return <Badge variant="outline">Unknown</Badge>;
+    return (
+      <Badge variant="outline" className={variants({ variant: "default" })}>
+        Unknown
+      </Badge>
+    );
   }
 
   const type = status.toLowerCase();
