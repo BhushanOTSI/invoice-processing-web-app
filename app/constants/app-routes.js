@@ -2,6 +2,10 @@ export const APP_ROUTES = {
   DASHBOARD: "/products/invoice-parser/dashboard",
   PROCESSING: "/products/invoice-parser/processing",
   DOCUMENTATION: "/products/invoice-parser/documentation",
+  FEATURES: "/features",
+  INTEGRATIONS: "/integrations",
+  PRICING: "/pricing",
+  FAQ: "/faq",
   LOGIN: "/login",
   PROCESSING: {
     NEW: "/products/invoice-parser/processing/new",

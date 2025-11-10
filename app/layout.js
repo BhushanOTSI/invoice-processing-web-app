@@ -25,8 +25,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${spaceMono.variable} antialiased`}>
+    <html lang="en" suppressHydrationWarning={true}>
+      <body 
+        className={`${dmSans.variable} ${spaceMono.variable} antialiased`}
+        suppressHydrationWarning={true}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
