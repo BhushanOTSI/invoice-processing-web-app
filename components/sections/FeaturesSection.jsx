@@ -74,7 +74,7 @@ export function FeaturesSection() {
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-medium text-gray-900 dark:text-white mb-4 lg:mb-6 leading-tight">
                         Everything you need to manage invoices
                     </h2>
-                    <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                    <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-xl mx-auto">
                         From generation to verification, our AI handles it all with unmatched accuracy.
                     </p>
                 </div>
