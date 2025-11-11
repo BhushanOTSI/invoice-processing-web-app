@@ -48,6 +48,7 @@ import { Spinner } from "../ui/spinner";
 import { useRouter } from "next/navigation";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 import { formatInTimeZone } from "date-fns-tz";
+import { AlphaTag } from "@/components/alpha-tag";
 
 export function FileProcessingForm() {
   return (
@@ -319,7 +320,8 @@ export function FileProcessingFormContent() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Human in Loop <sup>(Alpha)</sup>
+                            Human in Loop
+                            <AlphaTag />
                           </FormLabel>
                           <FormControl>
                             <Switch
@@ -381,8 +383,11 @@ export function FileProcessingFormContent() {
               </CardFooter>
             </Card>
             <Card className={"py-0 gap-0"}>
-              <CardHeader className={"border-b px-6 !py-4 items-center"}>
+              <CardHeader className={"border-b px-6 py-4! items-center"}>
                 <CardTitle>Files to Process</CardTitle>
+                <CardDescription>
+                  Maximum of {maxFiles} files can be processed at a time.
+                </CardDescription>
                 <CardAction>
                   <ButtonGroup>
                     <ButtonGroup>

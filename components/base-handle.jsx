@@ -3,7 +3,7 @@ import { Handle } from "@xyflow/react";
 
 import { cn } from "@/lib/utils";
 
-export const BaseHandle = forwardRef(({ className, children, ...props }, ref) => {
+export const BaseHandle = forwardRef(({ className, children, style, ...props }, ref) => {
   return (
     <Handle
       ref={ref}
@@ -11,6 +11,7 @@ export const BaseHandle = forwardRef(({ className, children, ...props }, ref) =>
         "h-[11px] w-[11px] rounded-full border border-slate-300 bg-slate-100 transition dark:border-secondary dark:bg-secondary",
         className
       )}
+      style={style}
       {...props}>
       {children}
     </Handle>

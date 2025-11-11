@@ -101,6 +101,7 @@ function getPath({
         targetY,
         sourcePosition,
         targetPosition,
+        borderRadius: 10, // Add border radius for smoother curves
       });
 
     case "step":

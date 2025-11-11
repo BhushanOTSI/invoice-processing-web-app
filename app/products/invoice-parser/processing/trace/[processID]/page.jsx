@@ -23,7 +23,7 @@ import {
   useProcessTraceStatus,
 } from "@/services/hooks/useInvoice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { ProcessMessage } from "@/components/invoice-ui/process-message";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 import {
@@ -48,6 +48,7 @@ import {
   useProcessingStream,
 } from "@/services/hooks/useBatchProcessInvoice";
 import {
+  ArrowLeftIcon,
   BadgeCheckIcon,
   BanIcon,
   CircleXIcon,
@@ -57,13 +58,15 @@ import {
   HashIcon,
   LinkIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActiveProcessMessage,
   ProcessingStepsFlow,
   ProcessingStepsFlowProvider,
 } from "@/components/invoice-ui/processing-steps-flow";
 import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import { useSetSearchParams } from "@/hooks/use-set-search-params";
 
 const PdfPreview = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
@@ -103,6 +106,8 @@ const addOrUpdateMessage = (messages, data) => {
 };
 
 export default function ProcessTracePage() {
+  const { params, updateParams } = useSetSearchParams();
+  const router = useRouter();
   const { setOpen } = useSidebar();
   const { processID } = useParams();
   const { leftSize, savePanelSize } = usePersistentResize(
@@ -134,12 +139,17 @@ export default function ProcessTracePage() {
   const { data: processTraceStatus, isLoading } =
     useProcessTraceStatus(processID);
 
-  const [activeTab, setActiveTab] = useState("step-1");
+  const [activeTab, setCurrentActiveTab] = useState(params.tab || "step-1");
   const [messages, setMessages] = useState([]);
   const isMainProcessProcessing = useMemo(
     () => isProcessing(processTraceStatus?.status),
     [processTraceStatus?.status]
   );
+
+  const setActiveTab = useCallback((tab) => {
+    setCurrentActiveTab(tab);
+    updateParams({ tab });
+  }, []);
 
   const { isLoading: isLoadingProcessingStream } = useProcessingStream(
     processID,
@@ -201,6 +211,7 @@ export default function ProcessTracePage() {
     if (processTraceStatus?.sessionMetadata?.cw_url) {
       return processTraceStatus?.sessionMetadata?.cw_url;
     }
+
     if (jsonData?.DocumentNumber) {
       return `https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`;
     }
@@ -211,16 +222,9 @@ export default function ProcessTracePage() {
   const containerHeight =
     "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
 
-  const considerDag =
-    CASE_TYPES[processTraceStatus?.sessionMetadata?.case_type] &&
-    ![CASE_TYPES.case1, CASE_TYPES.case2, CASE_TYPES.case3].includes(
-      CASE_TYPES[processTraceStatus?.sessionMetadata?.case_type]
-    );
-
   const { data: processTraceDag } = useProcessTraceDag(
     processID,
     !isLoading &&
-      considerDag &&
       isCompletedProcessing(groupedTraceMessages["step-1"]?.status, true) &&
       isCompletedProcessing(groupedTraceMessages["step-2"]?.status, true)
   );
@@ -235,7 +239,7 @@ export default function ProcessTracePage() {
   const stepStatus = useMemo(() => {
     const step1 = groupedTraceMessages["step-1"];
     const step2 = groupedTraceMessages["step-2"];
-    const step3 = considerDag ? dagNodes : groupedTraceMessages["step-3"];
+    const step3 = dagNodes;
 
     const step3Status = step3?.map(
       (message) => message?.data?.status || message?.status
@@ -260,7 +264,7 @@ export default function ProcessTracePage() {
       isStep3Cancelled: isCancelledProcessing(step3Status),
       isStep3Deferred: isDeferredProcessing(step3Status),
     };
-  }, [groupedTraceMessages, dagNodes, considerDag]);
+  }, [groupedTraceMessages, dagNodes]);
 
   useEffect(() => {
     if (stepStatus.isStep1Processing) {
@@ -283,6 +287,15 @@ export default function ProcessTracePage() {
   return (
     <div className="overflow-hidden flex flex-col" ref={containerRef}>
       <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={"rounded-full text-xs h-6"}
+          onClick={() => router.back()}
+        >
+          <ArrowLeftIcon className="size-3" />
+          Back
+        </Button>
         <InfoItem
           Icon={HashIcon}
           label="Process ID:"
