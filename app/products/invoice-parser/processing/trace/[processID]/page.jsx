@@ -411,13 +411,14 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="space-y-3 p-2 border-b border-border/50 shrink-0">
+                  <div className="px-4 py-2.5 border-b border-border/50 shrink-0">
                     <div className="flex items-center w-full justify-between">
                       <div className="flex-1">
-                        <TabsList className="flex items-center gap-y-2">
+                        <TabsList className="flex items-center gap-0 w-full justify-start bg-transparent p-0 h-auto">
                           <StepTabTrigger
                             value="step-1"
                             key="step-1"
+                            stepNumber={1}
                             isProcessing={stepStatus.isStep1Processing}
                             isLoading={isLoading}
                             isCompleted={stepStatus.isStep1Completed}
@@ -427,15 +428,14 @@ export default function ProcessTracePage() {
                           >
                             <span>AI Invoice Extraction</span>
                           </StepTabTrigger>
-                          <div
-                            className={cn(
-                              "w-6 h-px bg-foreground inline-block",
-                              isLoading && "animate-pulse bg-accent"
-                            )}
+                          <StepConnector
+                            isCompleted={stepStatus.isStep1Completed}
+                            isLoading={isLoading}
                           />
                           <StepTabTrigger
                             value="step-2"
                             key="step-2"
+                            stepNumber={2}
                             isProcessing={stepStatus.isStep2Processing}
                             isLoading={isLoading}
                             isCompleted={stepStatus.isStep2Completed}
@@ -450,15 +450,14 @@ export default function ProcessTracePage() {
                           >
                             <span>Validate CW Invoice</span>
                           </StepTabTrigger>
-                          <div
-                            className={cn(
-                              "w-6 h-px bg-foreground inline-block",
-                              isLoading && "animate-pulse bg-accent"
-                            )}
+                          <StepConnector
+                            isCompleted={stepStatus.isStep2Completed}
+                            isLoading={isLoading}
                           />
                           <StepTabTrigger
                             value="step-3"
                             key="step-3"
+                            stepNumber={3}
                             isProcessing={stepStatus.isStep3Processing}
                             isLoading={isLoading}
                             isCompleted={stepStatus.isStep3Completed}
@@ -561,9 +560,62 @@ function InfoItem({
   );
 }
 
+function StepConnector({ isCompleted, isLoading }) {
+  const lineColor = isCompleted
+    ? "#3b82f6" // blue-500
+    : isLoading
+    ? "hsl(var(--muted-foreground) / 0.3)"
+    : "hsl(var(--border))";
+
+  const dotColor = isCompleted
+    ? "#3b82f6" // blue-500
+    : isLoading
+    ? "hsl(var(--muted-foreground) / 0.3)"
+    : "hsl(var(--border))";
+
+  return (
+    <div className="flex-1 flex items-center px-3 min-w-[40px] relative">
+      {/* Dashed connector line using SVG for better rendering */}
+      <svg
+        className="w-full h-[2px] overflow-visible"
+        style={{ minHeight: "2px" }}
+      >
+        <line
+          x1="0"
+          y1="1"
+          x2="100%"
+          y2="1"
+          stroke={lineColor}
+          strokeWidth="2"
+          strokeDasharray="4 4"
+          className={cn(
+            "transition-all duration-300",
+            isLoading && "animate-pulse"
+          )}
+        />
+      </svg>
+      {/* Start dot */}
+      <div
+        className={cn(
+          "absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full -translate-x-1/2 transition-all duration-300"
+        )}
+        style={{ backgroundColor: dotColor }}
+      />
+      {/* End dot */}
+      <div
+        className={cn(
+          "absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full translate-x-1/2 transition-all duration-300"
+        )}
+        style={{ backgroundColor: dotColor }}
+      />
+    </div>
+  );
+}
+
 function StepTabTrigger({
   children,
   className,
+  stepNumber,
   isProcessing,
   isLoading,
   isCompleted,
@@ -572,69 +624,87 @@ function StepTabTrigger({
   isPreviousStepCompleted = false,
   ...props
 }) {
+  const isDisabled = isLoading || !isPreviousStepCompleted;
+
   return (
     <TabsTrigger
       className={cn(
-        "group/tab line-clamp-1 border border-inherit/50",
-        "text-sm px-4 py-1.5 rounded-full",
-        "transition-all bg-accent",
-        "hover:bg-primary/90 hover:text-primary-foreground hover:[&_svg]:text-primary-foreground",
-        "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
-        className,
-        isLoading &&
-          "pointer-events-none animate-pulse bg-accent! text-accent! select-none **:text-transparent!",
-        "disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed"
+        "group/tab relative flex items-center gap-2.5",
+        "px-3 py-1.5 rounded-lg",
+        "transition-all duration-200 ease-in-out",
+        "border border-transparent",
+        // Default light background for non-active states (so dots appear connected)
+        "bg-muted/30",
+        // Hover states - only when not disabled
+        !isDisabled && "hover:bg-muted/50 cursor-pointer",
+        // Active state - more prominent light grey background
+        "data-[state=active]:bg-muted/60 data-[state=active]:border-border",
+        // Disabled state
+        isDisabled && "opacity-50 cursor-not-allowed pointer-events-none",
+        // Loading state
+        isLoading && "pointer-events-none",
+        className
       )}
-      disabled={isLoading || !isPreviousStepCompleted}
+      disabled={isDisabled}
       {...props}
     >
-      <span className={cn("flex gap-2 items-center ")}>
-        {!isProcessing &&
+      {/* Step Number Badge */}
+      <div
+        className={cn(
+          "relative flex items-center justify-center shrink-0",
+          "w-6 h-6 rounded-full",
+          "font-medium text-xs",
+          "transition-all duration-200",
+          // Status-based styling
+          isCompleted && !isFailed && !isCancelled && "bg-green-500 text-white",
+          isProcessing && "bg-blue-500 text-white",
+          isFailed && "bg-red-500 text-white",
+          isCancelled && "bg-gray-500 text-white",
           !isCompleted &&
-          !isFailed &&
-          !isCancelled &&
-          !isLoading && (
-            <ClockIcon
-              className={cn(
-                "size-4 -ml-2",
-                statusTextVariants({ variant: "pending" })
-              )}
-            />
-          )}
-        {isProcessing && (
-          <Spinner
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "processing" })
-            )}
-          />
+            !isProcessing &&
+            !isFailed &&
+            !isCancelled &&
+            !isLoading &&
+            "bg-muted text-muted-foreground border border-border",
+          isLoading && "bg-muted text-muted-foreground border border-border"
         )}
-        {isCompleted && !isFailed && !isCancelled && (
-          <BadgeCheckIcon
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "completed" })
-            )}
-          />
+      >
+        {isLoading ? (
+          <Spinner className="size-3" />
+        ) : isCompleted && !isFailed && !isCancelled ? (
+          <BadgeCheckIcon className="size-3.5" />
+        ) : isFailed ? (
+          <CircleXIcon className="size-3.5" />
+        ) : isCancelled ? (
+          <BanIcon className="size-3.5" />
+        ) : (
+          <span>{stepNumber}</span>
         )}
-        {isFailed && (
-          <CircleXIcon
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "failed" })
-            )}
-          />
+      </div>
+
+      {/* Step Label */}
+      <span
+        className={cn(
+          "text-sm font-medium leading-tight",
+          "transition-colors duration-200",
+          "group-data-[state=active]/tab:text-foreground group-data-[state=active]/tab:font-semibold",
+          !isDisabled && "text-foreground/80",
+          isDisabled && "text-muted-foreground",
+          "whitespace-nowrap"
         )}
-        {isCancelled && (
-          <BanIcon
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "cancelled" })
-            )}
-          />
-        )}
-        <span className="truncate max-w-40">{children}</span>
+      >
+        {children}
       </span>
+
+      {/* Processing indicator dot */}
+      {isProcessing && (
+        <div className="absolute -top-0.5 -right-0.5">
+          <div className="relative flex h-2 w-2">
+            <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+            <div className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+          </div>
+        </div>
+      )}
     </TabsTrigger>
   );
 }
