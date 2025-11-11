@@ -38,13 +38,7 @@ const plans = [
 
 const PricingCard = ({ plan }) => (
     <div
-        className={`rounded-2xl sm:rounded-3xl p-6 lg:p-8 border transition-shadow duration-300 hover:shadow-lg relative ${plan.popular ? 'border-blue-500 dark:border-blue-400' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}
-        style={plan.popular ? {
-            background: 'linear-gradient(180deg, #161616 0%, #262626 100%)',
-            boxShadow: '0px 25px 50px -12px #00000040'
-        } : {
-            boxShadow: '0px 1px 2px -1px #0000001A, 0px 1px 3px 0px #0000001A'
-        }}
+        className={`rounded-2xl sm:rounded-3xl p-6 lg:p-8 border transition-shadow duration-300 hover:shadow-lg relative ${plan.popular ? 'border-blue-500 dark:border-blue-400 bg-gradient-to-b from-gray-900 to-gray-800 shadow-2xl shadow-black/25' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm shadow-black/5'}`}
     >
         {plan.popular && (
             <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
@@ -69,7 +63,7 @@ const PricingCard = ({ plan }) => (
         </div>
         <Button
             variant={plan.variant}
-            className={`w-full text-base sm:text-lg font-semibold rounded-3xl mb-4 lg:mb-6 shadow-none ${plan.variant === 'default' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border-1 sm:font-medium sm:text-[16px] border-gray-100 dark:border-gray-300 text-[#0A0A0A] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+            className={`w-full text-base sm:text-lg font-semibold rounded-3xl mb-4 lg:mb-6 shadow-none ${plan.variant === 'default' ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'border border-gray-100 dark:border-gray-300 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700'}`}
         >
             {plan.cta} {plan.variant === 'default' && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
@@ -95,7 +89,7 @@ export function PricingSection() {
         <section id="pricing" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-black">
             <div className="max-w-8xl mx-auto">
                 <div className="text-center mb-12 lg:mb-16">
-                    <Badge className="mb-4 lg:mb-6 px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-blue-900/30 border border-[#E5E7EB]-200 dark:border-blue-700 text-blue-gray-800 dark:text-blue-400 inline-flex items-center gap-2 shadow-sm">
+                    <Badge className="mb-4 lg:mb-6 px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-blue-900/30 border border-gray-200 dark:border-blue-700 text-gray-800 dark:text-blue-400 inline-flex items-center gap-2 shadow-sm">
                         <Dollar className="w-5 h-5" />  Simple, Transparent Pricing
                     </Badge>
                     <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-medium text-gray-900 dark:text-white mb-4 lg:mb-6 leading-tight">

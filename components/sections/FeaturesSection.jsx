@@ -6,8 +6,6 @@ import { ArrowRight } from "lucide-react";
 import Document from "@/public/landinglogs/document.svg";
 import Guard from "@/public/landinglogs/gaurd.svg";
 import Power from "@/public/landinglogs/power.svg";
-import { StatsSection } from "./StatsSection";
-import { WhyChooseSection } from "./WhyChooseSection";
 
 const features = [
     {
@@ -39,7 +37,7 @@ const FeatureCard = ({ feature }) => (
             </div>
         </div>
         <div className="space-y-4 lg:space-y-6">
-            <span className="font-lexend font-normal text-3xl bold leading-[28px] tracking-[0px] not-italic text-gray-900 dark:text-white">
+            <span className="font-lexend font-normal text-3xl font-bold leading-7 tracking-normal text-gray-900 dark:text-white">
                 {feature.title}
             </span>
             <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-sm sm:text-base mt-3">
@@ -67,29 +65,25 @@ const FeatureCard = ({ feature }) => (
 
 export function FeaturesSection() {
     return (
-        <>
-            <section id="features" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/85">
-                <div className="max-w-12xl mx-auto">
-                    <div className="text-center mb-12 lg:mb-16">
-                        <Badge className="mb-4 lg:mb-6 px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-blue-900/30 border border-[#E5E7EB]-200 dark:border-blue-700 text-blue-gray-800 dark:text-blue-400 inline-flex items-center gap-2 shadow-sm">
-                            <Power className="w-10 h-10" /> Powerful Features
-                        </Badge>
-                        <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-medium text-gray-900 dark:text-white mb-4 lg:mb-6 leading-tight">
-                            Everything you need to manage invoices
-                        </h2>
-                        <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                            From generation to verification, our AI handles it all with unmatched accuracy.
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-12xl mx-auto">
-                        {features.map((feature, i) => (
-                            <FeatureCard key={i} feature={feature} />
-                        ))}
-                    </div>
+        <section id="features" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/85">
+            <div className="max-w-12xl mx-auto">
+                <div className="text-center mb-12 lg:mb-16">
+                    <Badge className="mb-4 lg:mb-6 px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-blue-900/30 border border-gray-200 dark:border-blue-700 text-gray-800 dark:text-blue-400 inline-flex items-center gap-2 shadow-sm">
+                        <Power className="w-10 h-10" /> Powerful Features
+                    </Badge>
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-medium text-gray-900 dark:text-white mb-4 lg:mb-6 leading-tight">
+                        Everything you need to manage invoices
+                    </h2>
+                    <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                        From generation to verification, our AI handles it all with unmatched accuracy.
+                    </p>
                 </div>
-            </section>
-            <StatsSection />
-            <WhyChooseSection />
-        </>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-12xl mx-auto">
+                    {features.map((feature, i) => (
+                        <FeatureCard key={i} feature={feature} />
+                    ))}
+                </div>
+            </div>
+        </section>
     );
 }

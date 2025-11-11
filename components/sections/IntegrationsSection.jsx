@@ -13,10 +13,10 @@ export function IntegrationsSection() {
         <section id="integrations" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-900 dark:bg-gray-950">
             <div className="max-w-6xl mx-auto text-center">
                 <div className="mb-4 lg:mb-6">
-                    <h2 className="font-lexend font-normal text-[42px] leading-[42px] tracking-[0px] not-italic text-center text-white mb-4 lg:mb-6">
+                    <h2 className="font-lexend font-normal text-4xl leading-tight tracking-normal text-center text-white mb-4 lg:mb-6">
                         Don&apos;t replace. <span className="text-blue-400 dark:text-blue-300">Integrate.</span>
                     </h2>
-                    <p className="font-lexend font-normal text-lg sm:text-xl text-[#D1D5DC] dark:text-gray-300 max-w-xl mx-auto leading-relaxed">
+                    <p className="font-lexend font-normal text-lg sm:text-xl text-gray-300 dark:text-gray-300 max-w-xl mx-auto leading-relaxed">
                         InvoiceAI seamlessly connects with your existing accounting software, CRM, and payment platforms.
                         No disruption, just enhanced productivity.
                     </p>
@@ -28,8 +28,8 @@ export function IntegrationsSection() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
                     {integrations.map((integration, i) => (
-                        <div key={i} className="bg-gray-800/50 dark:bg-gray-700/50 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors duration-300 rounded-xl sm:rounded-2xl p-4 sm:p-6 flex items-center justify-center border border-[#FFFFFF99]/20 h-16 sm:h-20">
-                            <span className="text-[#FFFFFF99] dark:text-[#FFFFFF99]-60 font-medium text-xs sm:text-sm">{integration}</span>
+                        <div key={i} className="bg-gray-800/50 dark:bg-gray-700/50 hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors duration-300 rounded-xl sm:rounded-2xl p-4 sm:p-6 flex items-center justify-center border border-white/20 h-16 sm:h-20">
+                            <span className="text-white/60 dark:text-white/60 font-medium text-xs sm:text-sm">{integration}</span>
                         </div>
                     ))}
                 </div>
