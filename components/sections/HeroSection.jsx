@@ -43,7 +43,7 @@ export function HeroSection() {
                 <div className="text-center mb-10 lg:mb-14">
                     <div className="relative inline-block">
                         <Badge className="mb-6 lg:mb-8 px-4 py-2 text-sm font-medium rounded-full bg-gradient-to-r from-white via-blue-200/40 via-blue-300 via-blue-200/40 to-white dark:from-gray-800 dark:to-blue-900/20 border border-blue-600/30 dark:border-blue-400/30 shadow-md shadow-black/10 text-gray-700 dark:text-blue-400">
-                            <SparkleIcon className="w-4 h-4" /> AI-Powered Invoice Management
+                            <SparkleIcon className="w-4 h-4" style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(96%) saturate(2497%) hue-rotate(222deg) brightness(99%) contrast(101%)' }} /> AI-Powered Invoice Management
                             <div className="absolute top-2 right-2 w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
                         </Badge>
                     </div>
