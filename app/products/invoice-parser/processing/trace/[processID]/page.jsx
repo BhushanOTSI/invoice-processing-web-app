@@ -507,9 +507,9 @@ export default function ProcessTracePage() {
                       <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
-                          isLoading={
+                          isLoading={isLoading}
+                          isProcessing={
                             stepStatus.isStep1Processing ||
-                            isLoading ||
                             !groupedTraceMessages["step-1"]
                           }
                           jsonData={jsonData?.combined_parsed_json || jsonData}
