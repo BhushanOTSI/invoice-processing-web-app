@@ -372,18 +372,23 @@ export default function ProcessTracePage() {
                     "animate-pulse bg-accent/30"
                 )}
               >
-                {s3PdfUrl && (
+                {activeTab === "step-3" && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      {activeTab === "step-3" ? (
-                        <ProcessingStepsFlow />
-                      ) : (
-                        <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
-                      )}
+                      <ProcessingStepsFlow key="processing-flow" />
                     </div>
                   </div>
                 )}
-                {!s3PdfUrl && (
+
+                {s3PdfUrl && activeTab !== "step-3" && (
+                  <div className="h-full overflow-hidden">
+                    <div className="h-full overflow-y-auto overflow-x-hidden">
+                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                    </div>
+                  </div>
+                )}
+
+                {(isLoading || !s3PdfUrl) && (
                   <Empty className="h-full">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
