@@ -308,7 +308,7 @@ const ProcessingStepsFlowInner = () => {
   );
 
   return (
-    <div ref={containerRef} className="w-full h-full">
+    <div ref={containerRef} className="w-full h-full react-flow-container">
       <ReactFlow
         nodes={nodes}
         edges={edges}

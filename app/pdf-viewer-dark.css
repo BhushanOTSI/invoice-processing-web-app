@@ -1,4 +1,13 @@
 
+/* Protect React Flow from PDF viewer CSS interference */
+.react-flow-container svg,
+.react-flow-container svg * {
+  box-shadow: revert !important;
+  filter: revert !important;
+  background-image: revert !important;
+  outline: revert !important;
+}
+
 :root {
   --pv-bg: #FCFCFC;
   --pv-text: #111111;
@@ -672,10 +681,11 @@ body.pdf-popover-open .rpv-default-layout__container {
   visibility: hidden !important;
 }
 
-.rpv-core__viewer,
-.rpv-core__viewer *,
-.rpv-core__viewer *::before,
-.rpv-core__viewer *::after {
+/* Scope PDF viewer styles to only apply within invoice-pdf-container to prevent conflicts with React Flow */
+.invoice-pdf-container .rpv-core__viewer,
+.invoice-pdf-container .rpv-core__viewer *,
+.invoice-pdf-container .rpv-core__viewer *::before,
+.invoice-pdf-container .rpv-core__viewer *::after {
   box-shadow: none !important;
   filter: none !important;
   background-image: none !important;
@@ -683,7 +693,8 @@ body.pdf-popover-open .rpv-default-layout__container {
   outline: none !important;
 }
 
-[class*="h-[11px]"][class*="w-[11px]"][class*="rounded-full"] {
+/* Scope to PDF viewer container only */
+.invoice-pdf-container [class*="h-[11px]"][class*="w-[11px]"][class*="rounded-full"] {
   display: none !important;
   box-shadow: none !important;
   background: transparent !important;
