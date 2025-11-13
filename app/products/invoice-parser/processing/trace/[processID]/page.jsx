@@ -197,27 +197,36 @@ export default function ProcessTracePage() {
 
   const s3JsonUrl = useMemo(() => {
     return (
+      processTraceStatus?.sessionMetadata?.s3_raw_json_url ||
       processTraceStatus?.sessionMetadata?.s3_json_url ||
       groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl
     );
   }, [
-    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_raw_json_url,
     processTraceStatus?.sessionMetadata?.s3_json_url,
+    groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl,
   ]);
 
   const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
+
+  const documentNumber = useMemo(() => {
+    return (
+      jsonData?.combined_parsed_json?.invoiceNumber?.value ||
+      jsonData?.DocumentNumber
+    );
+  }, [jsonData]);
 
   const cwWorkFlowUrl = useMemo(() => {
     if (processTraceStatus?.sessionMetadata?.cw_url) {
       return processTraceStatus?.sessionMetadata?.cw_url;
     }
 
-    if (jsonData?.DocumentNumber) {
-      return `https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`;
+    if (documentNumber) {
+      return `https://cw.otsiaistudio.com/invoice/${documentNumber}`;
     }
 
     return null;
-  }, [jsonData?.DocumentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
+  }, [documentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
 
   const containerHeight =
     "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
@@ -315,7 +324,7 @@ export default function ProcessTracePage() {
           <InfoItem
             Icon={LinkIcon}
             label="Document Number:"
-            value={jsonData?.DocumentNumber}
+            value={documentNumber}
             href={cwWorkFlowUrl}
             allowCopy
             urlText="Collabration Workspace"
@@ -496,7 +505,7 @@ export default function ProcessTracePage() {
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
                           isLoading={isLoading || isLoadingProcessingStream}
-                          jsonData={jsonData}
+                          jsonData={jsonData?.combined_parsed_json || jsonData}
                           view={view}
                         />
                       </TabsContent>
