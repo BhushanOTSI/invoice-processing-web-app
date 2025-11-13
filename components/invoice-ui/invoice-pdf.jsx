@@ -10,10 +10,10 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
 import "@/app/pdf-viewer-dark.css";
 import { cn } from "@/lib/utils";
+import { Spinner } from "../ui/spinner";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [numPages, setNumPages] = useState(0);
-
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: () => [],
   });
@@ -29,12 +29,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   };
 
   return (
-    <div
-      className={cn(
-        "h-full w-full p-4 bg-accent invoice-pdf-container",
-        className
-      )}
-    >
+    <div className={cn("h-full w-full invoice-pdf-container", className)}>
       <Worker workerUrl="/pdf.worker.min.js">
         <div className="h-full">
           <Viewer
@@ -43,6 +38,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             onDocumentLoad={handleDocumentLoad}
             theme="auto"
             defaultScale={1}
+            renderLoader={() => <Spinner />}
+            pageLayout="single"
           />
         </div>
       </Worker>
