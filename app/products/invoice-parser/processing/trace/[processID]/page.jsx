@@ -365,7 +365,7 @@ export default function ProcessTracePage() {
                     "animate-pulse bg-accent/30"
                 )}
               >
-                {activeTab === "step-3" && (
+                {activeTab === "step-3" && !isLoading && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
                       <ProcessingStepsFlow />

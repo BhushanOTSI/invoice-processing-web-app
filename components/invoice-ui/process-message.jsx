@@ -44,7 +44,9 @@ export function ProcessMessage({
         <Markdown>{markdown}</Markdown>
         {jsonData && <Markdown>{jsonToMarkdown(jsonData)}</Markdown>}
       </div>
-    ) : message?.message || isMainProcessFailed ? (
+    ) : message?.message ? (
+      message?.message
+    ) : isMainProcessFailed ? (
       <Empty>
         <EmptyMedia variant="icon">
           <FileQuestionMarkIcon />
