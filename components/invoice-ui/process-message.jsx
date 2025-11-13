@@ -18,7 +18,11 @@ export function ProcessMessage({
   const hasJson = !!jsonData;
 
   if (isLoading) {
-    return <Spinner />;
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Spinner />
+      </div>
+    );
   }
 
   if (isProcessing) {
