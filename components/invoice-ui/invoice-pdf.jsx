@@ -9,7 +9,6 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
 import "@/app/pdf-viewer-dark.css";
-
 import { cn } from "@/lib/utils";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
@@ -30,8 +29,6 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const handleDocumentLoad = (e) => {
     setNumPages(e.doc.numPages);
   };
-
-
   return (
     <div className={cn("h-full w-full", className)}>
       <Worker workerUrl="/pdf.worker.min.js">
