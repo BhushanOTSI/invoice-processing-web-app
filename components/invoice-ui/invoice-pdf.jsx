@@ -1,6 +1,12 @@
 "use client";
 
-import { forwardRef, memo, useImperativeHandle, useState, useEffect } from "react";
+import {
+  forwardRef,
+  memo,
+  useImperativeHandle,
+  useState,
+  useEffect,
+} from "react";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { zoomPlugin } from "@react-pdf-viewer/zoom";
@@ -14,10 +20,8 @@ import { cn } from "@/lib/utils";
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const [numPages, setNumPages] = useState(0);
 
-
   const defaultLayoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: () => [],
-
   });
   const zoomPluginInstance = zoomPlugin();
 
@@ -30,7 +34,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     setNumPages(e.doc.numPages);
   };
   return (
-    <div className={cn("h-full w-full", className)}>
+    <div className={cn("h-full w-full p-4 bg-accent", className)}>
       <Worker workerUrl="/pdf.worker.min.js">
         <div className="h-full">
           <Viewer
