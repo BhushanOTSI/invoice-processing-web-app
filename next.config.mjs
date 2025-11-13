@@ -81,7 +81,7 @@ const nextConfig = {
       },
     ];
   },
-  webpack(config) {
+  webpack(config, { isServer }) {
     config.module.rules.push({
       test: /\.svg$/,
       issuer: /\.[jt]sx?$/,
@@ -106,6 +106,25 @@ const nextConfig = {
         },
       ],
     });
+
+    // Fix for pdfjs-dist canvas dependency issue
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        canvas: false,
+        fs: false,
+      };
+    }
+
+    // Externalize canvas for server builds
+    config.externals = config.externals || [];
+    if (typeof config.externals === 'object' && !Array.isArray(config.externals)) {
+      config.externals = [config.externals];
+    }
+    config.externals.push({
+      canvas: 'canvas',
+    });
+
     return config;
   },
   turbopack: {
