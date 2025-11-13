@@ -4,6 +4,7 @@ import { Markdown } from "./markdown";
 import JsonView from "@uiw/react-json-view";
 import { Skeleton } from "../ui/skeleton";
 import { jsonToMarkdown } from "@/lib/json-to-markdown";
+import { PdfScanningLoader } from "../pdf-scanning-loader";
 
 export function ProcessMessage({
   message,
@@ -16,7 +17,7 @@ export function ProcessMessage({
   const hasJson = !!jsonData;
 
   if (isLoading) {
-    return <Skeleton className="w-full min-h-96 h-full mt-6" />;
+    return <PdfScanningLoader />;
   }
 
   if (view === "markdown") {
