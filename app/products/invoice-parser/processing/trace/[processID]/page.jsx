@@ -507,7 +507,7 @@ export default function ProcessTracePage() {
                         />
                       </TabsContent>
                       <TabsContent value="step-3" className="space-y-4 h-full">
-                        {/* <ActiveProcessMessage isLoading={isLoading} /> */}
+                        <ActiveProcessMessage isLoading={isLoading} />
                       </TabsContent>
                     </div>
                   </div>
