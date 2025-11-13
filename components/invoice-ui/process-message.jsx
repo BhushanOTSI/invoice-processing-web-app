@@ -21,10 +21,10 @@ export function ProcessMessage({
 
   if (view === "markdown") {
     return hasMarkdown ? (
-      <>
+      <div className="space-y-4 pb-6">
         <Markdown>{markdown}</Markdown>
         {jsonData && <Markdown>{jsonToMarkdown(jsonData)}</Markdown>}
-      </>
+      </div>
     ) : (
       message?.message
     );
