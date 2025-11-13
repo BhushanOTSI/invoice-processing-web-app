@@ -297,13 +297,15 @@ const ProcessingStepsFlowInner = () => {
     }
   }, [nodes.length, isReactFlowReady]);
 
-  const onInit = useCallback((reactFlowInstance) => {
-    reactFlowInstanceRef.current = reactFlowInstance;
-    setIsReactFlowReady(true);
-    // Fit view on initial mount
-    rerunLayout();
-    reactFlowInstance.fitView({ duration: 0, padding: 0.1 });
-  }, []);
+  const onInit = useCallback(
+    (reactFlowInstance) => {
+      reactFlowInstanceRef.current = reactFlowInstance;
+      setIsReactFlowReady(true);
+      rerunLayout();
+      reactFlowInstance.fitView({ duration: 0, padding: 0.1 });
+    },
+    [rerunLayout]
+  );
 
   return (
     <div ref={containerRef} className="w-full h-full">
