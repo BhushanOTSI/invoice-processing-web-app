@@ -1,27 +1,16 @@
 "use client";
+
 import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useState,
   useCallback,
   useRef,
 } from "react";
 import Dagre from "@dagrejs/dagre";
-import {
-  cn,
-  formatFractionalHoursAuto,
-  isCompletedProcessing,
-  isPendingProcessing,
-  isProcessing,
-  isSkippedProcessing,
-} from "@/lib/utils";
-import {
-  statusBackgroundVariants,
-  statusBorderVariants,
-  statusTextVariants,
-} from "./process-status-badge";
+import { cn, isProcessing, isSkippedProcessing } from "@/lib/utils";
+import { statusTextVariants } from "./process-status-badge";
 
 import "@xyflow/react/dist/style.css";
 import {
@@ -41,7 +30,6 @@ import {
 import { ProcessStatusBadge } from "./process-status-badge";
 import { PROCESS_STATUS } from "@/app/constants";
 import { DataEdge } from "../data-edge";
-import { LabeledHandle } from "../labeled-handle";
 import { BaseHandle } from "../base-handle";
 import { ProcessMessage } from "./process-message";
 
@@ -51,11 +39,49 @@ const getBorderColor = (status) => {
     .replace("900", "500")})`;
 };
 
+// Reusable component for rendering multiple or single handles
+const NodeHandles = ({
+  edgeCount,
+  handleType,
+  position,
+  shouldRender,
+  keyPrefix,
+  getHandleStyle,
+}) => {
+  if (!shouldRender || edgeCount === 0) return null;
+
+  const hasMultipleEdges = edgeCount > 1;
+
+  return (
+    <>
+      {hasMultipleEdges ? (
+        // Multiple handles when there are multiple edges
+        Array.from({ length: edgeCount }).map((_, index) => (
+          <BaseHandle
+            key={`${keyPrefix}-${index}`}
+            id={`${keyPrefix}-${index}`}
+            type={handleType}
+            position={position}
+            isConnectable={false}
+            style={getHandleStyle(index, edgeCount)}
+          />
+        ))
+      ) : edgeCount === 1 ? (
+        // Single handle for one edge - use BaseHandle for consistency
+        <BaseHandle
+          type={handleType}
+          position={position}
+          isConnectable={false}
+        />
+      ) : null}
+    </>
+  );
+};
+
 const nodeTypes = {
-  step: ({ data, id }) => {
+  step: ({ data }) => {
     const {
       isFirstNode,
-      isLastNode,
       outgoingEdgesCount = 0,
       incomingEdgesCount = 0,
     } = data;
@@ -68,49 +94,33 @@ const nodeTypes = {
     // The 'left' style property positions handles horizontally on Top/Bottom edges
     const getHandleStyle = (index, total) => {
       if (total <= 1) return {}; // Default center position
+
       // Distribute handles evenly across the node width with better spacing
       // Use 10% padding from edges for wider distribution
       const padding = 10;
       const availablePercent = 100 - padding * 2;
       const percentPerHandle = total > 1 ? availablePercent / (total - 1) : 0;
       const leftPercent = padding + percentPerHandle * index;
+
       // Ensure the percentage is valid and return as string
       return { left: `${Math.max(0, Math.min(100, leftPercent))}%` };
     };
 
-    // Determine if we need multiple handles
-    const hasMultipleIncoming = incomingEdgesCount > 1;
-    const hasMultipleOutgoing = outgoingEdgesCount > 1;
+    // Determine if we have incoming/outgoing edges
     const hasIncoming = incomingEdgesCount > 0;
     const hasOutgoing = outgoingEdgesCount > 0;
 
     return (
       <>
         {/* Target handles for incoming edges */}
-        {hasIncoming && !isFirstNode && (
-          <>
-            {hasMultipleIncoming ? (
-              // Multiple handles when there are multiple incoming edges
-              Array.from({ length: incomingEdgesCount }).map((_, index) => (
-                <BaseHandle
-                  key={`target-${index}`}
-                  id={`target-${index}`}
-                  type="target"
-                  position={Position.Top}
-                  isConnectable={false}
-                  style={getHandleStyle(index, incomingEdgesCount)}
-                />
-              ))
-            ) : incomingEdgesCount === 1 ? (
-              // Single handle for one incoming edge - use BaseHandle for consistency
-              <BaseHandle
-                type="target"
-                position={Position.Top}
-                isConnectable={false}
-              />
-            ) : null}
-          </>
-        )}
+        <NodeHandles
+          edgeCount={incomingEdgesCount}
+          handleType="target"
+          position={Position.Top}
+          shouldRender={hasIncoming && !isFirstNode}
+          keyPrefix="target"
+          getHandleStyle={getHandleStyle}
+        />
         <BaseNode
           className={cn(
             isActive && "border-2 border-accent-foreground",
@@ -139,30 +149,14 @@ const nodeTypes = {
           </BaseNodeFooter>
         </BaseNode>
         {/* Source handles for outgoing edges */}
-        {hasOutgoing && (
-          <>
-            {hasMultipleOutgoing ? (
-              // Multiple handles when there are multiple outgoing edges
-              Array.from({ length: outgoingEdgesCount }).map((_, index) => (
-                <BaseHandle
-                  key={`source-${index}`}
-                  id={`source-${index}`}
-                  type="source"
-                  position={Position.Bottom}
-                  isConnectable={false}
-                  style={getHandleStyle(index, outgoingEdgesCount)}
-                />
-              ))
-            ) : outgoingEdgesCount === 1 ? (
-              // Single handle for one outgoing edge - use BaseHandle for consistency
-              <BaseHandle
-                type="source"
-                position={Position.Bottom}
-                isConnectable={false}
-              />
-            ) : null}
-          </>
-        )}
+        <NodeHandles
+          edgeCount={outgoingEdgesCount}
+          handleType="source"
+          position={Position.Bottom}
+          shouldRender={hasOutgoing}
+          keyPrefix="source"
+          getHandleStyle={getHandleStyle}
+        />
       </>
     );
   },
@@ -184,12 +178,19 @@ const edgeTypes = {
 };
 
 const ProcessingStepsFlowInner = () => {
-  const { nodes, edges, onNodeClick, onNodesChange, onEdgesChange } =
-    useProcessingStepsFlow();
+  const {
+    nodes,
+    edges,
+    onNodeClick,
+    onNodesChange,
+    onEdgesChange,
+    rerunLayout,
+  } = useProcessingStepsFlow();
   const reactFlowInstanceRef = useRef(null);
   const containerRef = useRef(null);
   const [minZoom, setMinZoom] = useState(0.3);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [isReactFlowReady, setIsReactFlowReady] = useState(false);
 
   // Calculate minZoom based on nodes bounding box
   const calculateMinZoom = useCallback(() => {
@@ -287,18 +288,20 @@ const ProcessingStepsFlowInner = () => {
 
   // Fit view when nodes change (layout updates)
   useEffect(() => {
-    if (reactFlowInstanceRef.current && nodes.length > 0) {
+    if (isReactFlowReady && nodes.length > 0) {
       // Small delay to ensure layout is complete
       const timeoutId = setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.1 });
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [nodes.length]);
+  }, [nodes.length, isReactFlowReady]);
 
   const onInit = useCallback((reactFlowInstance) => {
     reactFlowInstanceRef.current = reactFlowInstance;
+    setIsReactFlowReady(true);
     // Fit view on initial mount
+    rerunLayout();
     reactFlowInstance.fitView({ duration: 0, padding: 0.1 });
   }, []);
 
@@ -345,8 +348,8 @@ export const getLayoutedElements = (nodes, edges, options) => {
   nodes.forEach((node) => {
     g.setNode(node.id, {
       ...node,
-      width: node.measured?.width ?? 0,
-      height: node.measured?.height ?? 0,
+      width: node.measured?.width || 350,
+      height: node.measured?.height || 100,
     });
   });
 
@@ -503,6 +506,16 @@ export const ProcessingStepsFlowProvider = ({
     setEdges(layoutedEdges);
   }, [messages, setNodes, setEdges, dag_nodes, dag_edges]);
 
+  const rerunLayout = useCallback(() => {
+    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(
+      nodes,
+      edges,
+      { direction: "TB" }
+    );
+    setNodes(newNodes);
+    setEdges(newEdges);
+  }, [nodes, edges]);
+
   return (
     <Context.Provider
       value={{
@@ -513,6 +526,7 @@ export const ProcessingStepsFlowProvider = ({
         activeNodeIndex,
         onNodesChange,
         onEdgesChange,
+        rerunLayout,
       }}
     >
       {children}

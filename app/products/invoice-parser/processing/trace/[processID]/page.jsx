@@ -275,20 +275,6 @@ export default function ProcessTracePage() {
     };
   }, [groupedTraceMessages, dagNodes]);
 
-  useEffect(() => {
-    if (stepStatus.isStep1Processing) {
-      setActiveTab("step-1");
-    }
-
-    if (stepStatus.isStep2Processing) {
-      setActiveTab("step-2");
-    }
-
-    if (stepStatus.isStep3Processing) {
-      setActiveTab("step-3");
-    }
-  }, [stepStatus]);
-
   const [view, setView] = useState("markdown");
 
   const containerRef = useRef(null);
