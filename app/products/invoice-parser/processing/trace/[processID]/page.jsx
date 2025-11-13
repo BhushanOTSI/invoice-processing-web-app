@@ -428,7 +428,10 @@ export default function ProcessTracePage() {
                             value="step-1"
                             key="step-1"
                             stepNumber={1}
-                            isProcessing={stepStatus.isStep1Processing}
+                            isProcessing={
+                              stepStatus.isStep1Processing ||
+                              !groupedTraceMessages["step-1"]
+                            }
                             isLoading={isLoading}
                             isCompleted={stepStatus.isStep1Completed}
                             isFailed={stepStatus.isStep1Failed}
@@ -504,7 +507,11 @@ export default function ProcessTracePage() {
                       <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
-                          isLoading={isLoading || isLoadingProcessingStream}
+                          isLoading={
+                            stepStatus.isStep1Processing ||
+                            isLoading ||
+                            !groupedTraceMessages["step-1"]
+                          }
                           jsonData={jsonData?.combined_parsed_json || jsonData}
                           view={view}
                         />
@@ -678,7 +685,7 @@ function StepTabTrigger({
           isLoading && "bg-muted text-muted-foreground border border-border"
         )}
       >
-        {isLoading ? (
+        {isLoading || isProcessing ? (
           <Spinner className="size-3" />
         ) : isCompleted && !isFailed && !isCancelled ? (
           <BadgeCheckIcon className="size-3.5" />
