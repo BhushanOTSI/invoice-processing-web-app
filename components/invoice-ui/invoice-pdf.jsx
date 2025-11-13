@@ -1,131 +1,50 @@
 "use client";
 
-import {
-  forwardRef,
-  useRef,
-  useState,
-  useEffect,
-  useImperativeHandle,
-  useCallback,
-  memo,
-} from "react";
+import { forwardRef, memo, useImperativeHandle, useState, useEffect } from "react";
+import { Worker, Viewer } from "@react-pdf-viewer/core";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
+import { zoomPlugin } from "@react-pdf-viewer/zoom";
 
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+import "@react-pdf-viewer/zoom/lib/styles/index.css";
+import "@/app/pdf-viewer-dark.css";
 
 import { cn } from "@/lib/utils";
-import { Spinner } from "@/components/ui/spinner";
-import { Document, Page, pdfjs } from "react-pdf";
-import { ScrollArea } from "../ui/scroll-area";
 
 const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
-  const containerRef = useRef(null);
-  const [numPages, setNumPages] = useState(1);
-  const [pageWidths, setPageWidths] = useState(600);
-  const pageRefs = useRef(new Map());
+  const [numPages, setNumPages] = useState(0);
 
-  useEffect(() => {
-    if (!pdfjs.GlobalWorkerOptions.workerSrc) {
-      pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-        "pdfjs-dist/build/pdf.worker.min.mjs",
-        import.meta.url
-      ).toString();
-    }
-  }, []);
 
-  const resetPages = useCallback(() => {
-    pageRefs.current.clear();
-  }, []);
+  const defaultLayoutPluginInstance = defaultLayoutPlugin({
+    sidebarTabs: () => [],
 
-  useEffect(() => {
-    resetPages();
-    setNumPages(0);
-  }, [fileUrl, resetPages]);
+  });
+  const zoomPluginInstance = zoomPlugin();
 
   useImperativeHandle(ref, () => ({
     getNumPages: () => numPages,
     setNumPages: (n) => setNumPages(n),
   }));
 
-  useEffect(() => {
-    if (!containerRef.current) return;
+  const handleDocumentLoad = (e) => {
+    setNumPages(e.doc.numPages);
+  };
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) setPageWidths(entry.contentRect.width);
-    });
-
-    resizeObserver.observe(containerRef.current);
-
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  const onDocumentLoadSuccess = useCallback(({ numPages: totalPages }) => {
-    setNumPages(totalPages);
-  }, []);
-
-  const onDocumentLoadError = useCallback(() => {
-    resetPages();
-    setNumPages(0);
-  }, [resetPages]);
-
-  const registerPageRef = useCallback(
-    (pageNumber) => (node) => {
-      if (!node) {
-        pageRefs.current.delete(pageNumber);
-        return;
-      }
-
-      pageRefs.current.set(pageNumber, node);
-    },
-    []
-  );
 
   return (
-    <div
-      ref={containerRef}
-      className={cn("h-full w-full overflow-y-auto flex flex-row", className)}
-    >
-      <div className="flex-1">
-        <ScrollArea className="h-full">
-          <Document
-            file={fileUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
-            className={"h-full [&>div]:h-full"}
-            loading={
-              <div className="flex-1 justify-center items-center h-full min-h-[calc(100vh-4rem)] flex flex-col">
-                <Spinner />
-              </div>
-            }
-            error={
-              <div className="flex-1 justify-center items-center text-sm text-red-500 h-full flex flex-col">
-                Unable to load this PDF document.
-              </div>
-            }
-          >
-            {Array.from({ length: numPages }, (_, index) => {
-              const pageNumber = index + 1;
-
-              return (
-                <div
-                  key={pageNumber}
-                  ref={registerPageRef(pageNumber)}
-                  data-page={pageNumber}
-                  className="px-8 first:pt-8 pb-8"
-                >
-                  <Page
-                    pageNumber={pageNumber}
-                    width={pageWidths - 80}
-                    renderAnnotationLayer={true}
-                    renderTextLayer={true}
-                    loading={null}
-                  />
-                </div>
-              );
-            })}
-          </Document>
-        </ScrollArea>
-      </div>
+    <div className={cn("h-full w-full", className)}>
+      <Worker workerUrl="/pdf.worker.min.js">
+        <div className="h-full">
+          <Viewer
+            fileUrl={fileUrl}
+            plugins={[defaultLayoutPluginInstance, zoomPluginInstance]}
+            onDocumentLoad={handleDocumentLoad}
+            theme="auto"
+            defaultScale={1}
+          />
+        </div>
+      </Worker>
     </div>
   );
 });
