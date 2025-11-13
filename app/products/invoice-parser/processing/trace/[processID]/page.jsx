@@ -279,6 +279,13 @@ export default function ProcessTracePage() {
 
   const containerRef = useRef(null);
 
+  const isMainProcessFailed = useMemo(() => {
+    return (
+      isFailedProcessing(processTraceStatus?.status) ||
+      isCancelledProcessing(processTraceStatus?.status)
+    );
+  }, [processTraceStatus?.status]);
+
   return (
     <div className="overflow-hidden flex flex-col" ref={containerRef}>
       <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b shrink-0">
@@ -418,12 +425,15 @@ export default function ProcessTracePage() {
                         key="step-1"
                         stepNumber={1}
                         isProcessing={
-                          stepStatus.isStep1Processing ||
-                          !groupedTraceMessages["step-1"]
+                          (stepStatus.isStep1Processing ||
+                            !groupedTraceMessages["step-1"]) &&
+                          !isMainProcessCompleted
                         }
                         isLoading={isLoading}
                         isCompleted={stepStatus.isStep1Completed}
-                        isFailed={stepStatus.isStep1Failed}
+                        isFailed={
+                          stepStatus.isStep1Failed || isMainProcessFailed
+                        }
                         isCancelled={stepStatus.isStep1Cancelled}
                         isPreviousStepCompleted={true}
                       >
@@ -491,17 +501,20 @@ export default function ProcessTracePage() {
                           message={groupedTraceMessages["step-1"]}
                           isLoading={isLoading}
                           isProcessing={
-                            stepStatus.isStep1Processing ||
-                            !groupedTraceMessages["step-1"]
+                            (stepStatus.isStep1Processing ||
+                              !groupedTraceMessages["step-1"]) &&
+                            !isMainProcessCompleted
                           }
                           jsonData={jsonData?.combined_parsed_json || jsonData}
                           view={view}
+                          isMainProcessFailed={isMainProcessFailed}
                         />
                       </TabsContent>
                       <TabsContent value="step-2" className="h-full">
                         <ProcessMessage
                           message={groupedTraceMessages["step-2"]}
                           isLoading={isLoading}
+                          isMainProcessFailed={isMainProcessFailed}
                         />
                       </TabsContent>
                       <TabsContent value="step-3" className="space-y-4 h-full">
@@ -618,7 +631,6 @@ function StepTabTrigger({
           "size-5 rounded-full",
           "font-semibold text-[9px]",
           "transition-all duration-200",
-          "border-2",
           "group-data-[state=active]/tab:scale-105",
           // Status colors
           isCompleted &&
@@ -647,13 +659,13 @@ function StepTabTrigger({
         )}
       >
         {isLoading || isProcessing ? (
-          <Spinner className="size-2.5" />
+          <Spinner className="size-3" />
         ) : isCompleted && !isFailed && !isCancelled ? (
-          <BadgeCheckIcon className="size-2.5" />
+          <BadgeCheckIcon className="size-4" />
         ) : isFailed ? (
-          <CircleXIcon className="size-2.5" />
+          <CircleXIcon className="size-4" />
         ) : isCancelled ? (
-          <BanIcon className="size-2.5" />
+          <BanIcon className="size-4" />
         ) : (
           <span>{stepNumber}</span>
         )}

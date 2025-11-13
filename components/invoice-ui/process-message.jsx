@@ -5,6 +5,14 @@ import JsonView from "@uiw/react-json-view";
 import { jsonToMarkdown } from "@/lib/json-to-markdown";
 import { PdfScanningLoader } from "../pdf-scanning-loader";
 import { Spinner } from "../ui/spinner";
+import { FileQuestionMarkIcon } from "lucide-react";
+import {
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  Empty,
+  EmptyMedia,
+} from "../ui/empty";
 
 export function ProcessMessage({
   message,
@@ -12,6 +20,7 @@ export function ProcessMessage({
   view = "markdown",
   jsonData,
   isProcessing = false,
+  isMainProcessFailed = false,
 }) {
   const markdown = message?.extraMetadata?.markdown;
   const hasMarkdown = !!markdown;
@@ -35,8 +44,28 @@ export function ProcessMessage({
         <Markdown>{markdown}</Markdown>
         {jsonData && <Markdown>{jsonToMarkdown(jsonData)}</Markdown>}
       </div>
+    ) : message?.message || isMainProcessFailed ? (
+      <Empty>
+        <EmptyMedia variant="icon">
+          <FileQuestionMarkIcon />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>Failed to parse the invoice</EmptyTitle>
+          <EmptyDescription>
+            The invoice parsing process failed.No message available.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     ) : (
-      message?.message
+      <Empty>
+        <EmptyMedia variant="icon">
+          <FileQuestionMarkIcon />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>No message available</EmptyTitle>
+          <EmptyDescription>No message available.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     );
   }
 
