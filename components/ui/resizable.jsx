@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
+import { GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ResizablePanelGroup = React.forwardRef(({ className, ...props }, ref) => (
@@ -31,41 +32,9 @@ const ResizableHandle = ({ withHandle, className, ...props }) => {
       {...props}
     >
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-80 group-hover:opacity-100 transition-all duration-300">
-        <div className="flex items-center gap-0.5 py-1 px-1.5 rounded-md bg-background/90 dark:bg-gray-800/90 border border-gray-200/50 dark:border-gray-600/50 shadow-sm hover:shadow-md hover:bg-background dark:hover:bg-gray-800 transition-all duration-200">
+        <div className="flex items-center gap-0.5 rounded-sm bg-background/90 dark:bg-gray-800/90 border border-gray-200/50 dark:border-gray-600/50 shadow-sm hover:shadow-md hover:bg-background dark:hover:bg-gray-800 transition-all duration-200">
           <button className="p-0.5 rounded">
-            <svg
-              width="5"
-              height="5"
-              viewBox="0 0 8 8"
-              fill="none"
-              className="text-gray-600 dark:text-gray-400"
-            >
-              <path
-                d="M5 1.5L2.5 4L5 6.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-          <div className="w-px h-3 bg-gray-300 dark:bg-gray-600"></div>
-          <button className="p-0.5 rounded">
-            <svg
-              width="5"
-              height="5"
-              viewBox="0 0 8 8"
-              fill="none"
-              className="text-gray-600 dark:text-gray-400"
-            >
-              <path
-                d="M3 1.5L5.5 4L3 6.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <GripVertical className="h-3 w-3 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
       </div>

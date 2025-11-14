@@ -1,12 +1,9 @@
 "use client";
 
-import { CASE_TYPES, PROCESS_STATUS } from "@/app/constants";
+import { PROCESS_STATUS } from "@/app/constants";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
-import {
-  ProcessStatusBadge,
-  statusTextVariants,
-} from "@/components/invoice-ui/process-status-badge";
+import { ProcessStatusBadge } from "@/components/invoice-ui/process-status-badge";
 import { usePersistentResize } from "@/hooks/use-persistent-resize";
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
 import {
@@ -407,7 +404,7 @@ export default function ProcessTracePage() {
                 )}
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle />
+            <ResizableHandle />
             <ResizablePanel className={cn(containerHeight)}>
               <div className="h-full flex flex-col">
                 <Tabs

@@ -251,8 +251,7 @@
   }
 
   .rpv-default-layout__toolbar {
-    @apply backdrop-blur-md transition-all duration-200 ease-in-out items-center gap-1;
-    background-color: var(--background) !important;
+    @apply backdrop-blur-md transition-all duration-200 ease-in-out items-center gap-1 border-x-0! border-b! border-border! shadow-none bg-accent!;
   }
 
   .dark .rpv-default-layout__toolbar {
@@ -303,14 +302,16 @@
     color: var(--pv-text) !important;
   }
 
+  .rpv-default-layout__body {
+    @apply bg-accent!;
+  }
+
   .rpv-core__inner-pages {
-    @apply transition-colors duration-200 ease-in-out;
-    background-color: var(--background) !important;
+    @apply transition-colors duration-200 ease-in-out py-8! bg-accent!;
   }
 
   .rpv-core__inner-page {
-    @apply mb-4;
-    background-color: var(--pv-bg) !important;
+    @apply mb-4 bg-accent!;
   }
 
   .rpv-zoom__popover-target-arrow {
@@ -547,6 +548,10 @@
     background-color: var(--pv-search-highlight-dark) !important;
   }
 
+  .rpv-core__viewer  {
+    @apply border-r! border-border!;
+  }
+
   .rpv-core__inner-pages,
   .rpv-core__viewer,
   .rpv-default-layout__sidebar,
@@ -626,7 +631,7 @@
 
   .rpv-core__page-layer-wrapper,
   .rpv-default-layout__container {
-    @apply border-none shadow-none;
+    @apply border-none! shadow-none;
   }
 
   .rpv-core__minimal-button:disabled,
