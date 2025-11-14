@@ -102,17 +102,14 @@ const nodeTypes = {
       const percentPerHandle = total > 1 ? availablePercent / (total - 1) : 0;
       const leftPercent = padding + percentPerHandle * index;
 
-      // Ensure the percentage is valid and return as string
       return { left: `${Math.max(0, Math.min(100, leftPercent))}%` };
     };
 
-    // Determine if we have incoming/outgoing edges
     const hasIncoming = incomingEdgesCount > 0;
     const hasOutgoing = outgoingEdgesCount > 0;
 
     return (
       <>
-        {/* Target handles for incoming edges */}
         <NodeHandles
           edgeCount={incomingEdgesCount}
           handleType="target"
@@ -148,7 +145,6 @@ const nodeTypes = {
             <div className="text-xs">{data.processingTime}</div>
           </BaseNodeFooter>
         </BaseNode>
-        {/* Source handles for outgoing edges */}
         <NodeHandles
           edgeCount={outgoingEdgesCount}
           handleType="source"
@@ -192,10 +188,9 @@ const ProcessingStepsFlowInner = () => {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isReactFlowReady, setIsReactFlowReady] = useState(false);
 
-  // Calculate minZoom based on nodes bounding box
   const calculateMinZoom = useCallback(() => {
     if (!containerRef.current || nodes.length === 0) {
-      return 0.3; // Default fallback
+      return 0.3;
     }
 
     const container = containerRef.current;
@@ -203,10 +198,9 @@ const ProcessingStepsFlowInner = () => {
     const containerHeight = container.clientHeight;
 
     if (containerWidth === 0 || containerHeight === 0) {
-      return 0.3; // Default fallback
+      return 0.3;
     }
 
-    // Calculate bounding box of all nodes
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
@@ -224,7 +218,6 @@ const ProcessingStepsFlowInner = () => {
       maxY = Math.max(maxY, y + nodeHeight);
     });
 
-    // Add padding (10% on each side)
     const padding = 0.1;
     const paddingX = (maxX - minX) * padding;
     const paddingY = (maxY - minY) * padding;
@@ -232,18 +225,14 @@ const ProcessingStepsFlowInner = () => {
     const contentWidth = maxX - minX + paddingX * 2;
     const contentHeight = maxY - minY + paddingY * 2;
 
-    // Calculate zoom needed to fit content in viewport
     const zoomX = containerWidth / contentWidth;
     const zoomY = containerHeight / contentHeight;
 
-    // Use the smaller zoom to ensure everything fits
     const calculatedZoom = Math.min(zoomX, zoomY);
 
-    // Clamp between reasonable bounds (0.1 to 1.0)
     return Math.max(0.1, Math.min(1.0, calculatedZoom));
   }, [nodes]);
 
-  // Update container size and minZoom on resize
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -258,7 +247,6 @@ const ProcessingStepsFlowInner = () => {
 
     let timeoutId;
     const resizeObserver = new ResizeObserver(() => {
-      // Debounce resize events for better performance
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         updateSize();
@@ -268,9 +256,8 @@ const ProcessingStepsFlowInner = () => {
       }, 150);
     });
 
-    // Observe the parent container
     resizeObserver.observe(containerRef.current);
-    updateSize(); // Initial size
+    updateSize();
 
     return () => {
       resizeObserver.disconnect();
@@ -278,7 +265,6 @@ const ProcessingStepsFlowInner = () => {
     };
   }, []);
 
-  // Update minZoom when nodes or container size changes
   useEffect(() => {
     if (nodes.length > 0) {
       const newMinZoom = calculateMinZoom();
@@ -286,10 +272,8 @@ const ProcessingStepsFlowInner = () => {
     }
   }, [nodes, containerSize, calculateMinZoom]);
 
-  // Fit view when nodes change (layout updates)
   useEffect(() => {
     if (isReactFlowReady && nodes.length > 0) {
-      // Small delay to ensure layout is complete
       const timeoutId = setTimeout(() => {
         reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.1 });
       }, 100);
