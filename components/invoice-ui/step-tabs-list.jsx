@@ -7,13 +7,14 @@ import { BadgeCheckIcon, BanIcon, CircleXIcon } from "lucide-react";
 
 function StepConnector({ isCompleted, isLoading }) {
   return (
-    <div className="flex items-center px-1.5 min-w-[24px] shrink-0">
+    <div className="flex items-center px-1.5 min-w-[20px] shrink-0">
       <div
         className={cn(
-          "h-[2px] w-full rounded-full transition-all duration-300",
+          "h-[2px] w-full rounded-full",
+          "transition-colors duration-300 ease-in-out",
           isCompleted && "bg-emerald-500",
           !isCompleted && !isLoading && "bg-border",
-          isLoading && "bg-muted-foreground/20 animate-pulse"
+          isLoading && "bg-muted-foreground/20"
         )}
       />
     </div>
