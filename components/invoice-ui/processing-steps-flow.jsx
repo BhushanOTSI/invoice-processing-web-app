@@ -324,10 +324,14 @@ export const getLayoutedElements = async (nodes, edges, options) => {
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": elkDirection,
-      "elk.spacing.nodeNode": "80",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
-      "elk.spacing.edgeNode": "10",
-      "elk.spacing.edgeEdge": "10",
+      "elk.spacing.nodeNode": 50,
+      "elk.layered.spacing.nodeNodeBetweenLayers": 60,
+      // edges
+      "elk.edgeRouting": "ORTHOGONAL",
+      // "elk.layered.mergeEdges": true,
+      // reduce ugly crossings
+      "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+      "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
     },
     children: nodes.map((node) => ({
       id: String(node.id),
