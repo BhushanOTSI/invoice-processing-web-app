@@ -19,9 +19,10 @@ import {
   useProcessTraceDag,
   useProcessTraceStatus,
 } from "@/services/hooks/useInvoice";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
+import { Tabs, TabsContent } from "@radix-ui/react-tabs";
 import { useParams, useRouter } from "next/navigation";
 import { ProcessMessage } from "@/components/invoice-ui/process-message";
+import { StepTabsList } from "@/components/invoice-ui/step-tabs-list";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 import {
   Empty,
@@ -46,9 +47,6 @@ import {
 } from "@/services/hooks/useBatchProcessInvoice";
 import {
   ArrowLeftIcon,
-  BadgeCheckIcon,
-  BanIcon,
-  CircleXIcon,
   ClockIcon,
   FileIcon,
   FileQuestionMarkIcon,
@@ -415,69 +413,51 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="px-4 py-2 border-b border-border/50 shrink-0 overflow-hidden">
-                    <TabsList className="flex items-center gap-0 w-full bg-transparent p-0 h-auto">
-                      <StepTabTrigger
-                        value="step-1"
-                        key="step-1"
-                        stepNumber={1}
-                        isProcessing={
+                  <StepTabsList
+                    tabs={[
+                      {
+                        value: "step-1",
+                        label: "AI Invoice Extraction",
+                        stepNumber: 1,
+                        isProcessing:
                           (stepStatus.isStep1Processing ||
-                            !groupedTraceMessages["step-1"]) &&
-                          !isMainProcessCompleted
-                        }
-                        isLoading={isLoading}
-                        isCompleted={stepStatus.isStep1Completed}
-                        isFailed={
-                          stepStatus.isStep1Failed || isMainProcessFailed
-                        }
-                        isCancelled={stepStatus.isStep1Cancelled}
-                        isPreviousStepCompleted={true}
-                      >
-                        <span>AI Invoice Extraction</span>
-                      </StepTabTrigger>
-                      <StepConnector
-                        isCompleted={stepStatus.isStep1Completed}
-                        isLoading={isLoading}
-                      />
-                      <StepTabTrigger
-                        value="step-2"
-                        key="step-2"
-                        stepNumber={2}
-                        isProcessing={stepStatus.isStep2Processing}
-                        isLoading={isLoading}
-                        isCompleted={stepStatus.isStep2Completed}
-                        isFailed={
-                          stepStatus.isStep2Failed || stepStatus.isStep1Failed
-                        }
-                        isCancelled={stepStatus.isStep2Cancelled}
-                        isPreviousStepCompleted={stepStatus.isStep1Completed}
-                      >
-                        <span>Validate CW Invoice</span>
-                      </StepTabTrigger>
-                      <StepConnector
-                        isCompleted={stepStatus.isStep2Completed}
-                        isLoading={isLoading}
-                      />
-                      <StepTabTrigger
-                        value="step-3"
-                        key="step-3"
-                        stepNumber={3}
-                        isProcessing={stepStatus.isStep3Processing}
-                        isLoading={isLoading}
-                        isCompleted={stepStatus.isStep3Completed}
-                        isFailed={
+                            (!groupedTraceMessages["step-1"] && !isLoading)) &&
+                          !isMainProcessCompleted,
+                        isLoading: isLoading,
+                        isCompleted: stepStatus.isStep1Completed,
+                        isFailed:
+                          stepStatus.isStep1Failed || isMainProcessFailed,
+                        isCancelled: stepStatus.isStep1Cancelled,
+                        isPreviousStepCompleted: true,
+                      },
+                      {
+                        value: "step-2",
+                        label: "Validate CW Invoice",
+                        stepNumber: 2,
+                        isProcessing: stepStatus.isStep2Processing,
+                        isLoading: isLoading,
+                        isCompleted: stepStatus.isStep2Completed,
+                        isFailed:
+                          stepStatus.isStep2Failed || stepStatus.isStep1Failed,
+                        isCancelled: stepStatus.isStep2Cancelled,
+                        isPreviousStepCompleted: stepStatus.isStep1Completed,
+                      },
+                      {
+                        value: "step-3",
+                        label: "Process Steps",
+                        stepNumber: 3,
+                        isProcessing: stepStatus.isStep3Processing,
+                        isLoading: isLoading,
+                        isCompleted: stepStatus.isStep3Completed,
+                        isFailed:
                           stepStatus.isStep3Failed ||
                           stepStatus.isStep2Failed ||
-                          stepStatus.isStep1Failed
-                        }
-                        isCancelled={stepStatus.isStep3Cancelled}
-                        isPreviousStepCompleted={stepStatus.isStep2Completed}
-                      >
-                        <span>Process Steps</span>
-                      </StepTabTrigger>
-                    </TabsList>
-                  </div>
+                          stepStatus.isStep1Failed,
+                        isCancelled: stepStatus.isStep3Cancelled,
+                        isPreviousStepCompleted: stepStatus.isStep2Completed,
+                      },
+                    ]}
+                  />
                   {jsonData && activeTab === "step-1" && (
                     <div className="flex items-center gap-1 py-2 px-6 bg-accent dark:bg-accent/50 border-b border-border/50 justify-end">
                       <Switch
@@ -565,145 +545,5 @@ function InfoItem({
         <CopyToClipboard value={copyValue || value} iconSize={"size-3"} />
       )}
     </div>
-  );
-}
-
-function StepConnector({ isCompleted, isLoading }) {
-  return (
-    <div className="flex items-center px-1.5 min-w-[24px] shrink-0">
-      <div
-        className={cn(
-          "h-[2px] w-full rounded-full transition-all duration-300",
-          isCompleted && "bg-emerald-500",
-          !isCompleted && !isLoading && "bg-border",
-          isLoading && "bg-muted-foreground/20 animate-pulse"
-        )}
-      />
-    </div>
-  );
-}
-
-function StepTabTrigger({
-  children,
-  className,
-  stepNumber,
-  isProcessing,
-  isLoading,
-  isCompleted,
-  isFailed,
-  isCancelled,
-  isPreviousStepCompleted = false,
-  ...props
-}) {
-  const isDisabled = isLoading || !isPreviousStepCompleted;
-
-  return (
-    <TabsTrigger
-      className={cn(
-        "group/tab relative flex items-center gap-1.5",
-        "px-2.5 py-1.5 rounded-lg",
-        "transition-all duration-200",
-        "border border-border/50",
-        "min-w-0 flex-1",
-        // Default state
-        "bg-accent/50",
-        // Hover
-        !isDisabled && "hover:bg-muted/50 cursor-pointer",
-        // Active state - subtle elevation with better shadow
-        "data-[state=active]:bg-background/95 data-[state=active]:border-border",
-        "data-[state=active]:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.08),0_1px_4px_-1px_rgba(0,0,0,0.06)]",
-        "dark:data-[state=active]:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.4),0_1px_4px_-1px_rgba(0,0,0,0.3)]",
-        "data-[state=active]:ring-1 data-[state=active]:ring-primary/10",
-        // Disabled
-        isDisabled && "opacity-40 cursor-not-allowed pointer-events-none",
-        className
-      )}
-      disabled={isDisabled}
-      {...props}
-    >
-      {/* Step Badge */}
-      <div
-        className={cn(
-          "relative flex items-center justify-center shrink-0",
-          "size-5 rounded-full",
-          "font-semibold text-[9px]",
-          "transition-all duration-200",
-          "group-data-[state=active]/tab:scale-105",
-          // Status colors
-          isCompleted &&
-            !isFailed &&
-            !isCancelled && [
-              "bg-emerald-500 border-emerald-500 text-white",
-              "shadow-[0_0_6px_rgba(16,185,129,0.3)]",
-            ],
-          isProcessing && [
-            "bg-blue-500 border-blue-500 text-white",
-            "shadow-[0_0_6px_rgba(59,130,246,0.3)]",
-          ],
-          isFailed && [
-            "bg-red-500 border-red-500 text-white",
-            "shadow-[0_0_6px_rgba(239,68,68,0.3)]",
-          ],
-          isCancelled && "bg-gray-400 border-gray-400 text-white",
-          !isCompleted &&
-            !isProcessing &&
-            !isFailed &&
-            !isCancelled &&
-            !isLoading &&
-            "bg-muted border-muted-foreground/30 text-muted-foreground",
-          isLoading &&
-            "bg-muted border-muted-foreground/20 text-muted-foreground"
-        )}
-      >
-        {isLoading || isProcessing ? (
-          <Spinner className="size-3" />
-        ) : isCompleted && !isFailed && !isCancelled ? (
-          <BadgeCheckIcon className="size-4" />
-        ) : isFailed ? (
-          <CircleXIcon className="size-4" />
-        ) : isCancelled ? (
-          <BanIcon className="size-4" />
-        ) : (
-          <span>{stepNumber}</span>
-        )}
-      </div>
-
-      {/* Label */}
-      <span
-        className={cn(
-          "text-sm font-medium",
-          "transition-all duration-200",
-          "group-data-[state=active]/tab:text-foreground group-data-[state=active]/tab:font-semibold",
-          !isDisabled && "text-foreground/70",
-          isDisabled && "text-muted-foreground",
-          "whitespace-nowrap truncate min-w-0"
-        )}
-      >
-        {children}
-      </span>
-
-      {/* Processing pulse */}
-      {isProcessing && (
-        <div className="absolute -top-0.5 -right-0.5">
-          <span className="relative flex size-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-            <span className="relative inline-flex rounded-full size-1.5 bg-blue-500" />
-          </span>
-        </div>
-      )}
-
-      {/* Active indicator */}
-      <div
-        className={cn(
-          "absolute bottom-0 left-0 right-0 h-[3px] rounded-t-full",
-          "transition-all duration-300 ease-out",
-          "bg-gradient-to-r from-primary/60 via-primary to-primary/60",
-          "shadow-[0_-1px_4px_0_rgba(var(--primary-rgb),0.3)]",
-          "scale-x-0 data-[state=active]:scale-x-100",
-          "origin-center"
-        )}
-        data-state={props.value === props.activeValue ? "active" : "inactive"}
-      />
-    </TabsTrigger>
   );
 }
