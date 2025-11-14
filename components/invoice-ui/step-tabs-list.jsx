@@ -5,16 +5,33 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { BadgeCheckIcon, BanIcon, CircleXIcon } from "lucide-react";
 
-function StepConnector({ isCompleted, isLoading }) {
+function StepConnector({
+  isCompleted,
+  isLoading,
+  isProcessing,
+  isFailed,
+  isCancelled,
+}) {
   return (
     <div className="flex items-center px-1.5 min-w-[20px] shrink-0">
       <div
         className={cn(
           "h-[2px] w-full rounded-full",
           "transition-colors duration-300 ease-in-out",
-          isCompleted && "bg-emerald-500",
-          !isCompleted && !isLoading && "bg-border",
-          isLoading && "bg-muted-foreground/20"
+          // Status colors - match step badge colors
+          isCompleted && !isFailed && !isCancelled && "bg-emerald-500",
+          isProcessing && "bg-blue-500",
+          isFailed && "bg-red-500",
+          isCancelled && "bg-gray-500",
+          // Loading state
+          isLoading && !isProcessing && "bg-muted-foreground/20",
+          // Pending state
+          !isCompleted &&
+            !isProcessing &&
+            !isFailed &&
+            !isCancelled &&
+            !isLoading &&
+            "bg-border"
         )}
       />
     </div>
@@ -192,6 +209,9 @@ export function StepTabsList({ tabs = [], className }) {
               <StepConnector
                 isCompleted={tab.isCompleted}
                 isLoading={tab.isLoading}
+                isProcessing={tab.isProcessing}
+                isFailed={tab.isFailed}
+                isCancelled={tab.isCancelled}
               />
             )}
           </div>
