@@ -8,7 +8,7 @@ import {
   useCallback,
   useRef,
 } from "react";
-import Dagre from "@dagrejs/dagre";
+import ELK from "elkjs/lib/elk.bundled.js";
 import { cn, isProcessing, isSkippedProcessing } from "@/lib/utils";
 import { statusTextVariants } from "./process-status-badge";
 
@@ -21,12 +21,7 @@ import {
   useNodesState,
   ReactFlowProvider,
 } from "@xyflow/react";
-import {
-  BaseNode,
-  BaseNodeFooter,
-  BaseNodeHeader,
-  BaseNodeHeaderTitle,
-} from "../base-node";
+import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle } from "../base-node";
 import { ProcessStatusBadge } from "./process-status-badge";
 import { PROCESS_STATUS } from "@/app/constants";
 import { DataEdge } from "../data-edge";
@@ -39,7 +34,6 @@ const getBorderColor = (status) => {
     .replace("900", "500")})`;
 };
 
-// Reusable component for rendering multiple or single handles
 const NodeHandles = ({
   edgeCount,
   handleType,
@@ -55,7 +49,6 @@ const NodeHandles = ({
   return (
     <>
       {hasMultipleEdges ? (
-        // Multiple handles when there are multiple edges
         Array.from({ length: edgeCount }).map((_, index) => (
           <BaseHandle
             key={`${keyPrefix}-${index}`}
@@ -67,7 +60,6 @@ const NodeHandles = ({
           />
         ))
       ) : edgeCount === 1 ? (
-        // Single handle for one edge - use BaseHandle for consistency
         <BaseHandle
           type={handleType}
           position={position}
@@ -89,14 +81,8 @@ const nodeTypes = {
     const isActive = activeNodeIndex === data.index;
     const isSkippedStatus = isSkippedProcessing(data.status);
 
-    // Calculate handle positions as percentage for React Flow
-    // React Flow handles use percentage-based positioning along the edge
-    // The 'left' style property positions handles horizontally on Top/Bottom edges
     const getHandleStyle = (index, total) => {
-      if (total <= 1) return {}; // Default center position
-
-      // Distribute handles evenly across the node width with better spacing
-      // Use 10% padding from edges for wider distribution
+      if (total <= 1) return {};
       const padding = 10;
       const availablePercent = 100 - padding * 2;
       const percentPerHandle = total > 1 ? availablePercent / (total - 1) : 0;
@@ -130,20 +116,15 @@ const nodeTypes = {
             <BaseNodeHeaderTitle className="uppercase">
               {data.name}
             </BaseNodeHeaderTitle>
-          </BaseNodeHeader>
-          <BaseNodeFooter className="flex flex-row items-center justify-between gap-x-4 pt-3">
-            <div>
-              <ProcessStatusBadge
-                status={data.status}
-                className={"text-sm"}
-                iconClassName={"size-4!"}
-              >
-                {data.status}
-              </ProcessStatusBadge>
-            </div>
 
-            <div className="text-xs">{data.processingTime}</div>
-          </BaseNodeFooter>
+            <ProcessStatusBadge
+              status={data.status}
+              className={"text-sm"}
+              iconClassName={"size-4!"}
+            >
+              {data.status}
+            </ProcessStatusBadge>
+          </BaseNodeHeader>
         </BaseNode>
         <NodeHandles
           edgeCount={outgoingEdgesCount}
@@ -207,8 +188,8 @@ const ProcessingStepsFlowInner = () => {
     let maxY = -Infinity;
 
     nodes.forEach((node) => {
-      const nodeWidth = node.measured?.width ?? 350;
-      const nodeHeight = node.measured?.height ?? 100;
+      const nodeWidth = node.measured?.width;
+      const nodeHeight = node.measured?.height;
       const x = node.position.x;
       const y = node.position.y;
 
@@ -275,8 +256,8 @@ const ProcessingStepsFlowInner = () => {
   useEffect(() => {
     if (isReactFlowReady && nodes.length > 0) {
       const timeoutId = setTimeout(() => {
-        reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.1 });
-      }, 100);
+        reactFlowInstanceRef.current?.fitView({ duration: 0, padding: 0.1 });
+      }, 1);
       return () => clearTimeout(timeoutId);
     }
   }, [nodes.length, isReactFlowReady]);
@@ -326,42 +307,77 @@ export const useProcessingStepsFlow = () => {
   return useContext(Context);
 };
 
-export const getLayoutedElements = (nodes, edges, options) => {
-  const g = new Dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: options.direction });
+const elk = new ELK();
 
-  edges.forEach((edge) => g.setEdge(edge.source, edge.target));
-  nodes.forEach((node) => {
-    g.setNode(node.id, {
-      ...node,
-      width: node.measured?.width || 350,
-      height: node.measured?.height || 100,
-    });
-  });
+export const getLayoutedElements = async (nodes, edges, options) => {
+  const directionMap = {
+    TB: "DOWN",
+    BT: "UP",
+    LR: "RIGHT",
+    RL: "LEFT",
+  };
+  const elkDirection = directionMap[options.direction] || "DOWN";
 
-  Dagre.layout(g);
+  // Create clean ELK graph structure - only pass essential properties
+  const elkGraph = {
+    id: "root",
+    layoutOptions: {
+      "elk.algorithm": "layered",
+      "elk.direction": elkDirection,
+      "elk.spacing.nodeNode": "80",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "80",
+      "elk.spacing.edgeNode": "10",
+      "elk.spacing.edgeEdge": "10",
+    },
+    children: nodes.map((node) => ({
+      id: String(node.id),
+      width: Number(node.measured?.width || 350),
+      height: Number(node.measured?.height || 50),
+    })),
+    edges: edges.map((edge) => ({
+      id: String(edge.id),
+      sources: [String(edge.source)],
+      targets: [String(edge.target)],
+    })),
+  };
+
+  // Run ELK layout
+  const layoutedGraph = await elk.layout(elkGraph);
+
   const nodesLength = nodes.length;
-  return {
-    nodes: nodes
-      .map((node) => {
-        const position = g.node(node.id);
-        const x = position.x - (node.measured?.width ?? 0) / 2;
-        const y = position.y - (node.measured?.height ?? 0) / 2;
 
-        return { ...node, position: { x, y } };
-      })
-      .sort((a, b) => a.position.y - b.position.y)
-      .map((node, index) => {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            index,
-            isFirstNode: index === 0,
-            isLastNode: index === nodesLength - 1,
-          },
-        };
-      }),
+  // Map ELK positions back to React Flow nodes
+  const layoutedNodes = layoutedGraph.children
+    .map((elkNode) => {
+      const originalNode = nodes.find((n) => n.id === elkNode.id);
+      if (!originalNode) return null;
+
+      // React Flow expects a position property on the node instead of `x` and `y` fields
+      return {
+        ...originalNode,
+        ...elkNode,
+        position: {
+          x: elkNode.x || 0,
+          y: elkNode.y || 0,
+        },
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.position.y - b.position.y)
+    .map((node, index) => {
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          index,
+          isFirstNode: index === 0,
+          isLastNode: index === nodesLength - 1,
+        },
+      };
+    });
+
+  return {
+    nodes: layoutedNodes,
     edges,
   };
 };
@@ -377,13 +393,18 @@ export const ProcessingStepsFlowProvider = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   useEffect(() => {
-    const nodes = [];
-    const edges = [];
+    const newNodes = [];
+    const newEdges = [];
 
     const dagSet = new Map();
     dag_nodes.forEach((node) => {
       dagSet.set(node.id, node);
-      nodes.push({
+
+      // Try to preserve measured dimensions from existing nodes state
+      const existingNode = nodes.find((n) => n.id === node.id);
+      const existingMeasured = existingNode?.measured;
+
+      newNodes.push({
         id: node.id,
         position: { x: 0, y: 0 },
         type: "step",
@@ -391,9 +412,9 @@ export const ProcessingStepsFlowProvider = ({
           ...(node.data || {}),
           name: (node.data?.label || "").replace(/_/g, " "),
         },
-        measured: {
+        measured: existingMeasured || {
           width: 350,
-          height: 100,
+          height: 50,
         },
       });
     });
@@ -460,7 +481,7 @@ export const ProcessingStepsFlowProvider = ({
 
       // Always assign handles when there are multiple edges, even if count is 1
       // This ensures consistent behavior
-      edges.push({
+      newEdges.push({
         id: edge.id,
         source: edge.source,
         target: edge.target,
@@ -478,29 +499,27 @@ export const ProcessingStepsFlowProvider = ({
     });
 
     // Update node data with edge counts
-    nodes.forEach((node) => {
+    newNodes.forEach((node) => {
       node.data.outgoingEdgesCount = sourceEdgeCounts.get(node.id) || 0;
       node.data.incomingEdgesCount = targetEdgeCounts.get(node.id) || 0;
     });
 
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      nodes,
-      edges,
-      { direction: "TB" }
+    getLayoutedElements(newNodes, newEdges, { direction: "TB" }).then(
+      ({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+        setNodes(layoutedNodes);
+        setEdges(layoutedEdges);
+      }
     );
-    setNodes(layoutedNodes);
-    setEdges(layoutedEdges);
   }, [messages, setNodes, setEdges, dag_nodes, dag_edges]);
 
   const rerunLayout = useCallback(() => {
-    const { nodes: newNodes, edges: newEdges } = getLayoutedElements(
-      nodes,
-      edges,
-      { direction: "TB" }
+    getLayoutedElements(nodes, edges, { direction: "TB" }).then(
+      ({ nodes: newNodes, edges: newEdges }) => {
+        setNodes(newNodes);
+        setEdges(newEdges);
+      }
     );
-    setNodes(newNodes);
-    setEdges(newEdges);
-  }, [nodes, edges]);
+  }, [nodes, edges, setNodes, setEdges]);
 
   return (
     <Context.Provider

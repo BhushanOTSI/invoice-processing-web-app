@@ -118,11 +118,14 @@ const nextConfig = {
 
     // Externalize canvas for server builds
     config.externals = config.externals || [];
-    if (typeof config.externals === 'object' && !Array.isArray(config.externals)) {
+    if (
+      typeof config.externals === "object" &&
+      !Array.isArray(config.externals)
+    ) {
       config.externals = [config.externals];
     }
     config.externals.push({
-      canvas: 'canvas',
+      canvas: "canvas",
     });
 
     return config;

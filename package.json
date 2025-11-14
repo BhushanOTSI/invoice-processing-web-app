@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^1.1.8",
     "@hookform/resolvers": "^5.2.2",
     "@pdf-viewer/react": "^1.11.0",
     "@radix-ui/react-avatar": "^1.1.10",
@@ -39,6 +38,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
+    "elkjs": "^0.11.0",
     "highlight.js": "^11.11.1",
     "lightningcss": "^1.28.3",
     "lucide-react": "^0.545.0",
@@ -59,6 +59,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "vaul": "^1.1.2",
+    "web-worker": "^1.5.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
