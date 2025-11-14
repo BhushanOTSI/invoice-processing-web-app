@@ -38,7 +38,7 @@ function StepTabTrigger({
   return (
     <TabsTrigger
       className={cn(
-        "group/tab relative flex items-center gap-2",
+        "group relative flex items-center gap-2",
         "px-2 py-3",
         "min-w-0 ",
         "justify-center",
@@ -78,7 +78,7 @@ function StepTabTrigger({
             !isCancelled &&
             !isLoading && [
               "bg-transparent border-border text-muted-foreground",
-              "group-data-[state=active]/tab:border-primary group-data-[state=active]/tab:text-primary",
+              "group-data-[state=active]:border-primary group-data-[state=active]:text-primary",
             ],
           isLoading && ["bg-transparent border-border text-muted-foreground"]
         )}
@@ -103,7 +103,7 @@ function StepTabTrigger({
           "transition-[color] duration-200 ease-out",
           // Keep font-medium consistent to prevent width change
           // Active state uses full opacity, inactive uses reduced
-          "group-data-[state=active]/tab:text-foreground",
+          "group-data-[state=active]:text-foreground",
           !isDisabled && "text-foreground/70",
           isDisabled && "text-muted-foreground/60",
           "whitespace-nowrap truncate min-w-0"
@@ -125,10 +125,23 @@ function StepTabTrigger({
       {/* Animated sliding underline - attached to border */}
       <div
         className={cn(
-          "absolute -bottom-px left-0 right-0 h-1 bg-primary",
-          "transition-all duration-300 ease-out",
-          "scale-x-0 origin-center",
-          "group-data-[state=active]/tab:scale-x-100"
+          "absolute -bottom-px left-0 right-0 h-1",
+          "transition-transform duration-300 ease-out",
+          "origin-center",
+          "scale-x-0",
+          // Use group selector to check parent's data-state
+          "group-data-[state=active]:scale-x-100",
+          // Status-based border colors
+          isCompleted && !isFailed && !isCancelled && "bg-emerald-500",
+          isProcessing && "bg-blue-500",
+          isFailed && "bg-red-500",
+          isCancelled && "bg-gray-500",
+          // Default primary for pending state
+          !isCompleted &&
+            !isProcessing &&
+            !isFailed &&
+            !isCancelled &&
+            "bg-primary"
         )}
       />
     </TabsTrigger>
