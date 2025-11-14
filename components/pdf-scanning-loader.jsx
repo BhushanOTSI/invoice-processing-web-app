@@ -26,18 +26,21 @@ export function PdfScanningLoader({ className = "" }) {
 
           {/* Scanning Gradient */}
           <linearGradient id="scanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-            <stop
-              offset="50%"
-              stopColor="hsl(var(--primary))"
-              stopOpacity="0.15"
-            />
-            <stop
-              offset="100%"
-              stopColor="hsl(var(--primary))"
-              stopOpacity="0"
-            />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0" />
+            <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
           </linearGradient>
+
+          <style>{`
+            @media (prefers-color-scheme: dark) {
+              #scanGradient stop[offset="50%"] {
+                stop-opacity: 0.6 !important;
+              }
+            }
+            .dark #scanGradient stop[offset="50%"] {
+              stop-opacity: 0.6 !important;
+            }
+          `}</style>
 
           {/* Subtle Glow */}
           <filter id="glow">
@@ -244,9 +247,9 @@ export function PdfScanningLoader({ className = "" }) {
           x2="150"
           y2="55"
           className="stroke-primary"
-          strokeWidth="1"
+          strokeWidth="2"
           filter="url(#glow)"
-          opacity="0.6"
+          opacity="0.9"
         >
           <animate
             attributeName="y1"

@@ -195,6 +195,7 @@ export function ProcessStatusBadge({
   className,
   status,
   iconClassName,
+  iconOnly = false,
 }) {
   const isScheduled = status === PROCESS_STATUS.SCHEDULED;
   if (isLoading) {
@@ -211,6 +212,10 @@ export function ProcessStatusBadge({
 
   const type = status.toLowerCase();
   const Icon = ProcessIcons[type];
+
+  if (iconOnly) {
+    return <Icon className={cn("size-4", iconClassName)} />;
+  }
 
   return (
     <Badge

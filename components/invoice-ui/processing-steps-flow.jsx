@@ -9,7 +9,13 @@ import {
   useRef,
 } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
-import { cn, isProcessing, isSkippedProcessing } from "@/lib/utils";
+import {
+  cn,
+  isFailedProcessing,
+  isProcessing,
+  isSkippedProcessing,
+  isSuccessProcessing,
+} from "@/lib/utils";
 import { statusTextVariants } from "./process-status-badge";
 
 import "@xyflow/react/dist/style.css";
@@ -27,6 +33,7 @@ import { PROCESS_STATUS } from "@/app/constants";
 import { DataEdge } from "../data-edge";
 import { BaseHandle } from "../base-handle";
 import { ProcessMessage } from "./process-message";
+import { toTitleCase } from "remeda";
 
 const getBorderColor = (status) => {
   return `var(--${statusTextVariants({ variant: status })
@@ -80,6 +87,7 @@ const nodeTypes = {
     const { activeNodeIndex, setActiveNodeIndex } = useProcessingStepsFlow();
     const isActive = activeNodeIndex === data.index;
     const isSkippedStatus = isSkippedProcessing(data.status);
+    const isSuccessStatus = isSuccessProcessing(data.status);
 
     const getHandleStyle = (index, total) => {
       if (total <= 1) return {};
@@ -106,21 +114,22 @@ const nodeTypes = {
         />
         <BaseNode
           className={cn(
-            isActive && "border-2 border-accent-foreground",
-            isSkippedStatus && "opacity-50",
-            isProcessing(data.status) && "border-2 border-primary"
+            "min-h-14",
+            isActive && "node-active-gradient",
+            !isActive && isProcessing(data.status) && "node-processing-border",
+            isSkippedStatus && "node-skipped",
+            !isActive && isFailedProcessing(data.status) && "node-failed",
+            !isActive && isSuccessStatus && "node-success"
           )}
           onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
         >
-          <BaseNodeHeader>
-            <BaseNodeHeaderTitle className="uppercase">
-              {data.name}
-            </BaseNodeHeaderTitle>
+          <BaseNodeHeader className="pt-3.5">
+            <BaseNodeHeaderTitle>{toTitleCase(data.name)}</BaseNodeHeaderTitle>
 
             <ProcessStatusBadge
               status={data.status}
-              className={"text-sm"}
-              iconClassName={"size-4!"}
+              iconClassName={"size-6!"}
+              iconOnly={true}
             >
               {data.status}
             </ProcessStatusBadge>
@@ -165,13 +174,13 @@ const ProcessingStepsFlowInner = () => {
   } = useProcessingStepsFlow();
   const reactFlowInstanceRef = useRef(null);
   const containerRef = useRef(null);
-  const [minZoom, setMinZoom] = useState(0.3);
+  const [minZoom, setMinZoom] = useState(0.5);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isReactFlowReady, setIsReactFlowReady] = useState(false);
 
   const calculateMinZoom = useCallback(() => {
     if (!containerRef.current || nodes.length === 0) {
-      return 0.3;
+      return 0.5;
     }
 
     const container = containerRef.current;
@@ -179,7 +188,7 @@ const ProcessingStepsFlowInner = () => {
     const containerHeight = container.clientHeight;
 
     if (containerWidth === 0 || containerHeight === 0) {
-      return 0.3;
+      return 0.5;
     }
 
     let minX = Infinity;
@@ -318,45 +327,59 @@ export const getLayoutedElements = async (nodes, edges, options) => {
   };
   const elkDirection = directionMap[options.direction] || "DOWN";
 
-  // Create clean ELK graph structure - only pass essential properties
   const elkGraph = {
     id: "root",
     layoutOptions: {
       "elk.algorithm": "layered",
       "elk.direction": elkDirection,
-      "elk.spacing.nodeNode": 50,
-      "elk.layered.spacing.nodeNodeBetweenLayers": 60,
+
+      // spacing
+      "elk.spacing.nodeNode": 70,
+      "elk.layered.spacing.nodeNodeBetweenLayers": 80,
+
       // edges
       "elk.edgeRouting": "ORTHOGONAL",
-      // "elk.layered.mergeEdges": true,
-      // reduce ugly crossings
+      "elk.layered.mergeEdges": false,
+
+      // alignment + clean layering
+      "elk.layered.considerModelOrder": true,
       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
+      // "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+      "elk.portConstraints": "FIXED_ORDER",
+
+      // reduce chaotic line movement
+      "elk.layered.crossingMinimization.semiInteractive": true,
       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+
+      // aesthetics
+      "elk.rounding": 8,
     },
     children: nodes.map((node) => ({
       id: String(node.id),
       width: Number(node.measured?.width || 350),
-      height: Number(node.measured?.height || 50),
+      height: Number(node.measured?.height || 56),
     })),
     edges: edges.map((edge) => ({
       id: String(edge.id),
       sources: [String(edge.source)],
       targets: [String(edge.target)],
+      layoutOptions: {
+        priority:
+          String(edge.data?.status).toLowerCase() === PROCESS_STATUS.SKIPPED
+            ? 1
+            : 100,
+      },
     })),
   };
 
-  // Run ELK layout
   const layoutedGraph = await elk.layout(elkGraph);
-
   const nodesLength = nodes.length;
 
-  // Map ELK positions back to React Flow nodes
   const layoutedNodes = layoutedGraph.children
     .map((elkNode) => {
       const originalNode = nodes.find((n) => n.id === elkNode.id);
       if (!originalNode) return null;
 
-      // React Flow expects a position property on the node instead of `x` and `y` fields
       return {
         ...originalNode,
         ...elkNode,

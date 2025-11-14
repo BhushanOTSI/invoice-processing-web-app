@@ -686,4 +686,213 @@
       transform: scale(1) translateY(0);
     }
   }
+
+  /* Active node gradient border effect */
+  .node-active-gradient {
+    position: relative;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    isolation: isolate;
+  }
+
+  .node-active-gradient::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(
+      135deg,
+      var(--primary),
+      var(--chart-2),
+      var(--chart-1),
+      var(--primary)
+    );
+    background-size: 200% 200%;
+    -webkit-mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: exclude;
+    mask: 
+      linear-gradient(#fff 0 0) content-box, 
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: gradient-shift 3s ease infinite;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .node-active-gradient::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      var(--primary),
+      var(--chart-2),
+      var(--chart-1),
+      var(--primary)
+    );
+    background-size: 200% 200%;
+    opacity: 0.25;
+    filter: blur(10px);
+    animation: gradient-shift 3s ease infinite;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  .node-active-gradient:hover {
+    transform: translateY(-1px);
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Processing node pulsing border effect */
+  .node-processing-border {
+    position: relative;
+    border: 2px solid var(--primary);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    isolation: isolate;
+    animation: processing-border-pulse 2s ease-in-out infinite;
+    overflow: visible;
+  }
+
+  .node-processing-border::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px solid var(--primary);
+    opacity: 0.5;
+    animation: processing-border-fade 1.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .node-processing-border::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: var(--primary);
+    opacity: 0.15;
+    filter: blur(6px);
+    animation: processing-glow-pulse 2s ease-in-out infinite;
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  .node-processing-border:hover {
+    transform: translateY(-1px);
+  }
+
+  @keyframes processing-border-fade {
+    0%, 100% {
+      opacity: 0.3;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.01);
+    }
+  }
+
+  @keyframes processing-border-pulse {
+    0%, 100% {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 0 var(--primary);
+    }
+    50% {
+      border-color: var(--chart-2);
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+  }
+
+  @keyframes processing-glow-pulse {
+    0%, 100% {
+      opacity: 0.15;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.25;
+      transform: scale(1.02);
+    }
+  }
+
+  /* Skipped node styling */
+  .node-skipped {
+    position: relative;
+    opacity: 0.65;
+    border: 2px dashed var(--muted-foreground);
+    background-color: var(--muted);
+    filter: grayscale(0.3);
+  }
+
+  .node-skipped::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 8px;
+    right: 8px;
+    height: 1.5px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      var(--muted-foreground) 20%,
+      var(--muted-foreground) 80%,
+      transparent
+    );
+    opacity: 0.3;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .node-skipped::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    border: 2px dashed var(--muted-foreground);
+    opacity: 0.2;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Failed node styling */
+  .node-failed {
+    position: relative;
+    border: 1px solid var(--destructive);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    isolation: isolate;
+    overflow: visible;
+    box-shadow: 0 0 0 1px var(--destructive), 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .node-failed:hover {
+    transform: translateY(-1px);
+  }
+
+  /* Success node styling */
+  .node-success {
+    position: relative;
+    border: 1px solid var(--chart-3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    isolation: isolate;
+    overflow: visible;
+    box-shadow: 0 0 0 1px var(--chart-3), 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .node-success:hover {
+    transform: translateY(-1px);
+  }
 }
