@@ -8,7 +8,6 @@ import {
   useCallback,
   useRef,
   useLayoutEffect,
-  useMemo,
 } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import {
@@ -41,6 +40,7 @@ import { DataEdge } from "../data-edge";
 import { BaseHandle } from "../base-handle";
 import { ProcessMessage } from "./process-message";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { forwardRef } from "react";
 
 const getBorderColor = (status) => {
   return `var(--${statusTextVariants({ variant: status })
@@ -79,10 +79,30 @@ const NodeHandles = ({
   ));
 };
 
+const NodeContent = forwardRef(({ data, ...props }, ref) => (
+  <BaseNode ref={ref} {...props}>
+    <BaseNodeHeader>
+      <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
+
+      <ProcessStatusBadge
+        status={data.status}
+        iconClassName={"size-6!"}
+        iconOnly={true}
+      >
+        {data.status}
+      </ProcessStatusBadge>
+    </BaseNodeHeader>
+    {data.description && (
+      <BaseNodeContent className="border-t dark:border-white/80">
+        {data.description}
+      </BaseNodeContent>
+    )}
+  </BaseNode>
+));
+NodeContent.displayName = "NodeContent";
+
 const nodeTypes = {
-  step: ({ data, id }) => {
-    const { setNodeRegistry } = useProcessingStepsFlow();
-    const nodeRef = useRef(null);
+  step: ({ data }) => {
     const { outgoingEdgesCount = 0, incomingEdgesCount = 0 } = data;
     const { activeNodeIndex, setActiveNodeIndex } = useProcessingStepsFlow();
     const isActive = activeNodeIndex === data.index;
@@ -93,22 +113,10 @@ const nodeTypes = {
     const hasIncoming = incomingEdgesCount > 0;
     const hasOutgoing = outgoingEdgesCount > 0;
 
-    useLayoutEffect(() => {
-      if (nodeRef.current) {
-        const width = nodeRef.current.clientWidth;
-        const height = nodeRef.current.clientHeight;
-        setNodeRegistry((prevRegistry) => {
-          prevRegistry.set(id, { width, height });
-          return new Map(prevRegistry);
-        });
-      }
-    }, [id, setNodeRegistry]);
-
-    const NodeContent = (
-      <BaseNode
-        ref={nodeRef}
+    const Content = (
+      <NodeContent
+        data={data}
         className={cn(
-          "min-h-14",
           isActive && "node-active-gradient",
           !isActive && isProcessing(data.status) && "node-processing-border",
           isSkippedStatus && "node-skipped",
@@ -116,24 +124,7 @@ const nodeTypes = {
           !isActive && isSuccessStatus && "node-success"
         )}
         onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
-      >
-        <BaseNodeHeader>
-          <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
-
-          <ProcessStatusBadge
-            status={data.status}
-            iconClassName={"size-6!"}
-            iconOnly={true}
-          >
-            {data.status}
-          </ProcessStatusBadge>
-        </BaseNodeHeader>
-        {data.description && (
-          <BaseNodeContent className="border-t dark:border-white/80">
-            {data.description}
-          </BaseNodeContent>
-        )}
-      </BaseNode>
+      />
     );
 
     return (
@@ -146,10 +137,10 @@ const nodeTypes = {
           keyPrefix="target"
         />
         {isSkippedStatus ? (
-          NodeContent
+          Content
         ) : (
           <Tooltip>
-            <TooltipTrigger asChild>{NodeContent}</TooltipTrigger>
+            <TooltipTrigger asChild>{Content}</TooltipTrigger>
             <TooltipContent>Click to view logs</TooltipContent>
           </Tooltip>
         )}
@@ -275,16 +266,6 @@ const ProcessingStepsFlowInner = () => {
     setIsReactFlowReady(true);
   }, []);
 
-  const allNodesMeasured = useMemo(() => {
-    return nodes.every((node) => !node.measured?.isFaked) && nodes.length;
-  }, [nodes]);
-
-  useEffect(() => {
-    if (allNodesMeasured && isReactFlowReady) {
-      reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.1 });
-    }
-  }, [allNodesMeasured, isReactFlowReady]);
-
   return (
     <div
       ref={containerRef}
@@ -301,6 +282,8 @@ const ProcessingStepsFlowInner = () => {
         onInit={onInit}
         minZoom={minZoom}
         maxZoom={1.5}
+        fitView
+        fitViewOptions={{ duration: 300, padding: 0.1 }}
       >
         <Background variant="dots" />
       </ReactFlow>
@@ -340,17 +323,17 @@ export const getLayoutedElements = async (nodes, edges, options) => {
       "elk.direction": elkDirection,
 
       // spacing
-      "elk.spacing.nodeNode": 70,
-      "elk.layered.spacing.nodeNodeBetweenLayers": 80,
+      "elk.spacing.nodeNode": 100,
+      "elk.layered.spacing.nodeNodeBetweenLayers": 100,
 
       // edges
       "elk.edgeRouting": "ORTHOGONAL",
-      "elk.layered.mergeEdges": false,
+      "elk.layered.mergeEdges": true,
 
       // alignment + clean layering
       "elk.layered.considerModelOrder": true,
       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
-      // "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+      "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
       "elk.portConstraints": "FIXED_ORDER",
 
       // reduce chaotic line movement
@@ -425,6 +408,14 @@ export const ProcessingStepsFlowProvider = ({
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
   useEffect(() => {
+    if (
+      !dag_nodes.length ||
+      !dag_nodes.every((node) => nodeRegistry.get(node.id)?.width)
+    )
+      return;
+
+    console.log("nodeRegistry", nodeRegistry);
+
     const newNodes = [];
     const newEdges = [];
 
@@ -469,9 +460,8 @@ export const ProcessingStepsFlowProvider = ({
           name: (node.data?.label || "").replace(/_/g, " "),
         },
         measured: {
-          width: nodeRegistry.get(node.id)?.width || DefaultMeasured.width,
-          height: nodeRegistry.get(node.id)?.height || DefaultMeasured.height,
-          isFaked: nodeRegistry.get(node.id)?.width ? false : true,
+          width: nodeRegistry.get(node.id).width,
+          height: nodeRegistry.get(node.id).height,
         },
       });
     });
@@ -558,7 +548,53 @@ export const ProcessingStepsFlowProvider = ({
       }}
     >
       {children}
+      {dag_nodes.map((node) => (
+        <FakeNode
+          key={node.id}
+          data={{
+            ...node.data,
+            name: (node.data?.label || "").replace(/_/g, " "),
+          }}
+          id={node.id}
+        />
+      ))}
     </Context.Provider>
+  );
+};
+
+export const FakeNode = ({ data, id }) => {
+  const nodeRef = useRef(null);
+  const { setNodeRegistry } = useProcessingStepsFlow();
+
+  useLayoutEffect(() => {
+    if (!nodeRef.current) return;
+
+    const width = nodeRef.current.clientWidth;
+    const height = nodeRef.current.clientHeight;
+
+    setNodeRegistry((prevRegistry) => {
+      prevRegistry.set(id, { width, height });
+      return new Map(prevRegistry);
+    });
+  }, [id, setNodeRegistry]);
+
+  return (
+    <div
+      style={{
+        visibility: "hidden",
+        position: "absolute",
+        left: -9999,
+        top: 0,
+        pointerEvents: "none",
+      }}
+      className="fake-node"
+    >
+      <NodeContent
+        data={data}
+        ref={nodeRef}
+        style={{ maxWidth: DefaultMeasured.width }}
+      />
+    </div>
   );
 };
 
