@@ -41,10 +41,7 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import {
-  useFetchS3Json,
-  useProcessingStream,
-} from "@/services/hooks/useBatchProcessInvoice";
+import { useFetchS3Json } from "@/services/hooks/useBatchProcessInvoice";
 import {
   ArrowLeftIcon,
   ClockIcon,
@@ -74,31 +71,6 @@ const PdfPreview = dynamic(
     ),
   }
 );
-
-const convertToMessage = (data) => {
-  return {
-    ...data,
-    name: data.stepName,
-    id: data.stepId,
-    extraMetadata: data.metadata,
-    processingTimeSeconds: data.processingTimeMs,
-  };
-};
-
-const addOrUpdateMessage = (messages, data) => {
-  if (data.stepName === "Connected") return messages;
-
-  const index = messages.findIndex((message) => message.stepId === data.stepId);
-  const convertedMessage = convertToMessage(data);
-
-  if (index !== -1) {
-    messages[index] = convertedMessage;
-  } else {
-    messages.push(convertedMessage);
-  }
-
-  return [...messages];
-};
 
 export default function ProcessTracePage() {
   const { params, updateParams } = useSetSearchParams();
@@ -135,35 +107,15 @@ export default function ProcessTracePage() {
     useProcessTraceStatus(processID);
 
   const [activeTab, setCurrentActiveTab] = useState(params.tab || "step-1");
-  const [messages, setMessages] = useState([]);
-  const isMainProcessProcessing = useMemo(
-    () => isProcessing(processTraceStatus?.status),
-    [processTraceStatus?.status]
-  );
 
   const setActiveTab = useCallback((tab) => {
     setCurrentActiveTab(tab);
     updateParams({ tab });
   }, []);
 
-  const { isLoading: isLoadingProcessingStream } = useProcessingStream(
-    processID,
-    processID && !isLoading && isMainProcessProcessing,
-    {
-      onData: (data) => {
-        setMessages((prev) => addOrUpdateMessage(prev || [], data));
-      },
-    }
-  );
-
   const traceMessages = useMemo(() => {
-    return (
-      (isMainProcessProcessing ||
-      (messages.length && !processTraceStatus?.messages?.length)
-        ? messages
-        : processTraceStatus?.messages) || []
-    );
-  }, [messages, processTraceStatus?.messages, isMainProcessProcessing]);
+    return processTraceStatus?.messages || [];
+  }, [processTraceStatus?.messages]);
 
   const groupedTraceMessages = useMemo(() => {
     const grouped = {
@@ -356,8 +308,7 @@ export default function ProcessTracePage() {
               <div
                 className={cn(
                   "bg-accent h-full flex flex-col",
-                  (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
-                    "animate-pulse bg-accent/30"
+                  (isLoading || !s3PdfUrl) && "animate-pulse bg-accent/30"
                 )}
               >
                 {activeTab === "step-3" && !isLoading && (
@@ -380,20 +331,19 @@ export default function ProcessTracePage() {
                   <Empty className="h-full">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
-                        {(isLoading || isLoadingProcessingStream) &&
-                        !s3PdfUrl ? (
+                        {isLoading && !s3PdfUrl ? (
                           <Spinner />
                         ) : (
                           <FileQuestionMarkIcon />
                         )}
                       </EmptyMedia>
                       <EmptyTitle>
-                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                        {isLoading && !s3PdfUrl
                           ? "Loading Invoice..."
                           : "Nothing to Preview Yet"}
                       </EmptyTitle>
                       <EmptyDescription>
-                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                        {isLoading && !s3PdfUrl
                           ? "Please wait while we load the invoice..."
                           : "The invoice is not available for preview."}
                       </EmptyDescription>

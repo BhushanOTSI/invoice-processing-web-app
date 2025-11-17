@@ -7,6 +7,7 @@ import {
   useState,
   useCallback,
   useRef,
+  useLayoutEffect,
 } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import {
@@ -27,13 +28,18 @@ import {
   useNodesState,
   ReactFlowProvider,
 } from "@xyflow/react";
-import { BaseNode, BaseNodeHeader, BaseNodeHeaderTitle } from "../base-node";
+import {
+  BaseNode,
+  BaseNodeContent,
+  BaseNodeHeader,
+  BaseNodeHeaderTitle,
+} from "../base-node";
 import { ProcessStatusBadge } from "./process-status-badge";
 import { PROCESS_STATUS } from "@/app/constants";
 import { DataEdge } from "../data-edge";
 import { BaseHandle } from "../base-handle";
 import { ProcessMessage } from "./process-message";
-import { toTitleCase } from "remeda";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 const getBorderColor = (status) => {
   return `var(--${statusTextVariants({ variant: status })
@@ -47,60 +53,87 @@ const NodeHandles = ({
   position,
   shouldRender,
   keyPrefix,
-  getHandleStyle,
 }) => {
   if (!shouldRender || edgeCount === 0) return null;
+  const getHandleStyle = (index, total) => {
+    if (total <= 1) return {};
 
-  const hasMultipleEdges = edgeCount > 1;
+    const padding = 20;
+    const availablePercent = 100 - padding * 2;
+    const percentPerHandle = total > 1 ? availablePercent / (total - 1) : 0;
+    const leftPercent = padding + percentPerHandle * index;
 
-  return (
-    <>
-      {hasMultipleEdges ? (
-        Array.from({ length: edgeCount }).map((_, index) => (
-          <BaseHandle
-            key={`${keyPrefix}-${index}`}
-            id={`${keyPrefix}-${index}`}
-            type={handleType}
-            position={position}
-            isConnectable={false}
-            style={getHandleStyle(index, edgeCount)}
-          />
-        ))
-      ) : edgeCount === 1 ? (
-        <BaseHandle
-          type={handleType}
-          position={position}
-          isConnectable={false}
-        />
-      ) : null}
-    </>
-  );
+    return { left: `${Math.max(0, Math.min(100, leftPercent))}%` };
+  };
+
+  return Array.from({ length: edgeCount }).map((_, index) => (
+    <BaseHandle
+      key={`${keyPrefix}-${index}`}
+      id={`${keyPrefix}-${index}`}
+      type={handleType}
+      position={position}
+      isConnectable={false}
+      style={getHandleStyle(index, edgeCount)}
+    />
+  ));
 };
 
 const nodeTypes = {
-  step: ({ data }) => {
-    const {
-      isFirstNode,
-      outgoingEdgesCount = 0,
-      incomingEdgesCount = 0,
-    } = data;
+  step: ({ data, id }) => {
+    const { setNodeRegistry } = useProcessingStepsFlow();
+    const nodeRef = useRef(null);
+    const { outgoingEdgesCount = 0, incomingEdgesCount = 0 } = data;
     const { activeNodeIndex, setActiveNodeIndex } = useProcessingStepsFlow();
     const isActive = activeNodeIndex === data.index;
+
     const isSkippedStatus = isSkippedProcessing(data.status);
     const isSuccessStatus = isSuccessProcessing(data.status);
 
-    const getHandleStyle = (index, total) => {
-      if (total <= 1) return {};
-      const padding = 10;
-      const availablePercent = 100 - padding * 2;
-      const percentPerHandle = total > 1 ? availablePercent / (total - 1) : 0;
-      const leftPercent = padding + percentPerHandle * index;
-
-      return { left: `${Math.max(0, Math.min(100, leftPercent))}%` };
-    };
-
     const hasIncoming = incomingEdgesCount > 0;
     const hasOutgoing = outgoingEdgesCount > 0;
+
+    useLayoutEffect(() => {
+      if (nodeRef.current) {
+        const width = nodeRef.current.clientWidth;
+        const height = nodeRef.current.clientHeight;
+        setNodeRegistry((prevRegistry) => {
+          prevRegistry.set(id, { width, height });
+          return new Map(prevRegistry);
+        });
+      }
+    }, [id, setNodeRegistry]);
+
+    const NodeContent = (
+      <BaseNode
+        ref={nodeRef}
+        className={cn(
+          "min-h-14",
+          isActive && "node-active-gradient",
+          !isActive && isProcessing(data.status) && "node-processing-border",
+          isSkippedStatus && "node-skipped",
+          !isActive && isFailedProcessing(data.status) && "node-failed",
+          !isActive && isSuccessStatus && "node-success"
+        )}
+        onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
+      >
+        <BaseNodeHeader>
+          <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
+
+          <ProcessStatusBadge
+            status={data.status}
+            iconClassName={"size-6!"}
+            iconOnly={true}
+          >
+            {data.status}
+          </ProcessStatusBadge>
+        </BaseNodeHeader>
+        {data.description && (
+          <BaseNodeContent className="border-t dark:border-white/80">
+            {data.description}
+          </BaseNodeContent>
+        )}
+      </BaseNode>
+    );
 
     return (
       <>
@@ -108,40 +141,23 @@ const nodeTypes = {
           edgeCount={incomingEdgesCount}
           handleType="target"
           position={Position.Top}
-          shouldRender={hasIncoming && !isFirstNode}
+          shouldRender={hasIncoming}
           keyPrefix="target"
-          getHandleStyle={getHandleStyle}
         />
-        <BaseNode
-          className={cn(
-            "min-h-14",
-            isActive && "node-active-gradient",
-            !isActive && isProcessing(data.status) && "node-processing-border",
-            isSkippedStatus && "node-skipped",
-            !isActive && isFailedProcessing(data.status) && "node-failed",
-            !isActive && isSuccessStatus && "node-success"
-          )}
-          onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
-        >
-          <BaseNodeHeader className="pt-3.5">
-            <BaseNodeHeaderTitle>{toTitleCase(data.name)}</BaseNodeHeaderTitle>
-
-            <ProcessStatusBadge
-              status={data.status}
-              iconClassName={"size-6!"}
-              iconOnly={true}
-            >
-              {data.status}
-            </ProcessStatusBadge>
-          </BaseNodeHeader>
-        </BaseNode>
+        {isSkippedStatus ? (
+          NodeContent
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>{NodeContent}</TooltipTrigger>
+            <TooltipContent>Click to view logs</TooltipContent>
+          </Tooltip>
+        )}
         <NodeHandles
           edgeCount={outgoingEdgesCount}
           handleType="source"
           position={Position.Bottom}
           shouldRender={hasOutgoing}
           keyPrefix="source"
-          getHandleStyle={getHandleStyle}
         />
       </>
     );
@@ -164,23 +180,16 @@ const edgeTypes = {
 };
 
 const ProcessingStepsFlowInner = () => {
-  const {
-    nodes,
-    edges,
-    onNodeClick,
-    onNodesChange,
-    onEdgesChange,
-    rerunLayout,
-  } = useProcessingStepsFlow();
+  const { nodes, edges, onNodeClick, onNodesChange, onEdgesChange } =
+    useProcessingStepsFlow();
   const reactFlowInstanceRef = useRef(null);
   const containerRef = useRef(null);
-  const [minZoom, setMinZoom] = useState(0.5);
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [minZoom, setMinZoom] = useState(0.8);
   const [isReactFlowReady, setIsReactFlowReady] = useState(false);
 
   const calculateMinZoom = useCallback(() => {
     if (!containerRef.current || nodes.length === 0) {
-      return 0.5;
+      return 0.8;
     }
 
     const container = containerRef.current;
@@ -188,7 +197,7 @@ const ProcessingStepsFlowInner = () => {
     const containerHeight = container.clientHeight;
 
     if (containerWidth === 0 || containerHeight === 0) {
-      return 0.5;
+      return 0.8;
     }
 
     let minX = Infinity;
@@ -226,20 +235,10 @@ const ProcessingStepsFlowInner = () => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const updateSize = () => {
-      if (containerRef.current) {
-        setContainerSize({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
-      }
-    };
-
     let timeoutId;
     const resizeObserver = new ResizeObserver(() => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
-        updateSize();
         if (reactFlowInstanceRef.current) {
           reactFlowInstanceRef.current.fitView({ duration: 200, padding: 0.1 });
         }
@@ -247,7 +246,6 @@ const ProcessingStepsFlowInner = () => {
     });
 
     resizeObserver.observe(containerRef.current);
-    updateSize();
 
     return () => {
       resizeObserver.disconnect();
@@ -260,7 +258,7 @@ const ProcessingStepsFlowInner = () => {
       const newMinZoom = calculateMinZoom();
       setMinZoom(newMinZoom);
     }
-  }, [nodes, containerSize, calculateMinZoom]);
+  }, [nodes, calculateMinZoom]);
 
   useEffect(() => {
     if (isReactFlowReady && nodes.length > 0) {
@@ -271,15 +269,11 @@ const ProcessingStepsFlowInner = () => {
     }
   }, [nodes.length, isReactFlowReady]);
 
-  const onInit = useCallback(
-    (reactFlowInstance) => {
-      reactFlowInstanceRef.current = reactFlowInstance;
-      setIsReactFlowReady(true);
-      rerunLayout();
-      reactFlowInstance.fitView({ duration: 0, padding: 0.1 });
-    },
-    [rerunLayout]
-  );
+  const onInit = useCallback((reactFlowInstance) => {
+    reactFlowInstanceRef.current = reactFlowInstance;
+    setIsReactFlowReady(true);
+    reactFlowInstance.fitView({ duration: 0, padding: 0.1 });
+  }, []);
 
   return (
     <div ref={containerRef} className="w-full h-full react-flow-container">
@@ -356,24 +350,20 @@ export const getLayoutedElements = async (nodes, edges, options) => {
     },
     children: nodes.map((node) => ({
       id: String(node.id),
-      width: Number(node.measured?.width || 350),
-      height: Number(node.measured?.height || 56),
+      width: Number(node.measured?.width),
+      height: Number(node.measured?.height),
     })),
     edges: edges.map((edge) => ({
       id: String(edge.id),
       sources: [String(edge.source)],
       targets: [String(edge.target)],
       layoutOptions: {
-        priority:
-          String(edge.data?.status).toLowerCase() === PROCESS_STATUS.SKIPPED
-            ? 1
-            : 100,
+        priority: isSkippedProcessing(edge.data?.status) ? 1 : 100,
       },
     })),
   };
 
   const layoutedGraph = await elk.layout(elkGraph);
-  const nodesLength = nodes.length;
 
   const layoutedNodes = layoutedGraph.children
     .map((elkNode) => {
@@ -397,8 +387,6 @@ export const getLayoutedElements = async (nodes, edges, options) => {
         data: {
           ...node.data,
           index,
-          isFirstNode: index === 0,
-          isLastNode: index === nodesLength - 1,
         },
       };
     });
@@ -409,12 +397,17 @@ export const getLayoutedElements = async (nodes, edges, options) => {
   };
 };
 
+const DefaultMeasured = {
+  width: 350,
+  height: 50,
+};
+
 export const ProcessingStepsFlowProvider = ({
   children,
-  messages = [],
   dag_nodes = [],
   dag_edges = [],
 }) => {
+  const [nodeRegistry, setNodeRegistry] = useState(new Map());
   const [activeNodeIndex, setActiveNodeIndex] = useState(0);
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
@@ -423,32 +416,13 @@ export const ProcessingStepsFlowProvider = ({
     const newNodes = [];
     const newEdges = [];
 
-    const dagSet = new Map();
-    dag_nodes.forEach((node) => {
-      dagSet.set(node.id, node);
-
-      // Try to preserve measured dimensions from existing nodes state
-      const existingNode = nodes.find((n) => n.id === node.id);
-      const existingMeasured = existingNode?.measured;
-
-      newNodes.push({
-        id: node.id,
-        position: { x: 0, y: 0 },
-        type: "step",
-        data: {
-          ...(node.data || {}),
-          name: (node.data?.label || "").replace(/_/g, " "),
-        },
-        measured: existingMeasured || {
-          width: 350,
-          height: 50,
-        },
-      });
-    });
-
     // Calculate edge counts per node for handle distribution
     const sourceEdgeCounts = new Map();
     const targetEdgeCounts = new Map();
+
+    // Group edges by source and target to assign handle indices
+    const edgesBySource = new Map();
+    const edgesByTarget = new Map();
 
     dag_edges.forEach((edge) => {
       // Count outgoing edges per source
@@ -458,13 +432,7 @@ export const ProcessingStepsFlowProvider = ({
       // Count incoming edges per target
       const targetCount = targetEdgeCounts.get(edge.target) || 0;
       targetEdgeCounts.set(edge.target, targetCount + 1);
-    });
 
-    // Group edges by source and target to assign handle indices
-    const edgesBySource = new Map();
-    const edgesByTarget = new Map();
-
-    dag_edges.forEach((edge) => {
       if (!edgesBySource.has(edge.source)) {
         edgesBySource.set(edge.source, []);
       }
@@ -476,12 +444,23 @@ export const ProcessingStepsFlowProvider = ({
       edgesByTarget.get(edge.target).push(edge);
     });
 
-    // Sort edges for consistent handle assignment
-    edgesBySource.forEach((edgeList) => {
-      edgeList.sort((a, b) => a.id.localeCompare(b.id));
-    });
-    edgesByTarget.forEach((edgeList) => {
-      edgeList.sort((a, b) => a.id.localeCompare(b.id));
+    const dagSet = new Map();
+    dag_nodes.forEach((node) => {
+      dagSet.set(node.id, node);
+
+      newNodes.push({
+        id: node.id,
+        position: { x: 0, y: 0 },
+        type: "step",
+        data: {
+          ...(node.data || {}),
+          name: (node.data?.label || "").replace(/_/g, " "),
+        },
+        measured: {
+          width: nodeRegistry.get(node.id)?.width || DefaultMeasured.width,
+          height: nodeRegistry.get(node.id)?.height || DefaultMeasured.height,
+        },
+      });
     });
 
     // Assign handle indices to edges
@@ -519,7 +498,7 @@ export const ProcessingStepsFlowProvider = ({
           status: isSelectedStatus ? sourceStatus : PROCESS_STATUS.SKIPPED,
           targetStatus,
           path: "smoothstep",
-          label: edge.data?.label,
+          label: edge?.label,
         },
         animated: isSelectedStatus,
       });
@@ -537,7 +516,7 @@ export const ProcessingStepsFlowProvider = ({
         setEdges(layoutedEdges);
       }
     );
-  }, [messages, setNodes, setEdges, dag_nodes, dag_edges]);
+  }, [setNodes, setEdges, dag_nodes, dag_edges, nodeRegistry]);
 
   const rerunLayout = useCallback(() => {
     getLayoutedElements(nodes, edges, { direction: "TB" }).then(
@@ -559,6 +538,10 @@ export const ProcessingStepsFlowProvider = ({
         onNodesChange,
         onEdgesChange,
         rerunLayout,
+        setNodes,
+        setEdges,
+        setNodeRegistry,
+        nodeRegistry,
       }}
     >
       {children}
