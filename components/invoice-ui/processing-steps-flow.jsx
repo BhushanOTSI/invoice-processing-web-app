@@ -8,6 +8,7 @@ import {
   useCallback,
   useRef,
   useLayoutEffect,
+  useMemo,
 } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
 import {
@@ -272,11 +273,23 @@ const ProcessingStepsFlowInner = () => {
   const onInit = useCallback((reactFlowInstance) => {
     reactFlowInstanceRef.current = reactFlowInstance;
     setIsReactFlowReady(true);
-    reactFlowInstance.fitView({ duration: 0, padding: 0.1 });
   }, []);
 
+  const allNodesMeasured = useMemo(() => {
+    return nodes.every((node) => !node.measured?.isFaked) && nodes.length;
+  }, [nodes]);
+
+  useEffect(() => {
+    if (allNodesMeasured && isReactFlowReady) {
+      reactFlowInstanceRef.current?.fitView({ duration: 300, padding: 0.1 });
+    }
+  }, [allNodesMeasured, isReactFlowReady]);
+
   return (
-    <div ref={containerRef} className="w-full h-full react-flow-container">
+    <div
+      ref={containerRef}
+      className={cn("w-full h-full react-flow-container")}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -286,7 +299,6 @@ const ProcessingStepsFlowInner = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onInit={onInit}
-        fitView
         minZoom={minZoom}
         maxZoom={1.5}
       >
@@ -399,7 +411,7 @@ export const getLayoutedElements = async (nodes, edges, options) => {
 
 const DefaultMeasured = {
   width: 350,
-  height: 50,
+  height: 60,
 };
 
 export const ProcessingStepsFlowProvider = ({
@@ -459,6 +471,7 @@ export const ProcessingStepsFlowProvider = ({
         measured: {
           width: nodeRegistry.get(node.id)?.width || DefaultMeasured.width,
           height: nodeRegistry.get(node.id)?.height || DefaultMeasured.height,
+          isFaked: nodeRegistry.get(node.id)?.width ? false : true,
         },
       });
     });
