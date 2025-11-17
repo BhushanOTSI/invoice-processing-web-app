@@ -158,16 +158,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   processEdge: ({ data, ...props }) => {
-    return (
-      <DataEdge
-        {...props}
-        data={data}
-        style={{
-          strokeWidth: 2,
-          stroke: getBorderColor(data.status),
-        }}
-      />
-    );
+    return <DataEdge {...props} data={data} style={{ strokeWidth: 4 }} />;
   },
 };
 
@@ -515,7 +506,6 @@ export const ProcessingStepsFlowProvider = ({
           path: "smoothstep",
           label: edge?.label,
         },
-        animated: isSelectedStatus,
       });
     });
 
