@@ -102,7 +102,7 @@ const NodeContent = forwardRef(({ data, ...props }, ref) => (
 NodeContent.displayName = "NodeContent";
 
 const nodeTypes = {
-  step: ({ data }) => {
+  step: ({ data, width, height }) => {
     const { outgoingEdgesCount = 0, incomingEdgesCount = 0 } = data;
     const { activeNodeIndex, setActiveNodeIndex } = useProcessingStepsFlow();
     const isActive = activeNodeIndex === data.index;
@@ -124,6 +124,7 @@ const nodeTypes = {
           !isActive && isSuccessStatus && "node-success"
         )}
         onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
+        style={{ width, height }}
       />
     );
 
