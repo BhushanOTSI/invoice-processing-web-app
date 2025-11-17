@@ -84,21 +84,19 @@ const NodeContent = forwardRef(({ data, ...props }, ref) => (
   <BaseNode ref={ref} {...props}>
     <BaseNodeHeader>
       <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
+      <ProcessStatusBadge
+        status={data.status}
+        iconClassName={"size-6!"}
+        className="text-sm"
+      >
+        {data.status}
+      </ProcessStatusBadge>
     </BaseNodeHeader>
     {data.description && (
       <BaseNodeContent className="border-t dark:border-white/80">
         {data.description}
       </BaseNodeContent>
     )}
-    <BaseNodeFooter className="border-0 items-start">
-      <ProcessStatusBadge
-        status={data.status}
-        iconClassName={"size-6!"}
-        className="w-full text-sm"
-      >
-        {data.status}
-      </ProcessStatusBadge>
-    </BaseNodeFooter>
   </BaseNode>
 ));
 NodeContent.displayName = "NodeContent";
@@ -395,7 +393,7 @@ export const getLayoutedElements = async (nodes, edges, options) => {
 };
 
 const DefaultMeasured = {
-  width: 350,
+  width: 450,
   height: 60,
 };
 
@@ -415,8 +413,6 @@ export const ProcessingStepsFlowProvider = ({
       !dag_nodes.every((node) => nodeRegistry.get(node.id)?.width)
     )
       return;
-
-    console.log("nodeRegistry", nodeRegistry);
 
     const newNodes = [];
     const newEdges = [];
