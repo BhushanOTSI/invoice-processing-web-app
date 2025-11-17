@@ -44,7 +44,7 @@ export const useProcessTraceDag = (processID, enabled = true) => {
     enabled: !!processID && enabled,
     refetchInterval: ({ state }) => {
       const status = state?.data?.data?.dag_metadata?.status;
-      if (isCompletedProcessing(status, true)) return false;
+      if (isCompletedProcessing(status, true) || state?.error) return false;
 
       return 5000;
     },

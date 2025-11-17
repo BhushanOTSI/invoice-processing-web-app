@@ -1,12 +1,9 @@
 "use client";
 
-import { CASE_TYPES, PROCESS_STATUS } from "@/app/constants";
+import { PROCESS_STATUS } from "@/app/constants";
 import { APP_ROUTES } from "@/app/constants/app-routes";
 import { RowCell, RowRenderLink } from "@/components/invoice-ui/data-table";
-import {
-  ProcessStatusBadge,
-  statusTextVariants,
-} from "@/components/invoice-ui/process-status-badge";
+import { ProcessStatusBadge } from "@/components/invoice-ui/process-status-badge";
 import { usePersistentResize } from "@/hooks/use-persistent-resize";
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
 import {
@@ -22,9 +19,10 @@ import {
   useProcessTraceDag,
   useProcessTraceStatus,
 } from "@/services/hooks/useInvoice";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { useParams } from "next/navigation";
+import { Tabs, TabsContent } from "@radix-ui/react-tabs";
+import { useParams, useRouter } from "next/navigation";
 import { ProcessMessage } from "@/components/invoice-ui/process-message";
+import { StepTabsList } from "@/components/invoice-ui/step-tabs-list";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 import {
   Empty,
@@ -43,27 +41,24 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import { useFetchS3Json } from "@/services/hooks/useBatchProcessInvoice";
 import {
-  useFetchS3Json,
-  useProcessingStream,
-} from "@/services/hooks/useBatchProcessInvoice";
-import {
-  BadgeCheckIcon,
-  BanIcon,
-  CircleXIcon,
+  ArrowLeftIcon,
   ClockIcon,
   FileIcon,
   FileQuestionMarkIcon,
   HashIcon,
   LinkIcon,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActiveProcessMessage,
   ProcessingStepsFlow,
   ProcessingStepsFlowProvider,
 } from "@/components/invoice-ui/processing-steps-flow";
 import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import { useSetSearchParams } from "@/hooks/use-set-search-params";
 
 const PdfPreview = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
@@ -77,32 +72,9 @@ const PdfPreview = dynamic(
   }
 );
 
-const convertToMessage = (data) => {
-  return {
-    ...data,
-    name: data.stepName,
-    id: data.stepId,
-    extraMetadata: data.metadata,
-    processingTimeSeconds: data.processingTimeMs,
-  };
-};
-
-const addOrUpdateMessage = (messages, data) => {
-  if (data.stepName === "Connected") return messages;
-
-  const index = messages.findIndex((message) => message.stepId === data.stepId);
-  const convertedMessage = convertToMessage(data);
-
-  if (index !== -1) {
-    messages[index] = convertedMessage;
-  } else {
-    messages.push(convertedMessage);
-  }
-
-  return [...messages];
-};
-
 export default function ProcessTracePage() {
+  const { params, updateParams } = useSetSearchParams();
+  const router = useRouter();
   const { setOpen } = useSidebar();
   const { processID } = useParams();
   const { leftSize, savePanelSize } = usePersistentResize(
@@ -134,31 +106,16 @@ export default function ProcessTracePage() {
   const { data: processTraceStatus, isLoading } =
     useProcessTraceStatus(processID);
 
-  const [activeTab, setActiveTab] = useState("step-1");
-  const [messages, setMessages] = useState([]);
-  const isMainProcessProcessing = useMemo(
-    () => isProcessing(processTraceStatus?.status),
-    [processTraceStatus?.status]
-  );
+  const [activeTab, setCurrentActiveTab] = useState(params.tab || "step-1");
 
-  const { isLoading: isLoadingProcessingStream } = useProcessingStream(
-    processID,
-    processID && !isLoading && isMainProcessProcessing,
-    {
-      onData: (data) => {
-        setMessages((prev) => addOrUpdateMessage(prev || [], data));
-      },
-    }
-  );
+  const setActiveTab = useCallback((tab) => {
+    setCurrentActiveTab(tab);
+    updateParams({ tab });
+  }, []);
 
   const traceMessages = useMemo(() => {
-    return (
-      (isMainProcessProcessing ||
-      (messages.length && !processTraceStatus?.messages?.length)
-        ? messages
-        : processTraceStatus?.messages) || []
-    );
-  }, [messages, processTraceStatus?.messages, isMainProcessProcessing]);
+    return processTraceStatus?.messages || [];
+  }, [processTraceStatus?.messages]);
 
   const groupedTraceMessages = useMemo(() => {
     const grouped = {
@@ -187,40 +144,43 @@ export default function ProcessTracePage() {
 
   const s3JsonUrl = useMemo(() => {
     return (
+      processTraceStatus?.sessionMetadata?.s3_raw_json_url ||
       processTraceStatus?.sessionMetadata?.s3_json_url ||
       groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl
     );
   }, [
-    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_raw_json_url,
     processTraceStatus?.sessionMetadata?.s3_json_url,
+    groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl,
   ]);
 
   const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
+
+  const documentNumber = useMemo(() => {
+    return (
+      jsonData?.combined_parsed_json?.invoiceNumber?.value ||
+      jsonData?.DocumentNumber
+    );
+  }, [jsonData]);
 
   const cwWorkFlowUrl = useMemo(() => {
     if (processTraceStatus?.sessionMetadata?.cw_url) {
       return processTraceStatus?.sessionMetadata?.cw_url;
     }
-    if (jsonData?.DocumentNumber) {
-      return `https://cw.otsiaistudio.com/invoice/${jsonData?.DocumentNumber}`;
+
+    if (documentNumber) {
+      return `https://cw.otsiaistudio.com/invoice/${documentNumber}`;
     }
 
     return null;
-  }, [jsonData?.DocumentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
+  }, [documentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
 
   const containerHeight =
     "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
 
-  const considerDag =
-    CASE_TYPES[processTraceStatus?.sessionMetadata?.case_type] &&
-    ![CASE_TYPES.case1, CASE_TYPES.case2, CASE_TYPES.case3].includes(
-      CASE_TYPES[processTraceStatus?.sessionMetadata?.case_type]
-    );
-
   const { data: processTraceDag } = useProcessTraceDag(
     processID,
     !isLoading &&
-      considerDag &&
       isCompletedProcessing(groupedTraceMessages["step-1"]?.status, true) &&
       isCompletedProcessing(groupedTraceMessages["step-2"]?.status, true)
   );
@@ -235,7 +195,7 @@ export default function ProcessTracePage() {
   const stepStatus = useMemo(() => {
     const step1 = groupedTraceMessages["step-1"];
     const step2 = groupedTraceMessages["step-2"];
-    const step3 = considerDag ? dagNodes : groupedTraceMessages["step-3"];
+    const step3 = dagNodes;
 
     const step3Status = step3?.map(
       (message) => message?.data?.status || message?.status
@@ -260,29 +220,31 @@ export default function ProcessTracePage() {
       isStep3Cancelled: isCancelledProcessing(step3Status),
       isStep3Deferred: isDeferredProcessing(step3Status),
     };
-  }, [groupedTraceMessages, dagNodes, considerDag]);
-
-  useEffect(() => {
-    if (stepStatus.isStep1Processing) {
-      setActiveTab("step-1");
-    }
-
-    if (stepStatus.isStep2Processing) {
-      setActiveTab("step-2");
-    }
-
-    if (stepStatus.isStep3Processing) {
-      setActiveTab("step-3");
-    }
-  }, [stepStatus]);
+  }, [groupedTraceMessages, dagNodes]);
 
   const [view, setView] = useState("markdown");
 
   const containerRef = useRef(null);
 
+  const isMainProcessFailed = useMemo(() => {
+    return (
+      isFailedProcessing(processTraceStatus?.status) ||
+      isCancelledProcessing(processTraceStatus?.status)
+    );
+  }, [processTraceStatus?.status]);
+
   return (
     <div className="overflow-hidden flex flex-col" ref={containerRef}>
       <div className="flex items-center text-sm gap-3 flex-wrap transition-all p-4 py-2 border-b shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={"rounded-full text-xs h-6"}
+          onClick={() => router.back()}
+        >
+          <ArrowLeftIcon className="size-3" />
+          Back
+        </Button>
         <InfoItem
           Icon={HashIcon}
           label="Process ID:"
@@ -302,7 +264,7 @@ export default function ProcessTracePage() {
           <InfoItem
             Icon={LinkIcon}
             label="Document Number:"
-            value={jsonData?.DocumentNumber}
+            value={documentNumber}
             href={cwWorkFlowUrl}
             allowCopy
             urlText="Collabration Workspace"
@@ -346,39 +308,42 @@ export default function ProcessTracePage() {
               <div
                 className={cn(
                   "bg-accent h-full flex flex-col",
-                  (isLoading || (isLoadingProcessingStream && !s3PdfUrl)) &&
-                    "animate-pulse bg-accent/30"
+                  (isLoading || !s3PdfUrl) && "animate-pulse bg-accent/30"
                 )}
               >
-                {s3PdfUrl && (
+                {activeTab === "step-3" && !isLoading && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      {activeTab === "step-3" ? (
-                        <ProcessingStepsFlow />
-                      ) : (
-                        <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
-                      )}
+                      <ProcessingStepsFlow />
                     </div>
                   </div>
                 )}
-                {!s3PdfUrl && (
+
+                {s3PdfUrl && activeTab !== "step-3" && (
+                  <div className="h-full overflow-hidden">
+                    <div className="h-full overflow-y-auto overflow-x-hidden">
+                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                    </div>
+                  </div>
+                )}
+
+                {(isLoading || !s3PdfUrl) && (
                   <Empty className="h-full">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
-                        {(isLoading || isLoadingProcessingStream) &&
-                        !s3PdfUrl ? (
+                        {isLoading && !s3PdfUrl ? (
                           <Spinner />
                         ) : (
                           <FileQuestionMarkIcon />
                         )}
                       </EmptyMedia>
                       <EmptyTitle>
-                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                        {isLoading && !s3PdfUrl
                           ? "Loading Invoice..."
                           : "Nothing to Preview Yet"}
                       </EmptyTitle>
                       <EmptyDescription>
-                        {(isLoading || isLoadingProcessingStream) && !s3PdfUrl
+                        {isLoading && !s3PdfUrl
                           ? "Please wait while we load the invoice..."
                           : "The invoice is not available for preview."}
                       </EmptyDescription>
@@ -387,7 +352,7 @@ export default function ProcessTracePage() {
                 )}
               </div>
             </ResizablePanel>
-            <ResizableHandle withHandle />
+            <ResizableHandle />
             <ResizablePanel className={cn(containerHeight)}>
               <div className="h-full flex flex-col">
                 <Tabs
@@ -398,73 +363,51 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <div className="space-y-3 p-2 border-b border-border/50 shrink-0">
-                    <div className="flex items-center w-full justify-between">
-                      <div className="flex-1">
-                        <TabsList className="flex items-center gap-y-2">
-                          <StepTabTrigger
-                            value="step-1"
-                            key="step-1"
-                            isProcessing={stepStatus.isStep1Processing}
-                            isLoading={isLoading}
-                            isCompleted={stepStatus.isStep1Completed}
-                            isFailed={stepStatus.isStep1Failed}
-                            isCancelled={stepStatus.isStep1Cancelled}
-                            isPreviousStepCompleted={true}
-                          >
-                            <span>AI Invoice Extraction</span>
-                          </StepTabTrigger>
-                          <div
-                            className={cn(
-                              "w-6 h-px bg-foreground inline-block",
-                              isLoading && "animate-pulse bg-accent"
-                            )}
-                          />
-                          <StepTabTrigger
-                            value="step-2"
-                            key="step-2"
-                            isProcessing={stepStatus.isStep2Processing}
-                            isLoading={isLoading}
-                            isCompleted={stepStatus.isStep2Completed}
-                            isFailed={
-                              stepStatus.isStep2Failed ||
-                              stepStatus.isStep1Failed
-                            }
-                            isCancelled={stepStatus.isStep2Cancelled}
-                            isPreviousStepCompleted={
-                              stepStatus.isStep1Completed
-                            }
-                          >
-                            <span>Validate CW Invoice</span>
-                          </StepTabTrigger>
-                          <div
-                            className={cn(
-                              "w-6 h-px bg-foreground inline-block",
-                              isLoading && "animate-pulse bg-accent"
-                            )}
-                          />
-                          <StepTabTrigger
-                            value="step-3"
-                            key="step-3"
-                            isProcessing={stepStatus.isStep3Processing}
-                            isLoading={isLoading}
-                            isCompleted={stepStatus.isStep3Completed}
-                            isFailed={
-                              stepStatus.isStep3Failed ||
-                              stepStatus.isStep2Failed ||
-                              stepStatus.isStep1Failed
-                            }
-                            isCancelled={stepStatus.isStep3Cancelled}
-                            isPreviousStepCompleted={
-                              stepStatus.isStep2Completed
-                            }
-                          >
-                            <span>Process Steps</span>
-                          </StepTabTrigger>
-                        </TabsList>
-                      </div>
-                    </div>
-                  </div>
+                  <StepTabsList
+                    tabs={[
+                      {
+                        value: "step-1",
+                        label: "AI Invoice Extraction",
+                        stepNumber: 1,
+                        isProcessing:
+                          (stepStatus.isStep1Processing ||
+                            (!groupedTraceMessages["step-1"] && !isLoading)) &&
+                          !isMainProcessCompleted,
+                        isLoading: isLoading,
+                        isCompleted: stepStatus.isStep1Completed,
+                        isFailed:
+                          stepStatus.isStep1Failed || isMainProcessFailed,
+                        isCancelled: stepStatus.isStep1Cancelled,
+                        isPreviousStepCompleted: true,
+                      },
+                      {
+                        value: "step-2",
+                        label: "Validate CW Invoice",
+                        stepNumber: 2,
+                        isProcessing: stepStatus.isStep2Processing,
+                        isLoading: isLoading,
+                        isCompleted: stepStatus.isStep2Completed,
+                        isFailed:
+                          stepStatus.isStep2Failed || stepStatus.isStep1Failed,
+                        isCancelled: stepStatus.isStep2Cancelled,
+                        isPreviousStepCompleted: stepStatus.isStep1Completed,
+                      },
+                      {
+                        value: "step-3",
+                        label: "Process Steps",
+                        stepNumber: 3,
+                        isProcessing: stepStatus.isStep3Processing,
+                        isLoading: isLoading,
+                        isCompleted: stepStatus.isStep3Completed,
+                        isFailed:
+                          stepStatus.isStep3Failed ||
+                          stepStatus.isStep2Failed ||
+                          stepStatus.isStep1Failed,
+                        isCancelled: stepStatus.isStep3Cancelled,
+                        isPreviousStepCompleted: stepStatus.isStep2Completed,
+                      },
+                    ]}
+                  />
                   {jsonData && activeTab === "step-1" && (
                     <div className="flex items-center gap-1 py-2 px-6 bg-accent dark:bg-accent/50 border-b border-border/50 justify-end">
                       <Switch
@@ -483,15 +426,22 @@ export default function ProcessTracePage() {
                       <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
-                          isLoading={isLoading || isLoadingProcessingStream}
-                          jsonData={jsonData}
+                          isLoading={isLoading}
+                          isProcessing={
+                            (stepStatus.isStep1Processing ||
+                              !groupedTraceMessages["step-1"]) &&
+                            !isMainProcessCompleted
+                          }
+                          jsonData={jsonData?.combined_parsed_json || jsonData}
                           view={view}
+                          isMainProcessFailed={isMainProcessFailed}
                         />
                       </TabsContent>
                       <TabsContent value="step-2" className="h-full">
                         <ProcessMessage
                           message={groupedTraceMessages["step-2"]}
                           isLoading={isLoading}
+                          isMainProcessFailed={isMainProcessFailed}
                         />
                       </TabsContent>
                       <TabsContent value="step-3" className="space-y-4 h-full">
@@ -545,83 +495,5 @@ function InfoItem({
         <CopyToClipboard value={copyValue || value} iconSize={"size-3"} />
       )}
     </div>
-  );
-}
-
-function StepTabTrigger({
-  children,
-  className,
-  isProcessing,
-  isLoading,
-  isCompleted,
-  isFailed,
-  isCancelled,
-  isPreviousStepCompleted = false,
-  ...props
-}) {
-  return (
-    <TabsTrigger
-      className={cn(
-        "group/tab line-clamp-1 border border-inherit/50",
-        "text-sm px-4 py-1.5 rounded-full",
-        "transition-all bg-accent",
-        "hover:bg-primary/90 hover:text-primary-foreground hover:[&_svg]:text-primary-foreground",
-        "data-[state=active]:bg-primary data-[state=active]:[&_svg]:text-primary-foreground data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm",
-        className,
-        isLoading &&
-          "pointer-events-none animate-pulse bg-accent! text-accent! select-none **:text-transparent!",
-        "disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed"
-      )}
-      disabled={isLoading || !isPreviousStepCompleted}
-      {...props}
-    >
-      <span className={cn("flex gap-2 items-center ")}>
-        {!isProcessing &&
-          !isCompleted &&
-          !isFailed &&
-          !isCancelled &&
-          !isLoading && (
-            <ClockIcon
-              className={cn(
-                "size-4 -ml-2",
-                statusTextVariants({ variant: "pending" })
-              )}
-            />
-          )}
-        {isProcessing && (
-          <Spinner
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "processing" })
-            )}
-          />
-        )}
-        {isCompleted && !isFailed && !isCancelled && (
-          <BadgeCheckIcon
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "completed" })
-            )}
-          />
-        )}
-        {isFailed && (
-          <CircleXIcon
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "failed" })
-            )}
-          />
-        )}
-        {isCancelled && (
-          <BanIcon
-            className={cn(
-              "size-4 -ml-2",
-              statusTextVariants({ variant: "cancelled" })
-            )}
-          />
-        )}
-        <span className="truncate max-w-40">{children}</span>
-      </span>
-    </TabsTrigger>
   );
 }

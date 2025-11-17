@@ -104,7 +104,6 @@ const FileInputProvider = ({
         return isValid && isSizeValid;
       });
 
-      // Check total size limit
       if (totalSize > maxTotalSize) {
         toast.error(
           `Total file size cannot exceed ${formatFileSize(

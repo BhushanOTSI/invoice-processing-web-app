@@ -4,9 +4,10 @@ import { Spinner } from "../ui/spinner";
 import {
   CheckIcon,
   Clock1Icon,
-  XIcon,
   BanIcon,
   BadgeCheckIcon,
+  CircleXIcon,
+  CircleMinusIcon,
 } from "lucide-react";
 import { cn, humanizeDateTime } from "@/lib/utils";
 import { PROCESS_STATUS } from "@/app/constants";
@@ -16,16 +17,16 @@ export const ProcessIcons = {
   processing: Spinner,
   pending: Clock1Icon,
   completed: BadgeCheckIcon,
-  failed: XIcon,
+  failed: CircleXIcon,
   cancelled: BanIcon,
   scheduled: Clock1Icon,
   partially_completed: CheckIcon,
   queued: Clock1Icon,
   running: Spinner,
-  skipped: XIcon,
+  skipped: CircleMinusIcon,
   deferred: Clock1Icon,
   up_for_retry: Clock1Icon,
-  upstream_failed: XIcon,
+  upstream_failed: Clock1Icon,
   success: BadgeCheckIcon,
 };
 
@@ -195,6 +196,7 @@ export function ProcessStatusBadge({
   className,
   status,
   iconClassName,
+  iconOnly = false,
 }) {
   const isScheduled = status === PROCESS_STATUS.SCHEDULED;
   if (isLoading) {
@@ -211,6 +213,10 @@ export function ProcessStatusBadge({
 
   const type = status.toLowerCase();
   const Icon = ProcessIcons[type];
+
+  if (iconOnly) {
+    return <Icon className={cn("size-4", iconClassName)} />;
+  }
 
   return (
     <Badge

@@ -3,6 +3,7 @@
 import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
 import { cn } from "@/lib/utils";
 import {
@@ -45,13 +46,34 @@ const MarkdownHeading = ({ level, children }) => {
 };
 
 export function Markdown({ children, className }) {
+  React.useEffect(() => {
+    // Add dark mode styles for confidence badges
+    const styleId = "confidence-badge-styles";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        .confidence-badge {
+          transition: all 0.15s ease;
+          vertical-align: middle;
+        }
+        
+        .dark .confidence-badge {
+          background-color: rgba(0, 0, 0, 0.4) !important;
+          filter: brightness(1.2);
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   return (
     <div
       className={cn("prose prose-sm dark:prose-invert max-w-none", className)}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
           h1: (props) => <MarkdownHeading level={1} {...props} />,
           h2: (props) => <MarkdownHeading level={2} {...props} />,
@@ -82,13 +104,13 @@ export function Markdown({ children, className }) {
           ),
 
           ul: ({ node, ...props }) => (
-            <ul className="list-disc pl-5 mb-2 space-y-0.5" {...props} />
+            <ul className="list-disc pl-6 mb-3 space-y-1.5" {...props} />
           ),
           ol: ({ node, ...props }) => (
-            <ol className="list-decimal pl-5 mb-2 space-y-0.5" {...props} />
+            <ol className="list-decimal pl-6 mb-3 space-y-1.5" {...props} />
           ),
           li: ({ node, ...props }) => (
-            <li className="text-sm leading-6 text-foreground" {...props} />
+            <li className="text-sm leading-7 text-foreground ml-1" {...props} />
           ),
 
           blockquote: ({ node, ...props }) => <Blockquote {...props} />,

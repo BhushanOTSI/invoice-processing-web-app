@@ -38,7 +38,7 @@ export function HeroSection() {
     const handleDemoRequest = () => router.push('/login');
 
     return (
-        <section id="hero" className="py-6 px-4 sm:px-6 lg:px-8">
+        <section className="py-6 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-10 lg:mb-14">
                     <div className="relative inline-block">

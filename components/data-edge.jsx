@@ -48,6 +48,8 @@ export function DataEdge({
           return "";
       }
     }
+
+    return data.label || "";
   }, [data, nodeData]);
 
   const transform = `translate(${labelX}px,${labelY}px) translate(-50%, -50%)`;
@@ -55,10 +57,10 @@ export function DataEdge({
   return (
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />
-      {data.key && (
+      {label && (
         <EdgeLabelRenderer>
           <div
-            className="absolute rounded border bg-background px-1 text-foreground"
+            className="absolute border bg-background text-foreground p-2 rounded-md"
             style={{ transform }}
           >
             <pre className="text-xs">{label}</pre>
@@ -101,6 +103,7 @@ function getPath({
         targetY,
         sourcePosition,
         targetPosition,
+        borderRadius: 10, // Add border radius for smoother curves
       });
 
     case "step":

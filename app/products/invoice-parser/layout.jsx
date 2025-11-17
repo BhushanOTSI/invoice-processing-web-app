@@ -11,6 +11,7 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { cookies } from "next/headers";
 import BreadcrumbProvider from "@/app/providers/breadcrumb-provider";
 import ProtectedRoutes from "@/components/protected-routes";
+import { OfflineMessage } from "@/components/offline-message";
 
 export default async function ProtectedLayout({ children }) {
   const cookie = await cookies();
@@ -36,7 +37,9 @@ export default async function ProtectedLayout({ children }) {
                 <LogoIBM className={"w-14 sm:w-18"} />
               </div>
             </header>
-            <div className={"flex-1 flex flex-col"}>{children}</div>
+            <div className={"flex-1 flex flex-col"}>
+              <OfflineMessage>{children}</OfflineMessage>
+            </div>
           </SidebarInset>
         </BreadcrumbProvider>
       </SidebarProvider>

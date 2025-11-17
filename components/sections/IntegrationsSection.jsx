@@ -10,7 +10,7 @@ const integrations = [
 
 export function IntegrationsSection() {
     return (
-        <section id="integrations" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-900 dark:bg-gray-950">
+        <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-900 dark:bg-gray-950">
             <div className="max-w-6xl mx-auto text-center">
                 <div className="mb-4 lg:mb-6">
                     <h2 className="font-lexend font-normal text-5xl leading-tight tracking-normal text-center text-white mb-4 lg:mb-6">

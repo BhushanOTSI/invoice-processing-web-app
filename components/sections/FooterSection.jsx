@@ -34,7 +34,7 @@ const sections = [
 
 export function FooterSection() {
     return (
-        <footer id="faq" className="py-12 sm:py-10 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900 my-12">
+        <footer className="py-12 sm:py-10 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-900 my-12">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-16">
                     <div className="md:col-span-1 lg:col-span-3">

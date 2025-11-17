@@ -65,7 +65,7 @@ const FeatureCard = ({ feature }) => (
 
 export function FeaturesSection() {
     return (
-        <section id="features" className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/85">
+        <section className="py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900/85">
             <div className="max-w-12xl mx-auto">
                 <div className="text-center mb-12 lg:mb-16">
                     <Badge className="mb-4 lg:mb-6 px-4 py-2 text-sm font-medium rounded-full bg-white dark:bg-blue-900/30 border border-gray-200 dark:border-blue-700 text-gray-800 dark:text-blue-400 inline-flex items-center gap-2 shadow-sm">
