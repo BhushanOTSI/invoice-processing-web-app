@@ -31,6 +31,7 @@ import {
 import {
   BaseNode,
   BaseNodeContent,
+  BaseNodeFooter,
   BaseNodeHeader,
   BaseNodeHeaderTitle,
 } from "../base-node";
@@ -83,20 +84,21 @@ const NodeContent = forwardRef(({ data, ...props }, ref) => (
   <BaseNode ref={ref} {...props}>
     <BaseNodeHeader>
       <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
-
-      <ProcessStatusBadge
-        status={data.status}
-        iconClassName={"size-6!"}
-        iconOnly={true}
-      >
-        {data.status}
-      </ProcessStatusBadge>
     </BaseNodeHeader>
     {data.description && (
       <BaseNodeContent className="border-t dark:border-white/80">
         {data.description}
       </BaseNodeContent>
     )}
+    <BaseNodeFooter className="border-0 items-start">
+      <ProcessStatusBadge
+        status={data.status}
+        iconClassName={"size-6!"}
+        className="w-full text-sm"
+      >
+        {data.status}
+      </ProcessStatusBadge>
+    </BaseNodeFooter>
   </BaseNode>
 ));
 NodeContent.displayName = "NodeContent";
@@ -592,7 +594,7 @@ export const FakeNode = ({ data, id }) => {
       <NodeContent
         data={data}
         ref={nodeRef}
-        style={{ maxWidth: DefaultMeasured.width }}
+        style={{ width: DefaultMeasured.width }}
       />
     </div>
   );
