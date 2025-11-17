@@ -31,7 +31,6 @@ import {
 import {
   BaseNode,
   BaseNodeContent,
-  BaseNodeFooter,
   BaseNodeHeader,
   BaseNodeHeaderTitle,
 } from "../base-node";
@@ -323,23 +322,37 @@ export const getLayoutedElements = async (nodes, edges, options) => {
       "elk.algorithm": "layered",
       "elk.direction": elkDirection,
 
-      // spacing
+      // SPACING - the real fix
       "elk.spacing.nodeNode": 100,
+      "elk.spacing.edgeNode": 40,
+      "elk.spacing.edgeEdge": 20,
       "elk.layered.spacing.nodeNodeBetweenLayers": 100,
 
-      // edges
-      "elk.edgeRouting": "ORTHOGONAL",
-      "elk.layered.mergeEdges": true,
+      // ROUTING
+      "elk.edgeRouting": "POLYLINE",
+      "elk.layered.edgeRouting.useNodeShape": true,
 
-      // alignment + clean layering
+      // LAYER & ALIGNMENT
       "elk.layered.considerModelOrder": true,
       "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
-      "elk.portConstraints": "FIXED_ORDER",
+      "elk.layered.nodePlacement.favorStraightEdges": true,
 
-      // reduce chaotic line movement
+      // PORTS
+      "elk.portConstraints": "FIXED_ORDER",
+      "elk.portAlignment.default": "CENTER",
+
+      // CROSSING REDUCTION
       "elk.layered.crossingMinimization.semiInteractive": true,
       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
+
+      // COMPACTION
+      "elk.layered.compaction.connectedComponents": true,
+      "elk.layered.compaction.postCompaction.strategy": "SQUEEZE",
+
+      // DETERMINISTIC RESULTS
+      "elk.randomSeed": 1,
+      "elk.layered.randomization.seed": 1,
 
       // aesthetics
       "elk.rounding": 8,
