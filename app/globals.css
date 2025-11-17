@@ -612,25 +612,7 @@
     filter: grayscale(0.3);
   }
 
-  .node-skipped::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 8px;
-    right: 8px;
-    height: 1.5px;
-    background: linear-gradient(
-      to right,
-      transparent,
-      var(--muted-foreground) 20%,
-      var(--muted-foreground) 80%,
-      transparent
-    );
-    opacity: 0.3;
-    transform: translateY(-50%);
-    pointer-events: none;
-    z-index: 1;
-  }
+
 
   .node-skipped::after {
     content: "";

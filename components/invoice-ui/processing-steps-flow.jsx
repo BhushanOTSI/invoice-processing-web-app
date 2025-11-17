@@ -42,12 +42,6 @@ import { ProcessMessage } from "./process-message";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { forwardRef } from "react";
 
-const getBorderColor = (status) => {
-  return `var(--${statusTextVariants({ variant: status })
-    .replace("text", "color")
-    .replace("900", "500")})`;
-};
-
 const NodeHandles = ({
   edgeCount,
   handleType,
