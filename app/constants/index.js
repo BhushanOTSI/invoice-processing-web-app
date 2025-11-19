@@ -4,6 +4,7 @@ export const CASE_TYPES = {
   case3: "Non-PO Exception Processing",
   case4: "LCM PO Invoice Processing",
   case5: "LCM Invoice Processing",
+  case6: "Home delivery and return charges processing",
 };
 
 export const PROCESS_STATUS = {
