@@ -277,7 +277,7 @@ const layoutGraphDagre = async (nodes, edges) => {
   g.setGraph({
     rankdir: "TB", // Top to Bottom
     nodesep: 200, // Horizontal spacing between nodes
-    ranksep: 100, // Vertical spacing between ranks
+    ranksep: 150, // Vertical spacing between ranks
     marginx: 50,
     marginy: 50,
   });
