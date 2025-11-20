@@ -628,28 +628,90 @@
   /* Failed node styling */
   .node-failed {
     position: relative;
-    border: 1px solid var(--destructive);
+    border: 2px solid var(--destructive);
+    background-color: color-mix(in oklch, var(--destructive) 8%, transparent);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     isolation: isolate;
     overflow: visible;
-    box-shadow: 0 0 0 1px var(--destructive), 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 
+      0 0 0 1px var(--destructive),
+      0 2px 8px color-mix(in oklch, var(--destructive) 20%, transparent),
+      0 0 16px color-mix(in oklch, var(--destructive) 10%, transparent);
+  }
+
+  .node-failed::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px solid var(--destructive);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .node-failed::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    background: var(--destructive);
+    opacity: 0.12;
+    filter: blur(8px);
+    z-index: -2;
+    pointer-events: none;
   }
 
   .node-failed:hover {
     transform: translateY(-1px);
+    box-shadow: 
+      0 0 0 1px var(--destructive),
+      0 4px 12px color-mix(in oklch, var(--destructive) 30%, transparent),
+      0 0 20px color-mix(in oklch, var(--destructive) 15%, transparent);
   }
 
   /* Success node styling */
   .node-success {
     position: relative;
-    border: 1px solid var(--chart-3);
+    border: 2px solid var(--chart-3);
+    background-color: color-mix(in oklch, var(--chart-3) 8%, transparent);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     isolation: isolate;
     overflow: visible;
-    box-shadow: 0 0 0 1px var(--chart-3), 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 
+      0 0 0 1px var(--chart-3),
+      0 2px 8px color-mix(in oklch, var(--chart-3) 20%, transparent),
+      0 0 16px color-mix(in oklch, var(--chart-3) 10%, transparent);
+  }
+
+  .node-success::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    border: 2px solid var(--chart-3);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .node-success::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: inherit;
+    background: var(--chart-3);
+    opacity: 0.12;
+    filter: blur(8px);
+    z-index: -2;
+    pointer-events: none;
   }
 
   .node-success:hover {
     transform: translateY(-1px);
+    box-shadow: 
+      0 0 0 1px var(--chart-3),
+      0 4px 12px color-mix(in oklch, var(--chart-3) 30%, transparent),
+      0 0 20px color-mix(in oklch, var(--chart-3) 15%, transparent);
   }
 }
