@@ -290,11 +290,7 @@ export default function ProcessTracePage() {
           />
         )}
       </div>
-      <ProcessingStepsFlowProvider
-        messages={groupedTraceMessages["step-3"]}
-        dag_nodes={dagNodes}
-        dag_edges={dagEdges}
-      >
+      <ProcessingStepsFlowProvider dag_nodes={dagNodes} dag_edges={dagEdges}>
         <div className={cn("@container overflow-hidden", containerHeight)}>
           <ResizablePanelGroup
             direction="horizontal"

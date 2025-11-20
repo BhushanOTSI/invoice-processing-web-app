@@ -17,7 +17,6 @@ import {
   isSkippedProcessing,
   isSuccessProcessing,
 } from "@/lib/utils";
-import { statusTextVariants } from "./process-status-badge";
 
 import "@xyflow/react/dist/style.css";
 import {
@@ -95,10 +94,10 @@ const NodeContent = forwardRef(({ data, ...props }, ref) => (
 NodeContent.displayName = "NodeContent";
 
 const nodeTypes = {
-  step: ({ data, width, height }) => {
+  step: ({ data, width, height, id }) => {
     const { outgoingEdgesCount = 0, incomingEdgesCount = 0 } = data;
     const { activeNodeIndex, setActiveNodeIndex } = useProcessingStepsFlow();
-    const isActive = activeNodeIndex === data.index;
+    const isActive = activeNodeIndex === id;
 
     const isSkippedStatus = isSkippedProcessing(data.status);
     const isSuccessStatus = isSuccessProcessing(data.status);
@@ -116,7 +115,7 @@ const nodeTypes = {
           !isActive && isFailedProcessing(data.status) && "node-failed",
           !isActive && isSuccessStatus && "node-success"
         )}
-        onClick={() => !isSkippedStatus && setActiveNodeIndex(data.index)}
+        onClick={() => !isSkippedStatus && setActiveNodeIndex(id)}
         style={{ width, height }}
       />
     );
@@ -323,10 +322,6 @@ export const getLayoutedElements = async (nodes, edges, options) => {
       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
       "elk.layered.nodePlacement.favorStraightEdges": true,
 
-      // PORTS
-      "elk.portConstraints": "FIXED_ORDER",
-      "elk.portAlignment.default": "CENTER",
-
       // CROSSING REDUCTION
       "elk.layered.crossingMinimization.semiInteractive": true,
       "elk.layered.cycleBreaking.strategy": "DEPTH_FIRST",
@@ -344,8 +339,8 @@ export const getLayoutedElements = async (nodes, edges, options) => {
     },
     children: nodes.map((node) => ({
       id: String(node.id),
-      width: Number(node.measured?.width),
-      height: Number(node.measured?.height),
+      width: Number(node.measured?.width) || 450,
+      height: Number(node.measured?.height) || 60,
     })),
     edges: edges.map((edge) => ({
       id: String(edge.id),
@@ -359,32 +354,18 @@ export const getLayoutedElements = async (nodes, edges, options) => {
 
   const layoutedGraph = await elk.layout(elkGraph);
 
-  const layoutedNodes = layoutedGraph.children
-    .map((elkNode) => {
-      const originalNode = nodes.find((n) => n.id === elkNode.id);
-      if (!originalNode) return null;
+  const layoutedNodes = layoutedGraph.children.map((elkNode) => {
+    const original = nodes.find((n) => n.id === elkNode.id);
 
-      return {
-        ...originalNode,
-        ...elkNode,
-        position: {
-          x: elkNode.x || 0,
-          y: elkNode.y || 0,
-        },
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.position.y - b.position.y)
-    .map((node, index) => {
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          index,
-        },
-      };
-    });
-
+    return {
+      ...original,
+      position: { x: elkNode.x, y: elkNode.y },
+      measured: {
+        width: original.measured?.width || 450,
+        height: original.measured?.height || 60,
+      },
+    };
+  });
   return {
     nodes: layoutedNodes,
     edges,
@@ -511,32 +492,25 @@ export const ProcessingStepsFlowProvider = ({
 
     getLayoutedElements(newNodes, newEdges, { direction: "TB" }).then(
       ({ nodes: layoutedNodes, edges: layoutedEdges }) => {
+        setActiveNodeIndex(
+          [...layoutedNodes].sort((a, b) => a.position.y - b.position.y)[0].id
+        );
         setNodes(layoutedNodes);
         setEdges(layoutedEdges);
       }
     );
   }, [setNodes, setEdges, dag_nodes, dag_edges, nodeRegistry]);
 
-  const rerunLayout = useCallback(() => {
-    getLayoutedElements(nodes, edges, { direction: "TB" }).then(
-      ({ nodes: newNodes, edges: newEdges }) => {
-        setNodes(newNodes);
-        setEdges(newEdges);
-      }
-    );
-  }, [nodes, edges, setNodes, setEdges]);
-
   return (
     <Context.Provider
       value={{
         nodes,
         edges,
-        activeNode: nodes?.[activeNodeIndex] || null,
+        activeNode: nodes.find((node) => node.id === activeNodeIndex) || null,
         setActiveNodeIndex,
         activeNodeIndex,
         onNodesChange,
         onEdgesChange,
-        rerunLayout,
         setNodes,
         setEdges,
         setNodeRegistry,
@@ -563,16 +537,19 @@ export const FakeNode = ({ data, id }) => {
   const { setNodeRegistry } = useProcessingStepsFlow();
 
   useLayoutEffect(() => {
-    if (!nodeRef.current) return;
+    requestAnimationFrame(() => {
+      if (!nodeRef.current) return;
 
-    const width = nodeRef.current.clientWidth;
-    const height = nodeRef.current.clientHeight;
+      const width = nodeRef.current.offsetWidth;
+      const height = nodeRef.current.offsetHeight;
 
-    setNodeRegistry((prevRegistry) => {
-      prevRegistry.set(id, { width, height });
-      return new Map(prevRegistry);
+      setNodeRegistry((prev) => {
+        const next = new Map(prev);
+        next.set(id, { width: width + 20, height: height + 10 });
+        return next;
+      });
     });
-  }, [id, setNodeRegistry]);
+  }, [id]);
 
   return (
     <div
@@ -588,7 +565,7 @@ export const FakeNode = ({ data, id }) => {
       <NodeContent
         data={data}
         ref={nodeRef}
-        style={{ width: DefaultMeasured.width }}
+        style={{ maxWidth: DefaultMeasured.width }}
       />
     </div>
   );
@@ -599,6 +576,7 @@ export const ActiveProcessMessage = ({ isLoading = false }) => {
   const extraMetadata = activeNode?.data?.extraMetadata || {
     markdown: activeNode?.data?.log || "No data logs available",
   };
+
   return (
     <ProcessMessage
       message={{
