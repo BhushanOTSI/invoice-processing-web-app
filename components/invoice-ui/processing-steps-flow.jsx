@@ -10,6 +10,7 @@ import {
   useCallback,
 } from "react";
 import ELK from "elkjs/lib/elk.bundled.js";
+import dagre from "dagre";
 
 import "@xyflow/react/dist/style.css";
 import {
@@ -19,6 +20,7 @@ import {
   useEdgesState,
   useNodesState,
   ReactFlowProvider,
+  Controls,
 } from "@xyflow/react";
 
 import {
@@ -68,15 +70,20 @@ NodeContent.displayName = "NodeContent";
 const NodeHandles = ({ count, type, position }) => {
   if (!count) return null;
 
-  return Array.from({ length: count }).map((_, i) => (
-    <BaseHandle
-      key={`${type}-${i}`}
-      id={`${type}-${i}`}
-      type={type}
-      position={position}
-      isConnectable={false}
-    />
-  ));
+  return Array.from({ length: count }).map((_, i) => {
+    const left = count === 1 ? "50%" : `${((i + 1) / (count + 1)) * 100}%`;
+
+    return (
+      <BaseHandle
+        key={`${type}-${i}`}
+        id={`${type}-${i}`}
+        type={type}
+        position={position}
+        isConnectable={false}
+        style={{ left }}
+      />
+    );
+  });
 };
 
 /* ----------------------------------------------------------
@@ -181,7 +188,7 @@ const FakeNode = ({ id, data }) => {
       <NodeContent
         ref={ref}
         data={data}
-        style={{ maxWidth: 400, minWidth: 250 }}
+        style={{ minWidth: 250, maxWidth: 400 }}
       />
     </div>
   );
@@ -199,37 +206,47 @@ const layoutGraph = async (nodes, edges) => {
       "elk.algorithm": "layered",
       "elk.direction": "DOWN",
 
-      // Allow wide branching (removed maxWidth = 1)
-      "elk.layered.maxWidth": 9999,
-
-      // layering & placement favor wide horizontal spread
-      "elk.layered.layering.strategy": "LONGEST_PATH",
-      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
-      "elk.layered.nodePlacement.favorStraightEdges": true,
+      // ALIGNMENT & SYMMETRY (CRITICAL)
+      "elk.layered.nodePlacement.strategy": "BRANDES_KOEPF",
       "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
+      "elk.layered.considerModelOrder": true,
+      "elk.layered.nodePlacement.favorStraightEdges": true,
+      "elk.aspectRatio": 1.6,
 
-      // spacing tuned
-      "elk.spacing.nodeNode": 60,
-      "elk.spacing.edgeNode": 50,
-      "elk.spacing.edgeEdge": 25,
-      "elk.layered.spacing.nodeNodeBetweenLayers": 80,
-      "elk.layered.spacing.edgeNodeBetweenLayers": 70,
-      "elk.layered.spacing.edgeEdgeBetweenLayers": 70,
+      // LAYERING LIKE AIRFLOW
+      "elk.layered.layering.strategy": "NETWORK_SIMPLEX",
+      "elk.layered.compaction.connectedComponents": true,
+      "elk.layered.cycleBreaking.strategy": "GREEDY",
+      "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP",
 
-      // edge routing
+      // PORT ALIGNMENT LIKE AIRFLOW
+      "elk.portAlignment.default": "JUSTIFIED",
+
+      // SPACING (TIGHT & CLEAN)
+      "elk.spacing.nodeNode": 200,
+      "elk.layered.spacing.nodeNodeBetweenLayers": 100,
+      "elk.spacing.edgeNode": 15,
+      "elk.spacing.edgeEdge": 10,
+
+      // EDGE ROUTING (SAME AS AIRFLOW)
       "elk.edgeRouting": "ORTHOGONAL",
       "elk.layered.edgeRouting.useNodeShape": true,
-      "elk.layered.mergeEdges": false,
-
-      // label control
+      "elk.edgeSpacing": 10,
       "elk.edgeLabels.inline": false,
-      "elk.edgeLabels.placement": "TAIL",
-      "elk.edgeLabels.planarSelfLoops": true,
-      "elk.spacing.labelNode": 20,
+      "elk.edgeLabels.placement": "CENTER",
 
-      // stability
-      "elk.randomSeed": 42,
-      "elk.layered.randomization.seed": 42,
+      // PREVENT NODES FROM DRIFTING SIDEWAYS
+      "elk.layered.mergeEdges": true,
+      "elk.longEdgeOrdering.strategy": "DUMMY_NODE_OVER",
+      "elk.layered.randomization.seed": 1,
+      "elk.randomSeed": 1,
+
+      // LABEL BEHAVIOR
+      "elk.spacing.labelNode": 5,
+      "elk.nodeLabels.padding": "[5,5,5,5]",
+
+      // NO WRAPPING
+      "elk.graphWrapping.strategy": "OFF",
     },
     children: nodes.map((n) => ({
       id: n.id,
@@ -248,6 +265,49 @@ const layoutGraph = async (nodes, edges) => {
   const out = await elk.layout(graph);
 
   return out.children;
+};
+
+/* ----------------------------------------------------------
+   LAYOUT ENGINE (DAGRE)
+---------------------------------------------------------- */
+
+const layoutGraphDagre = async (nodes, edges) => {
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph({
+    rankdir: "TB", // Top to Bottom
+    nodesep: 200, // Horizontal spacing between nodes
+    ranksep: 100, // Vertical spacing between ranks
+    marginx: 50,
+    marginy: 50,
+  });
+
+  // Add nodes to dagre graph
+  nodes.forEach((node) => {
+    g.setNode(node.id, {
+      width: node.measured.width,
+      height: node.measured.height,
+    });
+  });
+
+  // Add edges to dagre graph
+  edges.forEach((edge) => {
+    g.setEdge(edge.source, edge.target);
+  });
+
+  // Run dagre layout
+  dagre.layout(g);
+
+  // Extract positions from dagre graph
+  // Dagre returns center positions, so we convert to top-left for React Flow
+  return nodes.map((node) => {
+    const nodeWithPosition = g.node(node.id);
+    return {
+      id: node.id,
+      x: nodeWithPosition.x - node.measured.width / 2,
+      y: nodeWithPosition.y - node.measured.height / 2,
+    };
+  });
 };
 
 /* ----------------------------------------------------------
@@ -273,7 +333,7 @@ export const ProcessingStepsFlowProvider = ({
   };
 
   const drawGraph = useCallback((builtNodes, builtEdges) => {
-    layoutGraph(builtNodes, builtEdges).then((layout) => {
+    layoutGraphDagre(builtNodes, builtEdges).then((layout) => {
       const finalNodes = builtNodes.map((n) => {
         const pos = layout.find((p) => p.id === n.id);
         return {
@@ -307,16 +367,32 @@ export const ProcessingStepsFlowProvider = ({
       measured: nodeSizes.get(n.id),
     }));
 
-    const builtEdges = dag_edges.map((e) => ({
-      id: e.id,
-      type: "processEdge",
-      source: e.source,
-      target: e.target,
-      data: {
-        path: "smoothstep",
-        label: e.label,
-      },
-    }));
+    // Track handle indices for each node to assign correct handles to edges
+    const sourceHandleCounts = new Map();
+    const targetHandleCounts = new Map();
+
+    const builtEdges = dag_edges.map((e) => {
+      // Get the current handle index for source and target nodes
+      const sourceHandleIndex = sourceHandleCounts.get(e.source) || 0;
+      const targetHandleIndex = targetHandleCounts.get(e.target) || 0;
+
+      // Increment counters for next edge
+      sourceHandleCounts.set(e.source, sourceHandleIndex + 1);
+      targetHandleCounts.set(e.target, targetHandleIndex + 1);
+
+      return {
+        id: e.id,
+        type: "processEdge",
+        source: e.source,
+        target: e.target,
+        sourceHandle: `source-${sourceHandleIndex}`,
+        targetHandle: `target-${targetHandleIndex}`,
+        data: {
+          path: "smoothstep",
+          label: e.label,
+        },
+      };
+    });
 
     dag_nodes.forEach((n) => {
       builtNodes.find((x) => x.id === n.id).data.incomingEdgesCount =
@@ -354,7 +430,6 @@ export const ProcessingStepsFlowProvider = ({
 /* ----------------------------------------------------------
    REACT FLOW WRAPPER
 ---------------------------------------------------------- */
-
 const FlowInner = () => {
   const { nodes, edges, onNodesChange, onEdgesChange } =
     useProcessingStepsFlow();
@@ -380,8 +455,8 @@ const FlowInner = () => {
     if (!first) return;
 
     instanceRef.current.setViewport({
-      x: first.position.x / 2,
-      y: -first.position.y + 30,
+      x: first.position.x / 4 - 100,
+      y: -first.position.y + 40,
       zoom: 0.5,
       duration: 300,
     });
@@ -414,12 +489,12 @@ const FlowInner = () => {
         onInit={onInit}
         className={cn(isDark && "dark")}
         onNodesChange={onNodesChange}
-        onEdgesChange={(edges) => {
-          console.log("edges", edges);
-          onEdgesChange(edges);
-        }}
+        onEdgesChange={onEdgesChange}
+        minZoom={0.1}
+        maxZoom={10}
       >
         <Background variant="dots" />
+        <Controls />
       </ReactFlow>
     </div>
   );
