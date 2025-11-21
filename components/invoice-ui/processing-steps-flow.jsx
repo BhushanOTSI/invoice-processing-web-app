@@ -19,6 +19,7 @@ import {
   useEdgesState,
   useNodesState,
   ReactFlowProvider,
+  Controls,
 } from "@xyflow/react";
 
 import {
@@ -124,8 +125,6 @@ const nodeTypes = {
 
 const edgeTypes = {
   processEdge: (props) => {
-    const { theme } = useTheme();
-
     return (
       <DataEdge
         {...props}
@@ -230,10 +229,6 @@ const layoutGraph = async (nodes, edges) => {
 
   return out.children;
 };
-
-/* ----------------------------------------------------------
-   FLOW PROVIDER
----------------------------------------------------------- */
 
 export const ProcessingStepsFlowProvider = ({
   children,
@@ -401,6 +396,7 @@ const FlowInner = () => {
         }}
       >
         <Background variant="dots" />
+        <Controls />
       </ReactFlow>
     </div>
   );
