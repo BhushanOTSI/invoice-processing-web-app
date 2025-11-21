@@ -26,7 +26,7 @@ export const CustomNode = ({ id, data, onClick, isActive, ...props }) => {
         isSkipped && "node-skipped",
         isSuccessProcessing(data.status) && !isActive && "node-success"
       )}
-      onClick={onClick}
+      onClick={(node) => !isSkipped && onClick(node)}
       {...props}
     />
   );

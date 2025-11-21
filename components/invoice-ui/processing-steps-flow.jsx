@@ -20,9 +20,8 @@ import {
   Controls,
 } from "@xyflow/react";
 
-import { PROCESS_STATUS } from "@/app/constants";
 import { ProcessMessage } from "./process-message";
-import { cn } from "@/lib/utils";
+import { cn, isProcessing } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { CustomNode, FakeNode } from "./react-flow/CustomNode";
 import { CustomNodeHandles } from "./react-flow/CustomNodeHandles";
@@ -43,7 +42,7 @@ const nodeTypes = {
 
         <CustomNode
           data={data}
-          onClick={() => !isSkipped && setActiveNodeId(id)}
+          onClick={() => setActiveNodeId(id)}
           isActive={isActive}
           style={{ width, height }}
         />
@@ -164,9 +163,7 @@ const FlowInner = () => {
     if (!nodes.length) return;
 
     let targetNode = [...nodes].sort((a, b) => a.position.y - b.position.y)[0];
-    const processingNode = nodes.find(
-      (n) => n.data.status === PROCESS_STATUS.PROCESSING
-    );
+    const processingNode = nodes.find((n) => isProcessing(n.data.status));
 
     if (processingNode) {
       targetNode = processingNode;
@@ -223,7 +220,6 @@ const FlowInner = () => {
         minZoom={0.1}
         nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
       >
         <Background variant="dots" />
         <Controls />
