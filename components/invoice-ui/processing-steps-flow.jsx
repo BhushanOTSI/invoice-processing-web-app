@@ -6,10 +6,8 @@ import {
   useEffect,
   useState,
   useRef,
-  useLayoutEffect,
   useCallback,
 } from "react";
-import ELK from "elkjs/lib/elk.bundled.js";
 
 import "@xyflow/react/dist/style.css";
 import {
@@ -22,101 +20,38 @@ import {
   Controls,
 } from "@xyflow/react";
 
-import {
-  BaseNode,
-  BaseNodeContent,
-  BaseNodeHeader,
-  BaseNodeHeaderTitle,
-} from "../base-node";
-import { ProcessStatusBadge } from "./process-status-badge";
 import { PROCESS_STATUS } from "@/app/constants";
-import { DataEdge } from "../data-edge";
-import { BaseHandle } from "../base-handle";
 import { ProcessMessage } from "./process-message";
-import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
-import {
-  cn,
-  isFailedProcessing,
-  isProcessing,
-  isSkippedProcessing,
-  isSuccessProcessing,
-} from "@/lib/utils";
-import { forwardRef } from "react";
+import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { CustomNode, FakeNode } from "./react-flow/CustomNode";
+import { CustomNodeHandles } from "./react-flow/CustomNodeHandles";
+import { CustomEdges } from "./react-flow/CustomEdges";
+import { layoutGraph } from "./react-flow";
 
 const FlowContext = createContext(null);
 export const useProcessingStepsFlow = () => useContext(FlowContext);
 
-const NodeContent = forwardRef(({ data, ...props }, ref) => (
-  <BaseNode ref={ref} {...props}>
-    <BaseNodeHeader>
-      <BaseNodeHeaderTitle>{data.name}</BaseNodeHeaderTitle>
-    </BaseNodeHeader>
-
-    <BaseNodeContent className="border-t dark:border-white/80">
-      {data.description}
-
-      <ProcessStatusBadge status={data.status} className="text-sm" />
-    </BaseNodeContent>
-  </BaseNode>
-));
-NodeContent.displayName = "NodeContent";
-
-const NodeHandles = ({ count, type, position }) => {
-  if (!count) return null;
-
-  return Array.from({ length: count }).map((_, i) => (
-    <BaseHandle
-      key={`${type}-${i}`}
-      id={`${type}-${i}`}
-      type={type}
-      position={position}
-      isConnectable={false}
-    />
-  ));
-};
-
 const nodeTypes = {
-  step: ({ data, id, width }) => {
+  step: ({ data, id, width, height }) => {
     const { activeNodeId, setActiveNodeId } = useProcessingStepsFlow();
     const isActive = activeNodeId === id;
-    const isSkipped = isSkippedProcessing(data.status);
-
-    const Content = (
-      <NodeContent
-        data={data}
-        style={{ width }}
-        className={cn(
-          isActive && "node-active-gradient",
-          !isActive && isProcessing(data.status) && "node-processing-border",
-          isFailedProcessing(data.status) && !isActive && "node-failed",
-          isSkipped && "node-skipped",
-          isSuccessProcessing(data.status) && !isActive && "node-success"
-        )}
-        onClick={() => !isSkipped && setActiveNodeId(id)}
-      />
-    );
 
     return (
       <>
-        <NodeHandles
-          count={data.incomingEdgesCount}
-          type="target"
-          position={Position.Top}
-        />
-        {!isSkipped ? (
-          <Tooltip>
-            <TooltipTrigger asChild>{Content}</TooltipTrigger>
-            <TooltipContent>Click to view logs</TooltipContent>
-          </Tooltip>
-        ) : (
-          Content
-        )}
+        <CustomNodeHandles type="target" position={Position.Top} node={data} />
 
-        <NodeHandles
-          count={data.outgoingEdgesCount}
+        <CustomNode
+          data={data}
+          onClick={() => !isSkipped && setActiveNodeId(id)}
+          isActive={isActive}
+          style={{ width, height }}
+        />
+
+        <CustomNodeHandles
           type="source"
           position={Position.Bottom}
+          node={data}
         />
       </>
     );
@@ -124,110 +59,7 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  processEdge: (props) => {
-    return (
-      <DataEdge
-        {...props}
-        style={{
-          strokeWidth: 4,
-          stroke: "var(--color-muted-foreground)",
-        }}
-      />
-    );
-  },
-};
-
-const FakeNode = ({ id, data }) => {
-  const ref = useRef(null);
-  const { registerSize } = useProcessingStepsFlow();
-
-  useLayoutEffect(() => {
-    requestAnimationFrame(() => {
-      if (!ref.current) return;
-
-      registerSize(id, {
-        width: ref.current.offsetWidth,
-        height: ref.current.offsetHeight,
-      });
-    });
-  }, []);
-
-  return (
-    <div
-      style={{
-        visibility: "hidden",
-        position: "absolute",
-        left: -9999,
-        top: 0,
-      }}
-    >
-      <NodeContent
-        ref={ref}
-        data={data}
-        style={{ maxWidth: 400, minWidth: 250 }}
-      />
-    </div>
-  );
-};
-
-const elk = new ELK();
-
-const layoutGraph = async (nodes, edges) => {
-  const graph = {
-    id: "root",
-    layoutOptions: {
-      "elk.algorithm": "layered",
-      "elk.direction": "DOWN",
-
-      // Allow wide branching (removed maxWidth = 1)
-      "elk.layered.maxWidth": 9999,
-
-      // layering & placement favor wide horizontal spread
-      "elk.layered.layering.strategy": "LONGEST_PATH",
-      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX",
-      "elk.layered.nodePlacement.favorStraightEdges": true,
-      "elk.layered.nodePlacement.bk.fixedAlignment": "BALANCED",
-
-      // spacing tuned
-      "elk.spacing.nodeNode": 60,
-      "elk.spacing.edgeNode": 50,
-      "elk.spacing.edgeEdge": 25,
-      "elk.layered.spacing.nodeNodeBetweenLayers": 80,
-      "elk.layered.spacing.edgeNodeBetweenLayers": 70,
-      "elk.layered.spacing.edgeEdgeBetweenLayers": 70,
-
-      // edge routing
-      "elk.edgeRouting": "ORTHOGONAL",
-      "elk.layered.edgeRouting.useNodeShape": true,
-      "elk.layered.mergeEdges": false,
-
-      // label control
-      "elk.edgeLabels.inline": false,
-      "elk.edgeLabels.placement": "TAIL",
-      "elk.edgeLabels.planarSelfLoops": true,
-      "elk.spacing.labelNode": 20,
-
-      // stability
-      "elk.randomSeed": 42,
-      "elk.layered.randomization.seed": 42,
-    },
-    children: nodes.map((n) => ({
-      id: n.id,
-      width: n.measured.width,
-      height: n.measured.height,
-    })),
-    edges: edges.map((e) => {
-      return {
-        id: e.id,
-        sources: [e.source],
-        targets: [e.target],
-      };
-    }),
-  };
-
-  const out = await elk.layout(graph);
-
-  return out.children;
+  processEdge: CustomEdges,
 };
 
 export const ProcessingStepsFlowProvider = ({
@@ -249,22 +81,10 @@ export const ProcessingStepsFlowProvider = ({
   };
 
   const drawGraph = useCallback((builtNodes, builtEdges) => {
-    layoutGraph(builtNodes, builtEdges).then((layout) => {
-      const finalNodes = builtNodes.map((n) => {
-        const pos = layout.find((p) => p.id === n.id);
-        return {
-          ...n,
-          position: { x: pos.x, y: pos.y },
-        };
-      });
-
-      setNodes(finalNodes);
-      setEdges(builtEdges);
-
-      const sortedNodes = [...finalNodes].sort(
-        (a, b) => a.position.y - b.position.y
-      );
-      setActiveNodeId(sortedNodes[0]?.id || null);
+    layoutGraph(builtNodes, builtEdges).then(({ nodes, edges }) => {
+      setNodes(nodes);
+      setEdges(edges);
+      setActiveNodeId(nodes[0]?.id || null);
     });
   }, []);
 
@@ -272,7 +92,7 @@ export const ProcessingStepsFlowProvider = ({
     if (!dag_nodes.length) return;
     if (nodeSizes.size !== dag_nodes.length) return;
 
-    const builtNodes = dag_nodes.map((n) => ({
+    const builtNodes = dag_nodes.map((n, i) => ({
       id: n.id,
       type: "step",
       position: { x: 0, y: 0 },
@@ -321,15 +141,16 @@ export const ProcessingStepsFlowProvider = ({
       {children}
 
       {dag_nodes.map((n) => (
-        <FakeNode key={n.id} id={n.id} data={n.data} />
+        <FakeNode
+          registerSize={registerSize}
+          key={n.id}
+          id={n.id}
+          data={n.data}
+        />
       ))}
     </FlowContext.Provider>
   );
 };
-
-/* ----------------------------------------------------------
-   REACT FLOW WRAPPER
----------------------------------------------------------- */
 
 const FlowInner = () => {
   const { nodes, edges, onNodesChange, onEdgesChange } =
@@ -337,37 +158,45 @@ const FlowInner = () => {
   const containerRef = useRef(null);
   const flowRef = useRef(null);
   const instanceRef = useRef(null);
-  const [isInitialAdjustViewport, setIsInitialAdjustViewport] = useState(false);
 
   const adjustViewport = useCallback(() => {
     if (!instanceRef.current) return;
     if (!nodes.length) return;
-    setIsInitialAdjustViewport(true);
 
-    let first = [...nodes].sort((a, b) => a.position.y - b.position.y)[0];
+    let targetNode = [...nodes].sort((a, b) => a.position.y - b.position.y)[0];
     const processingNode = nodes.find(
       (n) => n.data.status === PROCESS_STATUS.PROCESSING
     );
 
     if (processingNode) {
-      first = processingNode;
+      targetNode = processingNode;
     }
 
-    if (!first) return;
+    if (!targetNode) return;
+    const zoom = processingNode ? 0.8 : 0.5;
+    const paddingTop = 40;
 
-    instanceRef.current.setViewport({
-      x: first.position.x / 2,
-      y: -first.position.y + 30,
-      zoom: 0.5,
-      duration: 300,
-    });
+    const viewportWidth = flowRef.current.clientWidth;
+    const x = targetNode.position.x;
+    const y = targetNode.position.y;
+    const nodeCenterX = x + targetNode.measured?.width / 2;
+    const translateX = viewportWidth / 2 - nodeCenterX * zoom;
+
+    const translateY = paddingTop - y * zoom;
+
+    instanceRef.current.setViewport(
+      {
+        x: translateX,
+        y: translateY,
+        zoom,
+      },
+      { duration: 300 }
+    );
   }, [nodes]);
 
   useEffect(() => {
-    if (isInitialAdjustViewport) return;
-
     adjustViewport();
-  }, [nodes, adjustViewport, isInitialAdjustViewport]);
+  }, [nodes, adjustViewport]);
 
   const onInit = (instance) => {
     instanceRef.current = instance;
@@ -390,10 +219,11 @@ const FlowInner = () => {
         onInit={onInit}
         className={cn(isDark && "dark")}
         onNodesChange={onNodesChange}
-        onEdgesChange={(edges) => {
-          console.log("edges", edges);
-          onEdgesChange(edges);
-        }}
+        onEdgesChange={onEdgesChange}
+        minZoom={0.1}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={false}
       >
         <Background variant="dots" />
         <Controls />
@@ -407,10 +237,6 @@ export const ProcessingStepsFlow = () => (
     <FlowInner />
   </ReactFlowProvider>
 );
-
-/* ----------------------------------------------------------
-   CURRENT NODE DETAIL
----------------------------------------------------------- */
 
 export const ActiveProcessMessage = () => {
   const { nodes, activeNodeId } = useProcessingStepsFlow();

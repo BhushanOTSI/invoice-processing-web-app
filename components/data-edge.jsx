@@ -56,7 +56,13 @@ export function DataEdge({
 
   return (
     <>
-      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={style}
+        label={label}
+      />
       {label && (
         <EdgeLabelRenderer>
           <div
@@ -103,7 +109,7 @@ function getPath({
         targetY,
         sourcePosition,
         targetPosition,
-        borderRadius: 10, // Add border radius for smoother curves
+        borderRadius: 10,
       });
 
     case "step":
