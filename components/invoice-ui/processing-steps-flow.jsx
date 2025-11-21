@@ -61,10 +61,6 @@ const NodeContent = forwardRef(({ data, ...props }, ref) => (
 ));
 NodeContent.displayName = "NodeContent";
 
-/* ----------------------------------------------------------
-   HANDLES
----------------------------------------------------------- */
-
 const NodeHandles = ({ count, type, position }) => {
   if (!count) return null;
 
@@ -78,10 +74,6 @@ const NodeHandles = ({ count, type, position }) => {
     />
   ));
 };
-
-/* ----------------------------------------------------------
-   NODE TYPE
----------------------------------------------------------- */
 
 const nodeTypes = {
   step: ({ data, id, width }) => {
@@ -130,10 +122,6 @@ const nodeTypes = {
   },
 };
 
-/* ----------------------------------------------------------
-   EDGE TYPES
----------------------------------------------------------- */
-
 const edgeTypes = {
   processEdge: (props) => {
     const { theme } = useTheme();
@@ -149,10 +137,6 @@ const edgeTypes = {
     );
   },
 };
-
-/* ----------------------------------------------------------
-   FAKE NODE (SIZE MEASUREMENT)
----------------------------------------------------------- */
 
 const FakeNode = ({ id, data }) => {
   const ref = useRef(null);
@@ -187,9 +171,6 @@ const FakeNode = ({ id, data }) => {
   );
 };
 
-/* ----------------------------------------------------------
-   LAYOUT ENGINE (ELK)
----------------------------------------------------------- */
 const elk = new ELK();
 
 const layoutGraph = async (nodes, edges) => {
