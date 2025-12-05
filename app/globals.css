@@ -6,8 +6,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-dm-sans);
-  --font-mono: var(--font-space-mono);
+  --font-sans: var(--font-lexend);
+  --font-mono: var(--font-dm-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -70,7 +70,7 @@
   --radius: 0.5rem;
   /* Light mode - Clean & crisp professional theme */
   --background: oklch(0.99 0 0);
-  --foreground: oklch(0.09 0.01 256);
+  --foreground: oklch(0.25 0.01 256);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.09 0.01 256);
   --popover: oklch(1 0 0);
@@ -207,6 +207,10 @@
   }
 
 @layer base {
+  html{
+    @apply text-[15px];
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

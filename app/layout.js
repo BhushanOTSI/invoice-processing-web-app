@@ -1,8 +1,15 @@
 import { ThemeProvider } from "@/app/providers/theme-provider";
-import { DM_Sans, Space_Mono } from "next/font/google";
+import { DM_Sans, Space_Mono, Lexend } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/app/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+
+const lexend = Lexend({
+  variable: "--font-lexend",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -26,7 +33,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${dmSans.variable} ${spaceMono.variable} antialiased`} suppressHydrationWarning>
+      <body
+        className={`${dmSans.variable} ${spaceMono.variable} ${lexend.variable} antialiased`}
+        suppressHydrationWarning
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

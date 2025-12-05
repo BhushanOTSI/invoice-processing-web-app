@@ -19,7 +19,7 @@ import "highlight.js/styles/github-dark.css";
 
 const MarkdownHeading = ({ level, children }) => {
   const sizes = [
-    "text-lg",
+    "text-base",
     "text-base",
     "text-sm",
     "text-xs",
