@@ -152,7 +152,7 @@ export const ProcessingStepsFlowProvider = ({
 };
 
 const FlowInner = () => {
-  const { nodes, edges, onNodesChange, onEdgesChange } =
+  const { nodes, edges, onNodesChange, onEdgesChange, activeNodeId } =
     useProcessingStepsFlow();
   const containerRef = useRef(null);
   const flowRef = useRef(null);
@@ -164,9 +164,12 @@ const FlowInner = () => {
 
     let targetNode = [...nodes].sort((a, b) => a.position.y - b.position.y)[0];
     const processingNode = nodes.find((n) => isProcessing(n.data.status));
+    const activeNode = nodes.find((n) => n.id === activeNodeId);
 
     if (processingNode) {
       targetNode = processingNode;
+    } else if (activeNode) {
+      targetNode = activeNode;
     }
 
     if (!targetNode) return;
@@ -189,7 +192,7 @@ const FlowInner = () => {
       },
       { duration: 300 }
     );
-  }, [nodes]);
+  }, [nodes, activeNodeId]);
 
   useEffect(() => {
     adjustViewport();
