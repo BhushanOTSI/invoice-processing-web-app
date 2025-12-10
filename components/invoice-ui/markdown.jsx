@@ -144,18 +144,88 @@ export function Markdown({ children, className }) {
     // Step 1: Normalize line breaks (handle escaped newlines)
     content = content.replace(/\\n/g, "\n");
 
+    // Step 1.5: Ensure horizontal rules (---) have blank lines around them for proper rendering
+    content = content.replace(/([^\n])\n(---+)\n/g, "$1\n\n$2\n\n");
+    content = content.replace(/\n(---+)\n([^\n])/g, "\n\n$1\n\n$2");
+
     // Step 2: Convert markdown key-value pairs to HTML structure
-    // Pattern: **Key:** Value (on its own line or after other content)
-    // Only convert if not inside a heading or list
+
+    // Pattern 1: **Key:** Value (colon inside bold)
     content = content.replace(
-      /^(?!#+\s)(?![-*]\s)\*\*([^*\n:]+):\*\*\s*(.+?)(?=\n|$)/gm,
+      /^(?!#+\s)(?![-*]\s)\*\*([^*\n:]+):\*\*\s*(.+?)(?=\s*\n|$)/gm,
+      (match, key, value) => {
+        const trimmedKey = key.trim();
+        const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
+        // Skip if value is empty
+        if (!trimmedValue) {
+          return match;
+        }
+        return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
+          trimmedKey
+        )}">${trimmedValue}</div>`;
+      }
+    );
+
+    // Pattern 1.5: **Key**: Value (colon outside bold)
+    content = content.replace(
+      /\*\*([^*\n:]+)\*\*:\s*([^<\n]+)(?=<br|$)/gm,
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim();
-        // Skip if value is empty or just punctuation
-        if (!trimmedValue || trimmedValue.length < 2) {
+
+        // Skip if already wrapped
+        if (match.includes('class="kv-pair-wrapper"')) {
           return match;
         }
+
+        // If value exists, create key-value pair
+        if (trimmedValue) {
+          return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
+            trimmedKey
+          )}">${trimmedValue}</div>`;
+        }
+
+        // If no value, don't match - let it fall through to be rendered as markdown
+        return match;
+      }
+    );
+
+    // Pattern 1.6: **Key**:<br> (labels without values) - render as HTML bold
+    content = content.replace(
+      /\*\*([^*\n:]+)\*\*:\s*<br\s*\/?>/gm,
+      (match, key) => {
+        return `<strong>${escapeHtml(key.trim())}</strong>:`;
+      }
+    );
+
+    // Pattern 2: Key: Value (plain key-value pairs)
+    // Only convert lines that look like key-value pairs (not headings, not lists, has reasonable key)
+    content = content.replace(
+      /^(?!#+\s)(?![-*+]\s)(?!---$)(?!\|)([A-Z][A-Za-z\s]{2,40}):\s*(.+?)(?=\s*<br|\s*\\n|\s*\n|$)/gm,
+      (match, key, value) => {
+        const trimmedKey = key.trim();
+        const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
+
+        // Skip if already wrapped
+        if (match.includes('class="kv-pair-wrapper"')) {
+          return match;
+        }
+
+        // Skip if value is empty
+        if (!trimmedValue) {
+          return match;
+        }
+
+        // Skip common markdown patterns that shouldn't be converted
+        if (trimmedKey.includes("http") || trimmedKey.includes("##")) {
+          return match;
+        }
+
+        // Skip table-like content
+        if (trimmedValue.includes("|") || key.includes("|")) {
+          return match;
+        }
+
         return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
           trimmedKey
         )}">${trimmedValue}</div>`;
