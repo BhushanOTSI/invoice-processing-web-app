@@ -160,6 +160,10 @@ export function Markdown({ children, className }) {
         if (!trimmedValue) {
           return match;
         }
+        // Skip Description as it's usually a section header
+        if (trimmedKey.toLowerCase() === "description") {
+          return match;
+        }
         return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
           trimmedKey
         )}">${trimmedValue}</div>`;
@@ -180,6 +184,11 @@ export function Markdown({ children, className }) {
 
         // Skip if value is empty
         if (!trimmedValue) {
+          return match;
+        }
+
+        // Skip Description as it's usually a section header
+        if (trimmedKey.toLowerCase() === "description") {
           return match;
         }
 
@@ -242,12 +251,13 @@ export function Markdown({ children, className }) {
           }
         }
 
-        // Skip lines that look like they're introducing a table or list
+        // Skip lines that look like they're introducing a table or list, or are descriptive headers
         if (
           trimmedKey.toLowerCase().includes("found") ||
           trimmedKey.toLowerCase().includes("allocated") ||
           trimmedKey.toLowerCase().includes("items") ||
-          trimmedKey.toLowerCase().includes("following")
+          trimmedKey.toLowerCase().includes("following") ||
+          trimmedKey.toLowerCase() === "description"
         ) {
           return match;
         }
