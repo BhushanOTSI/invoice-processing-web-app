@@ -165,15 +165,17 @@ const FlowInner = () => {
     let targetNode = [...nodes].sort((a, b) => a.position.y - b.position.y)[0];
     const processingNode = nodes.find((n) => isProcessing(n.data.status));
     const activeNode = nodes.find((n) => n.id === activeNodeId);
+    let zoom = 0.5;
 
     if (processingNode) {
       targetNode = processingNode;
+      zoom = 0.8;
     } else if (activeNode) {
       targetNode = activeNode;
+      zoom = 0.8;
     }
 
     if (!targetNode) return;
-    const zoom = processingNode ? 0.8 : 0.5;
     const paddingTop = 40;
 
     const viewportWidth = flowRef.current.clientWidth;
