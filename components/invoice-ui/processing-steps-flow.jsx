@@ -27,6 +27,14 @@ import { CustomNode, FakeNode } from "./react-flow/CustomNode";
 import { CustomNodeHandles } from "./react-flow/CustomNodeHandles";
 import { CustomEdges } from "./react-flow/CustomEdges";
 import { layoutGraph } from "./react-flow";
+import {
+  Empty,
+  EmptyMedia,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from "../ui/empty";
+import { FileQuestionMarkIcon } from "lucide-react";
 
 const FlowContext = createContext(null);
 export const useProcessingStepsFlow = () => useContext(FlowContext);
@@ -246,6 +254,20 @@ export const ActiveProcessMessage = () => {
   const log = node?.data?.extraMetadata || {
     markdown: node?.data?.log || "No logs",
   };
+
+  if (!node?.data?.log) {
+    return (
+      <Empty className="h-full text-sm">
+        <EmptyMedia variant="icon">
+          <FileQuestionMarkIcon />
+        </EmptyMedia>
+        <EmptyHeader>
+          <EmptyTitle>No logs available</EmptyTitle>
+          <EmptyDescription>No logs available.</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
 
   return <ProcessMessage message={{ extraMetadata: log }} />;
 };
