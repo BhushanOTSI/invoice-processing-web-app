@@ -22,24 +22,40 @@ export const useSetSearchParams = () => {
         const hasParam = current.has(key);
         const currentValue = current.get(key);
 
-        if (Array.isArray(value)) {
-          value = value.join(",");
+        // Convert array values to comma-separated string
+        let finalValue = value;
+        if (Array.isArray(finalValue)) {
+          finalValue = finalValue.join(",");
         }
 
-        if (value == null && hasParam) {
+        // Convert to string for comparison
+        const valueStr = finalValue != null ? String(finalValue) : null;
+        const currentStr = currentValue != null ? String(currentValue) : null;
+
+        if (valueStr == null && hasParam) {
+          // Remove parameter if value is null/undefined
           current.delete(key);
           updated = true;
+        } else if (valueStr != null && !hasParam) {
+          // Add parameter if it doesn't exist
+          current.set(key, valueStr);
+          updated = true;
         } else if (
-          (value != null && !hasParam) ||
-          (type === "update" && `${currentValue}` !== `${value}`)
+          type === "update" &&
+          valueStr != null &&
+          currentStr !== valueStr
         ) {
-          current.set(key, value);
+          // Update parameter if in update mode and value is different
+          current.set(key, valueStr);
           updated = true;
         }
       });
 
       if (updated) {
-        router.replace(`?${current.toString()}`, { scroll: false });
+        const newUrl = current.toString()
+          ? `?${current.toString()}`
+          : window.location.pathname;
+        router.replace(newUrl, { scroll: false });
       }
     },
     [searchParams, router]
@@ -62,8 +78,7 @@ export const useSetSearchParams = () => {
 
   return {
     setParams: setParamsIfMissing,
-    updateParams: (params, rest = false) =>
-      setParamsIfMissing(params, "update", rest),
+    updateParams: (params) => setParamsIfMissing(params, "update"),
     searchParams,
     resetParams,
     params: Object.fromEntries(searchParams.entries()),
