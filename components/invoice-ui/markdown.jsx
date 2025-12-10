@@ -141,20 +141,28 @@ export function Markdown({ children, className }) {
 
     let content = children;
 
-    // Step 1: Convert markdown key-value pairs to HTML structure
-    // Pattern: **Key:** Value (on its own line)
+    // Step 1: Normalize line breaks (handle escaped newlines)
+    content = content.replace(/\\n/g, "\n");
+
+    // Step 2: Convert markdown key-value pairs to HTML structure
+    // Pattern: **Key:** Value (on its own line or after other content)
+    // Only convert if not inside a heading or list
     content = content.replace(
-      /^\*\*([^*:]+):\*\*\s*(.+)$/gm,
+      /^(?!#+\s)(?![-*]\s)\*\*([^*\n:]+):\*\*\s*(.+?)(?=\n|$)/gm,
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim();
+        // Skip if value is empty or just punctuation
+        if (!trimmedValue || trimmedValue.length < 2) {
+          return match;
+        }
         return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
           trimmedKey
         )}">${trimmedValue}</div>`;
       }
     );
 
-    // Step 2: Process confidence markers
+    // Step 3: Process confidence markers
     content = content.replace(/\{\{conf~([\d.]+)\}\}/g, (match, score) => {
       const numScore = parseFloat(score);
       let badgeColor =
