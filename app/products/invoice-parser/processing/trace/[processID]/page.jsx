@@ -108,10 +108,13 @@ export default function ProcessTracePage() {
 
   const [activeTab, setCurrentActiveTab] = useState(params.tab || "step-1");
 
-  const setActiveTab = useCallback((tab) => {
-    setCurrentActiveTab(tab);
-    updateParams({ tab });
-  }, []);
+  const setActiveTab = useCallback(
+    (tab) => {
+      setCurrentActiveTab(tab);
+      updateParams({ tab });
+    },
+    [updateParams]
+  );
 
   const traceMessages = useMemo(() => {
     return processTraceStatus?.messages || [];
