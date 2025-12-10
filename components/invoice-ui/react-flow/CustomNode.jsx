@@ -17,7 +17,7 @@ import { useLayoutEffect, useRef } from "react";
 
 const getNodeClassName = (status, isActive) => {
   const statusLower = (status || "").toLowerCase();
-  
+
   // Active/Selected nodes
   if (isActive) {
     if (isProcessing(status)) {
@@ -25,40 +25,44 @@ const getNodeClassName = (status, isActive) => {
     }
     return "node-active-gradient";
   }
-  
+
   // Non-active nodes - solid colors based on status
   if (isFailedProcessing(status)) {
     return "node-failed";
   }
-  
+
   if (isSuccessProcessing(status)) {
     return "node-success";
   }
-  
+
   if (isSkippedProcessing(status)) {
     return "node-skipped";
   }
-  
+
   if (isCancelledProcessing(status)) {
     return "node-cancelled";
   }
-  
+
   // Handle pending, scheduled, and other specific statuses
-  if (statusLower === PROCESS_STATUS.PENDING || 
-      statusLower === PROCESS_STATUS.PARTIALLY_COMPLETED || 
-      statusLower === PROCESS_STATUS.UP_FOR_RETRY) {
+  if (
+    statusLower === PROCESS_STATUS.PENDING ||
+    statusLower === PROCESS_STATUS.PARTIALLY_COMPLETED ||
+    statusLower === PROCESS_STATUS.UP_FOR_RETRY
+  ) {
     return "node-pending";
   }
-  
-  if (statusLower === PROCESS_STATUS.SCHEDULED || 
-      statusLower === PROCESS_STATUS.DEFERRED) {
+
+  if (
+    statusLower === PROCESS_STATUS.SCHEDULED ||
+    statusLower === PROCESS_STATUS.DEFERRED
+  ) {
     return "node-scheduled";
   }
-  
+
   if (isProcessing(status)) {
     return "node-processing-border";
   }
-  
+
   // Default
   return "";
 };
@@ -69,7 +73,7 @@ export const CustomNode = ({ id, data, onClick, isActive, ...props }) => {
   const Content = (
     <NodeContent
       data={data}
-      className={cn(getNodeClassName(data.status, isActive))}
+      className={cn("rounded-3xl p-4", getNodeClassName(data.status, isActive))}
       onClick={(node) => !isSkipped && onClick(node)}
       {...props}
     />

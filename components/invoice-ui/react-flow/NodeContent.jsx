@@ -10,8 +10,8 @@ import { forwardRef } from "react";
 export const NodeContent = forwardRef(({ data, ...props }, ref) => (
   <BaseNode ref={ref} {...props}>
     <BaseNodeHeader>
-      <BaseNodeHeaderTitle className="break-all">
-        {data.label || data.name}
+      <BaseNodeHeaderTitle className="break-words font-medium">
+        {String(data.label || data.name).replaceAll("_", " ")}
       </BaseNodeHeaderTitle>
       <ProcessStatusBadge
         status={data.status}
@@ -20,7 +20,9 @@ export const NodeContent = forwardRef(({ data, ...props }, ref) => (
       />
     </BaseNodeHeader>
 
-    {data.description && <BaseNodeContent>{data.description}</BaseNodeContent>}
+    {data.description && (
+      <BaseNodeContent className="text-sm">{data.description}</BaseNodeContent>
+    )}
   </BaseNode>
 ));
 
