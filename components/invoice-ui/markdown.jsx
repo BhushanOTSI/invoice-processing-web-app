@@ -50,7 +50,7 @@ const MarkdownHeading = ({ level, children }) => {
 const KeyValuePair = ({ keyName, children }) => {
   return (
     <div className="flex items-center gap-3 mb-2">
-      <div className="font-semibold text-xs text-muted-foreground min-w-[140px] shrink-0">
+      <div className="font-semibold text-xs text-muted-foreground w-48 shrink-0">
         {keyName}:
       </div>
       <div className="flex-1 flex items-center justify-between gap-3 py-2.5 px-3 bg-muted/40 border border-border rounded-md hover:bg-muted/50 transition-colors group text-sm text-foreground">
