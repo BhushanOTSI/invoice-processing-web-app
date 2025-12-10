@@ -21,7 +21,7 @@ export const CustomNode = ({ id, data, onClick, isActive, ...props }) => {
       data={data}
       className={cn(
         isActive && "node-active-gradient",
-        !isActive && isProcessing(data.status) && "node-processing-border",
+        isActive && isProcessing(data.status) && "node-processing-border",
         isFailedProcessing(data.status) && !isActive && "node-failed",
         isSkipped && "node-skipped",
         isSuccessProcessing(data.status) && !isActive && "node-success"

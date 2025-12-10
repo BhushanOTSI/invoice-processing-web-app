@@ -611,7 +611,7 @@
   .node-skipped {
     position: relative;
     opacity: 0.65;
-    border: 2px dashed var(--muted-foreground);
+    border: 2px solid var(--muted-foreground);
     background-color: var(--muted);
     filter: grayscale(0.3);
   }

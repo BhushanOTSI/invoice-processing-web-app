@@ -55,7 +55,7 @@ export default function Page() {
             data?.aiWorkHours?.count,
             data?.aiWorkHours?.unit
           )}
-          description={data?.aiWorkHours?.description}
+          description={"Processing time saved by AI."}
           icon={<Clock10 />}
         />
         <KpiCard

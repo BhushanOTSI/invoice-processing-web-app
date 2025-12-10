@@ -5,7 +5,6 @@ import {
   CheckIcon,
   Clock1Icon,
   BanIcon,
-  BadgeCheckIcon,
   CircleXIcon,
   CircleMinusIcon,
 } from "lucide-react";
@@ -16,7 +15,7 @@ import { Skeleton } from "../ui/skeleton";
 export const ProcessIcons = {
   processing: Spinner,
   pending: Clock1Icon,
-  completed: BadgeCheckIcon,
+  completed: CheckIcon,
   failed: CircleXIcon,
   cancelled: BanIcon,
   scheduled: Clock1Icon,
@@ -27,7 +26,7 @@ export const ProcessIcons = {
   deferred: Clock1Icon,
   up_for_retry: Clock1Icon,
   upstream_failed: Clock1Icon,
-  success: BadgeCheckIcon,
+  success: CheckIcon,
 };
 
 export const statusBackgroundVariants = cva("", {
