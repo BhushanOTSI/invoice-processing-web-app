@@ -10,7 +10,7 @@ import { forwardRef } from "react";
 export const NodeContent = forwardRef(({ data, ...props }, ref) => (
   <BaseNode ref={ref} {...props}>
     <BaseNodeHeader>
-      <BaseNodeHeaderTitle className="break-words font-medium">
+      <BaseNodeHeaderTitle className="wrap-break-word font-medium">
         {String(data.label || data.name).replaceAll("_", " ")}
       </BaseNodeHeaderTitle>
       <ProcessStatusBadge

@@ -73,7 +73,7 @@ export const CustomNode = ({ id, data, onClick, isActive, ...props }) => {
   const Content = (
     <NodeContent
       data={data}
-      className={cn("rounded-3xl p-4", getNodeClassName(data.status, isActive))}
+      className={cn("rounded-2xl p-4", getNodeClassName(data.status, isActive))}
       onClick={(node) => !isSkipped && onClick(node)}
       {...props}
     />
