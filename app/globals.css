@@ -457,265 +457,131 @@
     }
   }
 
-  /* Active node gradient border effect */
+  /* Active node - Blue border with white background */
   .node-active-gradient {
-    position: relative;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    isolation: isolate;
+    @apply relative border-4 border-blue-600 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-blue-400 dark:bg-blue-950/50 dark:text-white dark:shadow-blue-500/30;
   }
 
-  .node-active-gradient::before {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    padding: 2px;
-    background: linear-gradient(
-      135deg,
-      var(--primary),
-      var(--chart-2),
-      var(--chart-1),
-      var(--primary)
-    );
-    background-size: 200% 200%;
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: exclude;
-    mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    animation: gradient-shift 3s ease infinite;
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  .node-active-gradient::after {
-    content: "";
-    position: absolute;
-    inset: -6px;
-    border-radius: inherit;
-    background: linear-gradient(
-      135deg,
-      var(--primary),
-      var(--chart-2),
-      var(--chart-1),
-      var(--primary)
-    );
-    background-size: 200% 200%;
-    opacity: 0.25;
-    filter: blur(10px);
-    animation: gradient-shift 3s ease infinite;
-    z-index: -2;
-    pointer-events: none;
+  .node-active-gradient * {
+    @apply !text-gray-900 dark:!text-white;
   }
 
   .node-active-gradient:hover {
-    transform: translateY(-1px);
+    @apply -translate-y-0.5 shadow-md shadow-blue-600/20 dark:shadow-blue-500/40;
   }
 
-  @keyframes gradient-shift {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  /* Processing node pulsing border effect */
+  /* Processing node - Blue border with white background */
   .node-processing-border {
-    position: relative;
-    border: 2px solid var(--primary);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    isolation: isolate;
-    animation: processing-border-pulse 2s ease-in-out infinite;
-    overflow: visible;
+    @apply relative border-4 border-blue-600 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-blue-400 dark:bg-blue-950/50 dark:text-white dark:shadow-blue-500/30;
   }
 
-  .node-processing-border::before {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    border: 2px solid var(--primary);
-    opacity: 0.5;
-    animation: processing-border-fade 1.5s ease-in-out infinite;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  .node-processing-border::after {
-    content: "";
-    position: absolute;
-    inset: -4px;
-    border-radius: inherit;
-    background: var(--primary);
-    opacity: 0.15;
-    filter: blur(6px);
-    animation: processing-glow-pulse 2s ease-in-out infinite;
-    z-index: -2;
-    pointer-events: none;
+  .node-processing-border * {
+    @apply !text-gray-900 dark:!text-white;
   }
 
   .node-processing-border:hover {
-    transform: translateY(-1px);
+    @apply -translate-y-0.5 shadow-md shadow-blue-600/20 dark:shadow-blue-500/40;
   }
 
-  @keyframes processing-border-fade {
-    0%, 100% {
-      opacity: 0.3;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.7;
-      transform: scale(1.01);
-    }
-  }
-
-  @keyframes processing-border-pulse {
-    0%, 100% {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 0 var(--primary);
-    }
-    50% {
-      border-color: var(--chart-2);
-      box-shadow: 0 0 0 2px var(--primary);
-    }
-  }
-
-  @keyframes processing-glow-pulse {
-    0%, 100% {
-      opacity: 0.15;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.25;
-      transform: scale(1.02);
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      transform: translateX(-100%);
-    }
-    100% {
-      transform: translateX(100%);
-    }
-  }
-
-  /* Skipped node styling */
+  /* Skipped node styling - Light gray background with gray border */
   .node-skipped {
-    position: relative;
-    opacity: 0.65;
-    border: 2px solid var(--muted-foreground);
-    background-color: var(--muted);
-    filter: grayscale(0.3);
+    @apply relative border-4 border-gray-400 bg-white text-gray-700 transition-transform duration-200 shadow-sm;
+    @apply dark:border-gray-500 dark:bg-gray-900/50 dark:text-gray-300;
   }
 
-
-
-  .node-skipped::after {
-    content: "";
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    border: 2px dashed var(--muted-foreground);
-    opacity: 0.2;
-    pointer-events: none;
-    z-index: -1;
+  .node-skipped * {
+    @apply !text-gray-700 dark:!text-gray-300;
   }
 
-  /* Failed node styling */
+  .node-skipped:hover {
+    @apply -translate-y-0.5 shadow-md shadow-gray-400/20 dark:shadow-gray-500/30;
+  }
+
+  /* Failed node styling - Red border with white background */
   .node-failed {
-    position: relative;
-    border: 2px solid var(--destructive);
-    background-color: color-mix(in oklch, var(--destructive) 8%, transparent);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    isolation: isolate;
-    overflow: visible;
-    box-shadow: 
-      0 0 0 1px var(--destructive),
-      0 2px 8px color-mix(in oklch, var(--destructive) 20%, transparent),
-      0 0 16px color-mix(in oklch, var(--destructive) 10%, transparent);
+    @apply relative border-4 border-red-600 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-red-400 dark:bg-red-950/50 dark:text-white dark:shadow-red-500/30;
   }
 
-  .node-failed::before {
-    content: "";
-    position: absolute;
-    inset: -3px;
-    border-radius: inherit;
-    border: 2px solid var(--destructive);
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  .node-failed::after {
-    content: "";
-    position: absolute;
-    inset: -6px;
-    border-radius: inherit;
-    background: var(--destructive);
-    opacity: 0.12;
-    filter: blur(8px);
-    z-index: -2;
-    pointer-events: none;
+  .node-failed * {
+    @apply !text-gray-900 dark:!text-white;
   }
 
   .node-failed:hover {
-    transform: translateY(-1px);
-    box-shadow: 
-      0 0 0 1px var(--destructive),
-      0 4px 12px color-mix(in oklch, var(--destructive) 30%, transparent),
-      0 0 20px color-mix(in oklch, var(--destructive) 15%, transparent);
+    @apply -translate-y-0.5 shadow-md shadow-red-600/20 dark:shadow-red-500/40;
   }
 
-  /* Success node styling */
+  /* Success node styling - Green border with white background */
   .node-success {
-    position: relative;
-    border: 2px solid var(--chart-3);
-    background-color: color-mix(in oklch, var(--chart-3) 8%, transparent);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    isolation: isolate;
-    overflow: visible;
-    box-shadow: 
-      0 0 0 1px var(--chart-3),
-      0 2px 8px color-mix(in oklch, var(--chart-3) 20%, transparent),
-      0 0 16px color-mix(in oklch, var(--chart-3) 10%, transparent);
+    @apply relative border-4 border-green-600 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-green-400 dark:bg-green-950/50 dark:text-white dark:shadow-green-500/30;
   }
 
-  .node-success::before {
-    content: "";
-    position: absolute;
-    inset: -3px;
-    border-radius: inherit;
-    border: 2px solid var(--chart-3);
-    opacity: 0.4;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  .node-success::after {
-    content: "";
-    position: absolute;
-    inset: -6px;
-    border-radius: inherit;
-    background: var(--chart-3);
-    opacity: 0.12;
-    filter: blur(8px);
-    z-index: -2;
-    pointer-events: none;
+  .node-success * {
+    @apply !text-gray-900 dark:!text-white;
   }
 
   .node-success:hover {
-    transform: translateY(-1px);
-    box-shadow: 
-      0 0 0 1px var(--chart-3),
-      0 4px 12px color-mix(in oklch, var(--chart-3) 30%, transparent),
-      0 0 20px color-mix(in oklch, var(--chart-3) 15%, transparent);
+    @apply -translate-y-0.5 shadow-md shadow-green-600/20 dark:shadow-green-500/40;
+  }
+
+  /* Pending/Warning node styling - Orange border with white background */
+  .node-pending {
+    @apply relative border-4 border-orange-500 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-orange-400 dark:bg-orange-950/50 dark:text-white dark:shadow-orange-400/30;
+  }
+
+  .node-pending * {
+    @apply !text-gray-900 dark:!text-white;
+  }
+
+  .node-pending:hover {
+    @apply -translate-y-0.5 shadow-md shadow-orange-500/20 dark:shadow-orange-400/40;
+  }
+
+  /* Scheduled node styling - Purple border with white background */
+  .node-scheduled {
+    @apply relative border-4 border-purple-600 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-purple-400 dark:bg-purple-950/50 dark:text-white dark:shadow-purple-500/30;
+  }
+
+  .node-scheduled * {
+    @apply !text-gray-900 dark:!text-white;
+  }
+
+  .node-scheduled:hover {
+    @apply -translate-y-0.5 shadow-md shadow-purple-600/20 dark:shadow-purple-500/40;
+  }
+
+  /* Cancelled node styling - Gray border with white background */
+  .node-cancelled {
+    @apply relative border-4 border-slate-500 bg-white text-gray-900 transition-transform duration-200 shadow-sm;
+    @apply dark:border-slate-400 dark:bg-slate-900/50 dark:text-white dark:shadow-slate-400/30;
+  }
+
+  .node-cancelled * {
+    @apply !text-gray-900 dark:!text-white;
+  }
+
+  .node-cancelled:hover {
+    @apply -translate-y-0.5 shadow-md shadow-slate-500/20 dark:shadow-slate-400/40;
+  }
+
+  /* Filled badge styling - Force white text for all filled badges */
+  .badge-filled {
+    color: white !important;
+  }
+
+  .badge-filled *,
+  .badge-filled span,
+  .badge-filled [data-slot] {
+    color: white !important;
+  }
+
+  .badge-filled svg,
+  .badge-filled [data-slot] svg {
+    color: white !important;
   }
 }

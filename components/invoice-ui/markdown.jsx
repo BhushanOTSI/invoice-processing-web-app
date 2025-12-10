@@ -86,7 +86,7 @@ const ListItem = ({ children }) => {
 
 const EmptyValue = ({ children }) => {
   return (
-    <div className="py-1.5 px-3 bg-muted/20 border border-dashed border-border rounded text-sm text-muted-foreground italic">
+    <div className="py-1.5 px-3 bg-muted/20 border border-dashed border-border rounded text-sm text-muted-foreground italic mb-4">
       {children}
     </div>
   );
@@ -178,15 +178,15 @@ export function Markdown({ children, className }) {
           return match;
         }
 
-        // If value exists, create key-value pair
-        if (trimmedValue) {
-          return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
-            trimmedKey
-          )}">${trimmedValue}</div>`;
+        // Skip if value is empty
+        if (!trimmedValue) {
+          return match;
         }
 
-        // If no value, don't match - let it fall through to be rendered as markdown
-        return match;
+        // If value exists, create key-value pair
+        return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
+          trimmedKey
+        )}">${trimmedValue}</div>`;
       }
     );
 
@@ -211,8 +211,8 @@ export function Markdown({ children, className }) {
           return match;
         }
 
-        // Skip if value is empty
-        if (!trimmedValue) {
+        // Skip if value is empty or just a number
+        if (!trimmedValue || /^\d+$/.test(trimmedValue)) {
           return match;
         }
 
@@ -223,6 +223,32 @@ export function Markdown({ children, className }) {
 
         // Skip table-like content
         if (trimmedValue.includes("|") || key.includes("|")) {
+          return match;
+        }
+
+        // Skip if the next line looks like a table separator or table row
+        const lines = content.split("\n");
+        const currentLineIndex = lines.findIndex((line) =>
+          line.includes(match)
+        );
+        if (currentLineIndex >= 0 && currentLineIndex < lines.length - 1) {
+          const nextLine = lines[currentLineIndex + 1];
+          // Check if next line is a table separator (starts with |) or horizontal rule with pipes
+          if (
+            nextLine.trim().startsWith("|") ||
+            /^\|\s*[-:]+/.test(nextLine.trim())
+          ) {
+            return match;
+          }
+        }
+
+        // Skip lines that look like they're introducing a table or list
+        if (
+          trimmedKey.toLowerCase().includes("found") ||
+          trimmedKey.toLowerCase().includes("allocated") ||
+          trimmedKey.toLowerCase().includes("items") ||
+          trimmedKey.toLowerCase().includes("following")
+        ) {
           return match;
         }
 

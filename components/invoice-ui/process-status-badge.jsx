@@ -54,6 +54,31 @@ export const statusBackgroundVariants = cva("", {
   },
 });
 
+export const statusBackgroundFilledVariants = cva("", {
+  variants: {
+    variant: {
+      processing: "bg-blue-600",
+      pending: "bg-amber-500",
+      completed: "bg-green-600",
+      failed: "bg-red-600",
+      cancelled: "bg-slate-600",
+      scheduled: "bg-purple-600",
+      partially_completed: "bg-amber-500",
+      default: "bg-accent",
+      queued: "bg-blue-600",
+      running: "bg-blue-600",
+      skipped: "bg-slate-600",
+      deferred: "bg-purple-600",
+      up_for_retry: "bg-amber-500",
+      upstream_failed: "bg-red-600",
+      success: "bg-green-600",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
 export const statusTextVariants = cva("", {
   variants: {
     variant: {
@@ -79,6 +104,31 @@ export const statusTextVariants = cva("", {
   },
 });
 
+export const statusTextFilledVariants = cva("", {
+  variants: {
+    variant: {
+      processing: "!text-white",
+      pending: "!text-white",
+      completed: "!text-white",
+      failed: "!text-white",
+      cancelled: "!text-white",
+      scheduled: "!text-white",
+      partially_completed: "!text-white",
+      default: "text-accent-foreground",
+      queued: "!text-white",
+      running: "!text-white",
+      skipped: "!text-white",
+      deferred: "!text-white",
+      up_for_retry: "!text-white",
+      upstream_failed: "!text-white",
+      success: "!text-white",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
 export const statusBorderVariants = cva("", {
   variants: {
     variant: {
@@ -97,6 +147,31 @@ export const statusBorderVariants = cva("", {
       up_for_retry: "border-orange-300",
       upstream_failed: "border-red-300",
       success: "border-green-300",
+    },
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
+
+export const statusBorderFilledVariants = cva("", {
+  variants: {
+    variant: {
+      processing: "border-blue-600",
+      pending: "border-amber-500",
+      completed: "border-green-600",
+      failed: "border-red-600",
+      cancelled: "border-slate-600",
+      scheduled: "border-purple-600",
+      partially_completed: "border-amber-500",
+      default: "border border-accent",
+      queued: "border-blue-600",
+      running: "border-blue-600",
+      skipped: "border-slate-600",
+      deferred: "border-purple-600",
+      up_for_retry: "border-amber-500",
+      upstream_failed: "border-red-600",
+      success: "border-green-600",
     },
   },
   defaultVariants: {
@@ -196,6 +271,7 @@ export function ProcessStatusBadge({
   status,
   iconClassName,
   iconOnly = false,
+  appearance = "outlined", // "outlined" or "filled"
 }) {
   const isScheduled = status === PROCESS_STATUS.SCHEDULED;
   if (isLoading) {
@@ -217,10 +293,29 @@ export function ProcessStatusBadge({
     return <Icon className={cn("size-4", iconClassName)} />;
   }
 
+  // Choose the appropriate variant classes based on appearance
+  const badgeClasses =
+    appearance === "filled"
+      ? cn(
+          statusBackgroundFilledVariants({ variant: type }),
+          statusTextFilledVariants({ variant: type }),
+          statusBorderFilledVariants({ variant: type })
+        )
+      : cn(
+          statusBackgroundVariants({ variant: type }),
+          statusTextVariants({ variant: type }),
+          statusBorderVariants({ variant: type })
+        );
+
   return (
     <Badge
       variant="outline"
-      className={cn("font-semibold", variants({ variant: type }), className)}
+      className={cn(
+        "font-semibold",
+        badgeClasses,
+        appearance === "filled" && "badge-filled",
+        className
+      )}
     >
       {Icon && <Icon className={iconClassName} />}
       <span>

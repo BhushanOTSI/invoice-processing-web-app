@@ -13,7 +13,11 @@ export const NodeContent = forwardRef(({ data, ...props }, ref) => (
       <BaseNodeHeaderTitle className="break-all">
         {data.label || data.name}
       </BaseNodeHeaderTitle>
-      <ProcessStatusBadge status={data.status} className="text-sm" />
+      <ProcessStatusBadge
+        status={data.status}
+        appearance="filled"
+        className="text-sm"
+      />
     </BaseNodeHeader>
 
     {data.description && <BaseNodeContent>{data.description}</BaseNodeContent>}
