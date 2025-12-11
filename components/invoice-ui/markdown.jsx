@@ -152,18 +152,31 @@ export function Markdown({ children, className }) {
 
     // Pattern 1: **Key:** Value (colon inside bold)
     content = content.replace(
-      /^(?!#+\s)(?![-*]\s)\*\*([^*\n:]+):\*\*\s*(.+?)(?=\s*\n|$)/gm,
+      /^(?!#+\s)(?![-*]\s)(?!.*\|)\*\*([^*\n:()=]+):\*\*\s*([^\n|]+?)(?=\s*\n|$)/gm,
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
+        
+        // Skip if key has special characters that indicate it's not a simple key
+        if (/[()=<>[\]{}]/.test(trimmedKey)) {
+          return match;
+        }
+        
         // Skip if value is empty
         if (!trimmedValue) {
           return match;
         }
+        
         // Skip Description as it's usually a section header
         if (trimmedKey.toLowerCase() === "description") {
           return match;
         }
+        
+        // Skip if the line contains table-like content
+        if (trimmedValue.includes('|') || match.includes('|')) {
+          return match;
+        }
+        
         return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
           trimmedKey
         )}">${trimmedValue}</div>`;
@@ -172,11 +185,16 @@ export function Markdown({ children, className }) {
 
     // Pattern 1.5: **Key**: Value (colon outside bold)
     content = content.replace(
-      /\*\*([^*\n:]+)\*\*:\s*([^<\n]+)(?=<br|$)/gm,
+      /^(?!#+\s)(?![-*]\s)(?!.*\|)\*\*([^*\n:()=]+)\*\*:\s*([^<\n|]+)(?=<br|$)/gm,
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim();
 
+        // Skip if key has special characters
+        if (/[()=<>[\]{}]/.test(trimmedKey)) {
+          return match;
+        }
+        
         // Skip if already wrapped
         if (match.includes('class="kv-pair-wrapper"')) {
           return match;
@@ -187,12 +205,16 @@ export function Markdown({ children, className }) {
           return match;
         }
 
-        // Skip Description as it's usually a section header
+        // Skip Description
         if (trimmedKey.toLowerCase() === "description") {
           return match;
         }
+        
+        // Skip if contains table syntax
+        if (match.includes('|')) {
+          return match;
+        }
 
-        // If value exists, create key-value pair
         return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
           trimmedKey
         )}">${trimmedValue}</div>`;
@@ -201,8 +223,12 @@ export function Markdown({ children, className }) {
 
     // Pattern 1.6: **Key**:<br> (labels without values) - render as HTML bold
     content = content.replace(
-      /\*\*([^*\n:]+)\*\*:\s*<br\s*\/?>/gm,
+      /\*\*([^*\n:()=]+)\*\*:\s*<br\s*\/?>/gm,
       (match, key) => {
+        // Skip if key has special characters
+        if (/[()=<>[\]{}]/.test(key)) {
+          return match;
+        }
         return `<strong>${escapeHtml(key.trim())}</strong>:`;
       }
     );
@@ -220,8 +246,8 @@ export function Markdown({ children, className }) {
           return match;
         }
 
-        // Skip if value is empty or just a number
-        if (!trimmedValue || /^\d+$/.test(trimmedValue)) {
+        // Skip if value is empty
+        if (!trimmedValue) {
           return match;
         }
 
