@@ -141,42 +141,110 @@ export function Markdown({ children, className }) {
 
     let content = children;
 
-    // Step 1: Normalize line breaks (handle escaped newlines)
+    // Step 1: Normalize line breaks (handle escaped newlines and various formats)
     content = content.replace(/\\n/g, "\n");
+    content = content.replace(/\r\n/g, "\n");
+    content = content.replace(/\r/g, "\n");
 
-    // Step 1.5: Ensure horizontal rules (---) have blank lines around them for proper rendering
+    // Step 1.5: Process confidence markers FIRST (before protecting tables)
+    // This ensures badges work in table cells
+    content = content.replace(/\{\{conf~([\d.]+)\}\}/g, (match, score) => {
+      const numScore = parseFloat(score);
+      let badgeColor =
+        "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800";
+
+      if (numScore < 0.5) {
+        badgeColor =
+          "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800";
+      } else if (numScore < 0.8) {
+        badgeColor =
+          "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800";
+      }
+
+      return `<span class="confidence-badge inline-flex items-center text-[9px] leading-none font-semibold border ${badgeColor} rounded-full px-2 py-0.5 ml-2 whitespace-nowrap shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md shrink-0" title="Confidence Score: ${(
+        numScore * 100
+      ).toFixed(0)}%">${(numScore * 100).toFixed(0)}%</span>`;
+    });
+
+    // Step 2: Ensure tables have blank lines before them
+    // Markdown needs blank line before table for proper parsing
+    content = content.replace(
+      /([^\n])\n(\|[^\n]+\|\n\|[\s-:|]+\|)/g,
+      "$1\n\n$2"
+    );
+
+    // Extract and protect table blocks and complex content from processing
+    const protectedBlocks = [];
+    let blockIndex = 0;
+
+    // Protect complete table blocks (more flexible pattern)
+    // Matches: header row | divider row | data rows
+    content = content.replace(
+      /(\|.+?\|)\s*\n\s*(\|[\s-:|]+\|)\s*\n((?:\s*\|.+?\|\s*\n?)+)/gm,
+      (match) => {
+        const placeholder = `\n\n___TABLE_BLOCK_${blockIndex}___\n\n`;
+        protectedBlocks.push({ placeholder, content: match });
+        blockIndex++;
+        return placeholder;
+      }
+    );
+
+    // Protect any line that contains table-like structure
+    content = content.replace(/^.+\|.+\|.+\|.+$/gm, (match) => {
+      // If line has 3+ pipes (likely a table row), protect it
+      const pipeCount = (match.match(/\|/g) || []).length;
+      if (pipeCount >= 3) {
+        const placeholder = `___TABLE_LINE_${blockIndex}___`;
+        protectedBlocks.push({ placeholder, content: match });
+        blockIndex++;
+        return placeholder;
+      }
+      return match;
+    });
+
+    // Step 1.6: Ensure horizontal rules (---) have blank lines around them
+    // This won't affect tables since they're protected above
     content = content.replace(/([^\n])\n(---+)\n/g, "$1\n\n$2\n\n");
     content = content.replace(/\n(---+)\n([^\n])/g, "\n\n$1\n\n$2");
 
-    // Step 2: Convert markdown key-value pairs to HTML structure
+    // Step 3: Convert markdown key-value pairs to HTML structure
+    // (Skip protected table blocks)
 
     // Pattern 1: **Key:** Value (colon inside bold)
     content = content.replace(
-      /^(?!#+\s)(?![-*]\s)(?!.*\|)\*\*([^*\n:()=]+):\*\*\s*([^\n|]+?)(?=\s*\n|$)/gm,
+      /^(?!#+\s)(?![-*]\s)(?!.*\|)(?!.*___)\*\*([^*\n:()=]+):\*\*\s*([^\n|]+?)(?=\s*\n|$)/gm,
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
-        
+
+        // Skip if inside a protected block
+        if (
+          match.includes("___TABLE_BLOCK_") ||
+          match.includes("___PROTECTED_")
+        ) {
+          return match;
+        }
+
         // Skip if key has special characters that indicate it's not a simple key
         if (/[()=<>[\]{}]/.test(trimmedKey)) {
           return match;
         }
-        
+
         // Skip if value is empty
         if (!trimmedValue) {
           return match;
         }
-        
+
         // Skip Description as it's usually a section header
         if (trimmedKey.toLowerCase() === "description") {
           return match;
         }
-        
+
         // Skip if the line contains table-like content
-        if (trimmedValue.includes('|') || match.includes('|')) {
+        if (trimmedValue.includes("|") || match.includes("|")) {
           return match;
         }
-        
+
         return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
           trimmedKey
         )}">${trimmedValue}</div>`;
@@ -185,16 +253,24 @@ export function Markdown({ children, className }) {
 
     // Pattern 1.5: **Key**: Value (colon outside bold)
     content = content.replace(
-      /^(?!#+\s)(?![-*]\s)(?!.*\|)\*\*([^*\n:()=]+)\*\*:\s*([^<\n|]+)(?=<br|$)/gm,
+      /^(?!#+\s)(?![-*]\s)(?!.*\|)(?!.*___)\*\*([^*\n:()=]+)\*\*:\s*([^<\n|]+)(?=<br|$)/gm,
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim();
+
+        // Skip if inside a protected block
+        if (
+          match.includes("___TABLE_BLOCK_") ||
+          match.includes("___PROTECTED_")
+        ) {
+          return match;
+        }
 
         // Skip if key has special characters
         if (/[()=<>[\]{}]/.test(trimmedKey)) {
           return match;
         }
-        
+
         // Skip if already wrapped
         if (match.includes('class="kv-pair-wrapper"')) {
           return match;
@@ -209,9 +285,9 @@ export function Markdown({ children, className }) {
         if (trimmedKey.toLowerCase() === "description") {
           return match;
         }
-        
+
         // Skip if contains table syntax
-        if (match.includes('|')) {
+        if (match.includes("|")) {
           return match;
         }
 
@@ -240,6 +316,14 @@ export function Markdown({ children, className }) {
       (match, key, value) => {
         const trimmedKey = key.trim();
         const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
+
+        // Skip if inside a protected block
+        if (
+          match.includes("___TABLE_BLOCK_") ||
+          match.includes("___PROTECTED_")
+        ) {
+          return match;
+        }
 
         // Skip if already wrapped
         if (match.includes('class="kv-pair-wrapper"')) {
@@ -294,23 +378,19 @@ export function Markdown({ children, className }) {
       }
     );
 
-    // Step 3: Process confidence markers
-    content = content.replace(/\{\{conf~([\d.]+)\}\}/g, (match, score) => {
-      const numScore = parseFloat(score);
-      let badgeColor =
-        "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800";
-
-      if (numScore < 0.5) {
-        badgeColor =
-          "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800";
-      } else if (numScore < 0.8) {
-        badgeColor =
-          "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800";
+    // Step 4: Convert remaining **bold** syntax to HTML (for text mixed with HTML)
+    // This ensures bold text renders correctly when mixed with our HTML elements
+    content = content.replace(/\*\*([^*\n]+?)\*\*/g, (match, text) => {
+      // Skip if inside a protected block or already converted element
+      if (match.includes("___") || match.includes("class=")) {
+        return match;
       }
+      return `<strong>${text}</strong>`;
+    });
 
-      return `<span class="confidence-badge inline-flex items-center text-[9px] leading-none font-semibold border ${badgeColor} rounded-full px-2 py-0.5 ml-2 whitespace-nowrap shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md shrink-0" title="Confidence Score: ${(
-        numScore * 100
-      ).toFixed(0)}%">${(numScore * 100).toFixed(0)}%</span>`;
+    // Step 5: Restore protected table blocks (with confidence badges already converted)
+    protectedBlocks.forEach(({ placeholder, content: blockContent }) => {
+      content = content.replace(placeholder, blockContent);
     });
 
     return content;
