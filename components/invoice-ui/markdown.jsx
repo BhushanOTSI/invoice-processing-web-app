@@ -497,13 +497,13 @@ export function Markdown({ children, className }) {
           ),
           th: ({ node, ...props }) => (
             <TableHead
-              className="font-semibold text-xs py-4 px-4 whitespace-nowrap text-left"
+              className="font-semibold text-xs py-4 px-4 text-left "
               {...props}
             />
           ),
 
           td: ({ node, ...props }) => (
-            <TableCell className="text-sm py-4 px-4 align-middle" {...props} />
+            <TableCell className="text-sm py-4 px-4 align-middle " {...props} />
           ),
 
           hr: ({ node, ...props }) => (
