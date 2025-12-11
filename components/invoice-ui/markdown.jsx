@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import rehypeHighlight from "rehype-highlight";
+import { visit } from "unist-util-visit";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -50,10 +51,10 @@ const MarkdownHeading = ({ level, children }) => {
 const KeyValuePair = ({ keyName, children }) => {
   return (
     <div className="flex items-center gap-3 mb-2">
-      <div className="font-semibold text-xs text-muted-foreground w-48 shrink-0">
+      <div className="font-semibold text-xs text-muted-foreground min-w-36 max-w-36 shrink-0">
         {keyName}:
       </div>
-      <div className="flex-1 flex items-center justify-between gap-3 py-2.5 px-3 bg-muted/40 border border-border rounded-md hover:bg-muted/50 transition-colors group text-sm text-foreground">
+      <div className="flex-1 relative py-2.5 px-3 bg-muted/40 border border-border rounded-md hover:bg-muted/50 transition-colors group text-sm text-foreground [&_.confidence-badge]:absolute [&_.confidence-badge]:top-3 [&_.confidence-badge]:right-2 [&>br]:first:hidden has-[.confidence-badge]:pr-14 wrap-break-words">
         {children}
       </div>
     </div>
@@ -62,8 +63,8 @@ const KeyValuePair = ({ keyName, children }) => {
 
 const Section = ({ title, children }) => {
   return (
-    <div className="not-first:pt-2 last:border-b-0">
-      <div className="text-base font-semibold text-foreground mb-3 ">
+    <div className="mb-6 pb-4 border-b border-border/40 last:border-b-0">
+      <div className="text-sm font-semibold text-foreground mb-3 px-1">
         {title}
       </div>
       <div className="space-y-1">{children}</div>
@@ -86,7 +87,7 @@ const ListItem = ({ children }) => {
 
 const EmptyValue = ({ children }) => {
   return (
-    <div className="py-1.5 px-3 bg-muted/20 border border-dashed border-border rounded text-sm text-muted-foreground italic mb-4">
+    <div className="py-1.5 px-3 bg-muted/20 border border-dashed border-border rounded text-sm text-muted-foreground italic">
       {children}
     </div>
   );
@@ -125,276 +126,261 @@ export function Markdown({ children, className }) {
     }
   }, []);
 
-  // Helper function to escape HTML
-  const escapeHtml = React.useCallback((text) => {
-    return text
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }, []);
+  const rehypeCustomProcessor = React.useMemo(() => {
+    return () => (tree) => {
+      visit(tree, "text", (node, index, parent) => {
+        if (!node.value || !node.value.includes("{{conf~")) return;
 
-  // Process markdown content before rendering
-  const processedContent = React.useMemo(() => {
-    if (typeof children !== "string") return children;
+        const parts = [];
+        const regex = /\{\{conf~([\d.]+)\}\}/g;
+        let lastIndex = 0;
+        let match;
 
-    let content = children;
+        while ((match = regex.exec(node.value)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push({
+              type: "text",
+              value: node.value.slice(lastIndex, match.index),
+            });
+          }
 
-    // Step 1: Normalize line breaks (handle escaped newlines and various formats)
-    content = content.replace(/\\n/g, "\n");
-    content = content.replace(/\r\n/g, "\n");
-    content = content.replace(/\r/g, "\n");
+          const score = parseFloat(match[1]);
+          let badgeColor =
+            "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800";
 
-    // Step 1.5: Process confidence markers FIRST (before protecting tables)
-    // This ensures badges work in table cells
-    content = content.replace(/\{\{conf~([\d.]+)\}\}/g, (match, score) => {
-      const numScore = parseFloat(score);
-      let badgeColor =
-        "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800";
+          if (score < 0.5) {
+            badgeColor =
+              "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800";
+          } else if (score < 0.8) {
+            badgeColor =
+              "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800";
+          }
 
-      if (numScore < 0.5) {
-        badgeColor =
-          "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800";
-      } else if (numScore < 0.8) {
-        badgeColor =
-          "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800";
-      }
+          parts.push({
+            type: "element",
+            tagName: "span",
+            properties: {
+              className: [
+                "confidence-badge",
+                "inline-flex",
+                "items-center",
+                "text-[9px]",
+                "leading-none",
+                "font-semibold",
+                "border",
+                ...badgeColor.split(" "),
+                "rounded-full",
+                "px-2",
+                "py-0.5",
+                "ml-2",
+                "whitespace-nowrap",
+                "shadow-sm",
+                "transition-all",
+                "duration-200",
+                "hover:scale-105",
+                "hover:shadow-md",
+                "shrink-0",
+              ],
+              title: `Confidence Score: ${(score * 100).toFixed(0)}%`,
+            },
+            children: [{ type: "text", value: `${(score * 100).toFixed(0)}%` }],
+          });
 
-      return `<span class="confidence-badge inline-flex items-center text-[9px] leading-none font-semibold border ${badgeColor} rounded-full px-2 py-0.5 ml-2 whitespace-nowrap shadow-sm transition-all duration-200 hover:scale-105 hover:shadow-md shrink-0" title="Confidence Score: ${(
-        numScore * 100
-      ).toFixed(0)}%">${(numScore * 100).toFixed(0)}%</span>`;
-    });
+          lastIndex = match.index + match[0].length;
+        }
 
-    // Step 2: Ensure tables have blank lines before them
-    // Markdown needs blank line before table for proper parsing
-    content = content.replace(
-      /([^\n])\n(\|[^\n]+\|\n\|[\s-:|]+\|)/g,
-      "$1\n\n$2"
-    );
+        if (lastIndex < node.value.length) {
+          parts.push({
+            type: "text",
+            value: node.value.slice(lastIndex),
+          });
+        }
 
-    // Extract and protect table blocks and complex content from processing
-    const protectedBlocks = [];
-    let blockIndex = 0;
+        if (parts.length > 1 && parent && typeof index === "number") {
+          parent.children.splice(index, 1, ...parts);
+          return index + parts.length;
+        }
+      });
 
-    // Protect complete table blocks (more flexible pattern)
-    // Matches: header row | divider row | data rows
-    content = content.replace(
-      /(\|.+?\|)\s*\n\s*(\|[\s-:|]+\|)\s*\n((?:\s*\|.+?\|\s*\n?)+)/gm,
-      (match) => {
-        const placeholder = `\n\n___TABLE_BLOCK_${blockIndex}___\n\n`;
-        protectedBlocks.push({ placeholder, content: match });
-        blockIndex++;
-        return placeholder;
-      }
-    );
-
-    // Protect any line that contains table-like structure
-    content = content.replace(/^.+\|.+\|.+\|.+$/gm, (match) => {
-      // If line has 3+ pipes (likely a table row), protect it
-      const pipeCount = (match.match(/\|/g) || []).length;
-      if (pipeCount >= 3) {
-        const placeholder = `___TABLE_LINE_${blockIndex}___`;
-        protectedBlocks.push({ placeholder, content: match });
-        blockIndex++;
-        return placeholder;
-      }
-      return match;
-    });
-
-    // Step 1.6: Ensure horizontal rules (---) have blank lines around them
-    // This won't affect tables since they're protected above
-    content = content.replace(/([^\n])\n(---+)\n/g, "$1\n\n$2\n\n");
-    content = content.replace(/\n(---+)\n([^\n])/g, "\n\n$1\n\n$2");
-
-    // Step 3: Convert markdown key-value pairs to HTML structure
-    // (Skip protected table blocks)
-
-    // Pattern 1: **Key:** Value (colon inside bold)
-    content = content.replace(
-      /^(?!#+\s)(?![-*]\s)(?!.*\|)(?!.*___)\*\*([^*\n:()=]+):\*\*\s*([^\n|]+?)(?=\s*\n|$)/gm,
-      (match, key, value) => {
-        const trimmedKey = key.trim();
-        const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
-
-        // Skip if inside a protected block
+      visit(tree, "element", (node, index, parent) => {
         if (
-          match.includes("___TABLE_BLOCK_") ||
-          match.includes("___PROTECTED_")
-        ) {
-          return match;
-        }
+          node.tagName !== "p" ||
+          !node.children ||
+          node.children.length === 0
+        )
+          return;
 
-        // Skip if key has special characters that indicate it's not a simple key
-        if (/[()=<>[\]{}]/.test(trimmedKey)) {
-          return match;
-        }
+        const firstChild = node.children[0];
 
-        // Skip if value is empty
-        if (!trimmedValue) {
-          return match;
-        }
+        // Pattern 3: Plain Key: Value (no bold, starts with capital)
+        if (firstChild && firstChild.type === "text") {
+          const textMatch = firstChild.value.match(
+            /^([A-Z][A-Za-z\s]{2,50}):\s*(.+)$/
+          );
+          if (textMatch) {
+            const [, key, valueStart] = textMatch;
 
-        // Skip Description as it's usually a section header
-        if (trimmedKey.toLowerCase() === "description") {
-          return match;
-        }
+            // Skip if key has special characters
+            if (/[()=<>[\]{}]/.test(key)) return;
 
-        // Skip if the line contains table-like content
-        if (trimmedValue.includes("|") || match.includes("|")) {
-          return match;
-        }
+            // Skip common descriptive phrases that aren't key-value pairs
+            if (
+              key.toLowerCase().includes("found") ||
+              key.toLowerCase().includes("allocated") ||
+              key.toLowerCase().includes("candidate items") ||
+              key.toLowerCase().includes("checking for") ||
+              key.toLowerCase() === "description"
+            )
+              return;
 
-        return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
-          trimmedKey
-        )}">${trimmedValue}</div>`;
-      }
-    );
+            // Create value nodes (remaining text + rest of paragraph)
+            const valueNodes = [
+              { type: "text", value: valueStart },
+              ...node.children.slice(1),
+            ];
 
-    // Pattern 1.5: **Key**: Value (colon outside bold)
-    content = content.replace(
-      /^(?!#+\s)(?![-*]\s)(?!.*\|)(?!.*___)\*\*([^*\n:()=]+)\*\*:\s*([^<\n|]+)(?=<br|$)/gm,
-      (match, key, value) => {
-        const trimmedKey = key.trim();
-        const trimmedValue = value.trim();
+            const kvWrapper = {
+              type: "element",
+              tagName: "div",
+              properties: {
+                className: ["kv-pair-wrapper"],
+                "data-key": key.trim(),
+              },
+              children: valueNodes,
+            };
 
-        // Skip if inside a protected block
-        if (
-          match.includes("___TABLE_BLOCK_") ||
-          match.includes("___PROTECTED_")
-        ) {
-          return match;
-        }
-
-        // Skip if key has special characters
-        if (/[()=<>[\]{}]/.test(trimmedKey)) {
-          return match;
-        }
-
-        // Skip if already wrapped
-        if (match.includes('class="kv-pair-wrapper"')) {
-          return match;
-        }
-
-        // Skip if value is empty
-        if (!trimmedValue) {
-          return match;
-        }
-
-        // Skip Description
-        if (trimmedKey.toLowerCase() === "description") {
-          return match;
-        }
-
-        // Skip if contains table syntax
-        if (match.includes("|")) {
-          return match;
-        }
-
-        return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
-          trimmedKey
-        )}">${trimmedValue}</div>`;
-      }
-    );
-
-    // Pattern 1.6: **Key**:<br> (labels without values) - render as HTML bold
-    content = content.replace(
-      /\*\*([^*\n:()=]+)\*\*:\s*<br\s*\/?>/gm,
-      (match, key) => {
-        // Skip if key has special characters
-        if (/[()=<>[\]{}]/.test(key)) {
-          return match;
-        }
-        return `<strong>${escapeHtml(key.trim())}</strong>:`;
-      }
-    );
-
-    // Pattern 2: Key: Value (plain key-value pairs)
-    // Only convert lines that look like key-value pairs (not headings, not lists, has reasonable key)
-    content = content.replace(
-      /^(?!#+\s)(?![-*+]\s)(?!---$)(?!\|)([A-Z][A-Za-z\s]{2,40}):\s*(.+?)(?=\s*<br|\s*\\n|\s*\n|$)/gm,
-      (match, key, value) => {
-        const trimmedKey = key.trim();
-        const trimmedValue = value.trim().replace(/<br\s*\/?>/gi, "");
-
-        // Skip if inside a protected block
-        if (
-          match.includes("___TABLE_BLOCK_") ||
-          match.includes("___PROTECTED_")
-        ) {
-          return match;
-        }
-
-        // Skip if already wrapped
-        if (match.includes('class="kv-pair-wrapper"')) {
-          return match;
-        }
-
-        // Skip if value is empty
-        if (!trimmedValue) {
-          return match;
-        }
-
-        // Skip common markdown patterns that shouldn't be converted
-        if (trimmedKey.includes("http") || trimmedKey.includes("##")) {
-          return match;
-        }
-
-        // Skip table-like content
-        if (trimmedValue.includes("|") || key.includes("|")) {
-          return match;
-        }
-
-        // Skip if the next line looks like a table separator or table row
-        const lines = content.split("\n");
-        const currentLineIndex = lines.findIndex((line) =>
-          line.includes(match)
-        );
-        if (currentLineIndex >= 0 && currentLineIndex < lines.length - 1) {
-          const nextLine = lines[currentLineIndex + 1];
-          // Check if next line is a table separator (starts with |) or horizontal rule with pipes
-          if (
-            nextLine.trim().startsWith("|") ||
-            /^\|\s*[-:]+/.test(nextLine.trim())
-          ) {
-            return match;
+            if (parent && typeof index === "number") {
+              parent.children[index] = kvWrapper;
+              return;
+            }
           }
         }
 
-        // Skip lines that look like they're introducing a table or list, or are descriptive headers
+        // Pattern 1: **Key:** Value (colon inside bold)
         if (
-          trimmedKey.toLowerCase().includes("found") ||
-          trimmedKey.toLowerCase().includes("allocated") ||
-          trimmedKey.toLowerCase().includes("items") ||
-          trimmedKey.toLowerCase().includes("following") ||
-          trimmedKey.toLowerCase() === "description"
+          firstChild &&
+          firstChild.type === "element" &&
+          firstChild.tagName === "strong"
         ) {
-          return match;
+          const strongText = firstChild.children?.[0]?.value;
+          if (strongText && strongText.endsWith(":")) {
+            const key = strongText.slice(0, -1).trim();
+
+            // Skip if key has special characters (likely not a simple KV pair)
+            if (/[()=<>[\]{}]/.test(key)) return;
+
+            // Skip Description as it's usually a section header
+            if (key.toLowerCase() === "description") return;
+
+            // Get the value (everything after the strong element)
+            let valueNodes = node.children.slice(1);
+
+            // Skip leading whitespace text node
+            if (
+              valueNodes[0] &&
+              valueNodes[0].type === "text" &&
+              valueNodes[0].value.trim() === ""
+            ) {
+              valueNodes = valueNodes.slice(1);
+            }
+
+            if (valueNodes.length > 0) {
+              // Create key-value wrapper
+              const kvWrapper = {
+                type: "element",
+                tagName: "div",
+                properties: {
+                  className: ["kv-pair-wrapper"],
+                  "data-key": key,
+                },
+                children: valueNodes,
+              };
+
+              // Replace paragraph with wrapper
+              if (parent && typeof index === "number") {
+                parent.children[index] = kvWrapper;
+              }
+            }
+          }
         }
 
-        return `<div class="kv-pair-wrapper" data-key="${escapeHtml(
-          trimmedKey
-        )}">${trimmedValue}</div>`;
-      }
+        // Pattern 2: **Key**: Value (colon outside bold)
+        if (
+          firstChild &&
+          firstChild.type === "element" &&
+          firstChild.tagName === "strong" &&
+          node.children[1] &&
+          node.children[1].type === "text"
+        ) {
+          const strongText = firstChild.children?.[0]?.value;
+          const colonText = node.children[1].value;
+
+          if (strongText && colonText && colonText.trim().startsWith(":")) {
+            const key = strongText.trim();
+
+            // Skip if key has special characters
+            if (/[()=<>[\]{}]/.test(key)) return;
+
+            // Skip Description
+            if (key.toLowerCase() === "description") return;
+
+            // The value might be in the same text node as the colon (": value")
+            // or in subsequent nodes
+            let valueNodes = [];
+
+            // Extract value from the colon text node
+            const valueInColonNode = colonText.replace(/^:\s*/, "").trim();
+            if (valueInColonNode) {
+              // Value is in the same node as colon - create new text node with just the value
+              valueNodes.push({
+                type: "text",
+                value: valueInColonNode,
+              });
+            }
+
+            // Add any remaining children nodes
+            if (node.children.length > 2) {
+              valueNodes.push(...node.children.slice(2));
+            }
+
+            if (valueNodes.length > 0) {
+              const kvWrapper = {
+                type: "element",
+                tagName: "div",
+                properties: {
+                  className: ["kv-pair-wrapper"],
+                  "data-key": key,
+                },
+                children: valueNodes,
+              };
+
+              if (parent && typeof index === "number") {
+                parent.children[index] = kvWrapper;
+              }
+            }
+          }
+        }
+      });
+    };
+  }, []);
+
+  // Minimal preprocessing - normalize line breaks and convert <br> to paragraph breaks
+  const processedContent = React.useMemo(() => {
+    if (typeof children !== "string") return children;
+
+    return (
+      children
+        // Convert <br> tags to paragraph breaks (double newline)
+        // This makes each line a separate paragraph for better pattern detection
+        .replace(/<br\s*\/?>/gi, "\n\n")
+        // Normalize line breaks
+        .replace(/\\n/g, "\n")
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        // Clean up excessive newlines (3+ becomes 2)
+        .replace(/\n{3,}/g, "\n\n")
     );
-
-    // Step 4: Convert remaining **bold** syntax to HTML (for text mixed with HTML)
-    // This ensures bold text renders correctly when mixed with our HTML elements
-    content = content.replace(/\*\*([^*\n]+?)\*\*/g, (match, text) => {
-      // Skip if inside a protected block or already converted element
-      if (match.includes("___") || match.includes("class=")) {
-        return match;
-      }
-      return `<strong>${text}</strong>`;
-    });
-
-    // Step 5: Restore protected table blocks (with confidence badges already converted)
-    protectedBlocks.forEach(({ placeholder, content: blockContent }) => {
-      content = content.replace(placeholder, blockContent);
-    });
-
-    return content;
-  }, [children, escapeHtml]);
+  }, [children]);
 
   return (
     <div
@@ -402,7 +388,7 @@ export function Markdown({ children, className }) {
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight, rehypeCustomProcessor]}
         components={{
           div: ({
             node,
@@ -459,7 +445,7 @@ export function Markdown({ children, className }) {
           ),
 
           ul: ({ node, ...props }) => (
-            <ul className="list-disc pl-6 mb-3 space-y-1.5" {...props} />
+            <ul className="[&_ul]:pl-6 mb-3 space-y-1.5" {...props} />
           ),
           ol: ({ node, ...props }) => (
             <ol className="list-decimal pl-6 mb-3 space-y-1.5" {...props} />
@@ -493,7 +479,7 @@ export function Markdown({ children, className }) {
 
           table: ({ node, ...props }) => (
             <div className="my-6 overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
-              <Table {...props} />
+              <Table {...props} containerClassName={"max-h-96"} />
             </div>
           ),
           thead: ({ node, ...props }) => (
