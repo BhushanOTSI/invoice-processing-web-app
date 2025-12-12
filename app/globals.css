@@ -464,7 +464,7 @@
   }
 
   .node-active-gradient * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-active-gradient:hover {
@@ -478,7 +478,7 @@
   }
 
   .node-processing-border * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-processing-border:hover {
@@ -492,7 +492,7 @@
   }
 
   .node-skipped * {
-    @apply !text-gray-700 dark:!text-gray-300;
+    @apply text-gray-700! dark:text-gray-300!;
   }
 
   .node-skipped:hover {
@@ -506,7 +506,7 @@
   }
 
   .node-failed * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-failed:hover {
@@ -520,7 +520,7 @@
   }
 
   .node-success * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-success:hover {
@@ -534,7 +534,7 @@
   }
 
   .node-pending * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-pending:hover {
@@ -548,7 +548,7 @@
   }
 
   .node-scheduled * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-scheduled:hover {
@@ -562,7 +562,7 @@
   }
 
   .node-cancelled * {
-    @apply !text-gray-900 dark:!text-white;
+    @apply text-gray-900! dark:text-white!;
   }
 
   .node-cancelled:hover {

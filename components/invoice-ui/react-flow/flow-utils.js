@@ -1,10 +1,13 @@
+import { PROCESS_STATUS } from "@/app/constants";
 import ELK from "elkjs/lib/elk.bundled.js";
 const elk = new ELK();
 
 export const getCurrentFont = () => {
   return `bold 12px var(--font-space-mono)`;
 };
+
 export const font = getCurrentFont();
+
 export const mesureTextWidth = (text) => {
   const context = document.createElement("canvas").getContext("2d");
   context.font = font;
@@ -33,6 +36,80 @@ export const createPorts = ({
 
   return ports;
 };
+
+const EXECUTED_STATUSES = new Set([
+  PROCESS_STATUS.SUCCESS,
+  PROCESS_STATUS.FAILED,
+  PROCESS_STATUS.CANCELLED,
+  PROCESS_STATUS.PROCESSING,
+  PROCESS_STATUS.RUNNING,
+  PROCESS_STATUS.UPSTREAM_FAILED,
+  PROCESS_STATUS.UP_FOR_RETRY,
+  PROCESS_STATUS.DEFERRED,
+  PROCESS_STATUS.COMPLETED,
+]);
+
+export function computeExecutionEdges(nodes, edges) {
+  const status = Object.fromEntries(nodes.map((n) => [n.id, n.data?.status]));
+  const isExecuted = (id) => EXECUTED_STATUSES.has(status[id]);
+
+  const outgoing = {};
+  edges.forEach((e) => {
+    (outgoing[e.source] ||= []).push(e);
+  });
+
+  // list executed nodes
+  const executed = new Set(
+    nodes.filter((n) => isExecuted(n.id)).map((n) => n.id)
+  );
+
+  // DFS to collect all executed paths
+  const allPaths = [];
+
+  function dfs(node, path, edgeList) {
+    const nextEdges = (outgoing[node] || []).filter((e) =>
+      executed.has(e.target)
+    );
+
+    if (nextEdges.length === 0) {
+      allPaths.push({ path: [...path], edges: [...edgeList] });
+      return;
+    }
+
+    for (const e of nextEdges) {
+      dfs(e.target, [...path, e.target], [...edgeList, e.id]);
+    }
+  }
+
+  // start DFS from all nodes with no executed incoming edges
+  const incoming = {};
+  edges.forEach((e) => {
+    (incoming[e.target] ||= []).push(e);
+  });
+
+  const starts = [...executed].filter((id) => {
+    const inc = incoming[id] || [];
+    return inc.every((e) => !executed.has(e.source));
+  });
+
+  for (const start of starts) {
+    dfs(start, [start], []);
+  }
+
+  // pick longest path
+  let longest = allPaths[0];
+  for (const p of allPaths) {
+    if (p.edges.length > longest.edges.length) longest = p;
+  }
+
+  const map = new Map();
+
+  longest.edges.forEach((e, i) => {
+    map.set(e, status[longest.path[i]]);
+  });
+
+  return map;
+}
 
 export const layoutGraph = async (nodes, edges) => {
   const graph = {
@@ -99,6 +176,7 @@ export const layoutGraph = async (nodes, edges) => {
 
   edges.map((e) => {
     const label = e?.data?.label;
+
     const outgoingEdges = edges.filter((edge) => edge.source === e.source);
     const sourceIndex = outgoingEdges.findIndex((edge) => edge.id === e.id);
 
@@ -112,14 +190,24 @@ export const layoutGraph = async (nodes, edges) => {
       id: e.id,
       sources: [sourcePort],
       targets: [targetPort],
-      labels: label ? [{ text: label, ...mesureTextWidth(label) }] : [],
+      labels: label
+        ? [
+            {
+              text: label,
+              ...mesureTextWidth(label),
+            },
+          ]
+        : [],
     });
   });
 
   const out = await elk.layout(graph);
 
+  const executionEdges = computeExecutionEdges(nodes, edges);
+
   const finalNodes = nodes.map((n) => {
     const pos = out.children.find((p) => p.id === n.id);
+
     return {
       ...n,
       position: { x: pos.x, y: pos.y },
@@ -134,6 +222,7 @@ export const layoutGraph = async (nodes, edges) => {
 
   const finalEdges = out.edges.map((e) => {
     const pos = edges.find((p) => p.id === e.id);
+
     return {
       ...pos,
       sourceHandle: e.sources[0],
@@ -142,6 +231,7 @@ export const layoutGraph = async (nodes, edges) => {
         ...pos.data,
         sections: e.sections || [],
         labels: e.labels || [],
+        executionEdge: executionEdges.get(e.id),
       },
     };
   });
@@ -174,18 +264,28 @@ export const generateEdgePath = (section) => {
 
 export function getPolylinePoints(sections) {
   const pts = [];
-  sections.forEach((s) => {
-    pts.push(s.startPoint);
+  sections.forEach((s, index) => {
+    // Only push startPoint for the first section to avoid duplicates
+    if (index === 0) {
+      pts.push(s.startPoint);
+    }
+    // Push bend points if they exist
     if (s.bendPoints?.length) pts.push(...s.bendPoints);
+    // Always push endPoint
     pts.push(s.endPoint);
   });
   return pts;
 }
 
 export function getPolylineMidpoint(points) {
+  // Handle edge cases
+  if (!points || points.length === 0) return { x: 0, y: 0 };
+  if (points.length === 1) return { x: points[0].x, y: points[0].y };
+
   let total = 0;
   const lens = [];
 
+  // Calculate segment lengths
   for (let i = 0; i < points.length - 1; i++) {
     const dx = points[i + 1].x - points[i].x;
     const dy = points[i + 1].y - points[i].y;
@@ -194,13 +294,18 @@ export function getPolylineMidpoint(points) {
     total += len;
   }
 
+  // If total length is 0 (all points are the same), return first point
+  if (total === 0) return { x: points[0].x, y: points[0].y };
+
   const mid = total / 2;
   let acc = 0;
 
+  // Find the segment containing the midpoint
   for (let i = 0; i < lens.length; i++) {
     if (acc + lens[i] >= mid) {
       const remain = mid - acc;
-      const ratio = remain / lens[i];
+      // Avoid division by zero
+      const ratio = lens[i] > 0 ? remain / lens[i] : 0;
       return {
         x: points[i].x + (points[i + 1].x - points[i].x) * ratio,
         y: points[i].y + (points[i + 1].y - points[i].y) * ratio,
@@ -209,7 +314,8 @@ export function getPolylineMidpoint(points) {
     acc += lens[i];
   }
 
-  return points[0];
+  // Fallback to last point if we somehow don't find the midpoint
+  return { x: points[points.length - 1].x, y: points[points.length - 1].y };
 }
 
 export function getPolylineMidpointXOnly(points) {

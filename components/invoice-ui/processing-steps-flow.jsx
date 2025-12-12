@@ -99,35 +99,39 @@ export const ProcessingStepsFlowProvider = ({
     if (!dag_nodes.length) return;
     if (nodeSizes.size !== dag_nodes.length) return;
 
-    const builtNodes = dag_nodes.map((n, i) => ({
+    const ioCount = new Map();
+
+    const builtEdges = dag_edges.map((e) => {
+      const incomingCount = ioCount.get(e.target + "_in") || 0;
+      const outgoingCount = ioCount.get(e.source + "_out") || 0;
+
+      ioCount.set(e.target + "_in", incomingCount + 1);
+      ioCount.set(e.source + "_out", outgoingCount + 1);
+
+      return {
+        id: e.id,
+        type: "processEdge",
+        source: e.source,
+        target: e.target,
+        data: {
+          path: "smoothstep",
+          label: e.label,
+        },
+      };
+    });
+
+    const builtNodes = dag_nodes.map((n) => ({
       id: n.id,
       type: "step",
       position: { x: 0, y: 0 },
       data: {
         ...n.data,
         name: (n.data?.label || "").replace(/_/g, " "),
+        incomingEdgesCount: ioCount.get(n.id + "_in") || 0,
+        outgoingEdgesCount: ioCount.get(n.id + "_out") || 0,
       },
       measured: nodeSizes.get(n.id),
     }));
-
-    const builtEdges = dag_edges.map((e) => ({
-      id: e.id,
-      type: "processEdge",
-      source: e.source,
-      target: e.target,
-      data: {
-        path: "smoothstep",
-        label: e.label,
-      },
-    }));
-
-    dag_nodes.forEach((n) => {
-      builtNodes.find((x) => x.id === n.id).data.incomingEdgesCount =
-        dag_edges.filter((e) => e.target === n.id).length;
-
-      builtNodes.find((x) => x.id === n.id).data.outgoingEdgesCount =
-        dag_edges.filter((e) => e.source === n.id).length;
-    });
 
     drawGraph(builtNodes, builtEdges);
   }, [nodeSizes, dag_nodes, dag_edges]);
@@ -235,7 +239,12 @@ const FlowInner = () => {
         nodesConnectable={false}
       >
         <Background variant="dots" />
-        <Controls />
+        <Controls
+          showInteractive={false}
+          fitViewOptions={{
+            duration: 300,
+          }}
+        />
       </ReactFlow>
     </div>
   );
