@@ -21,7 +21,7 @@ import {
 } from "@/services/hooks/useInvoice";
 import { Tabs, TabsContent } from "@radix-ui/react-tabs";
 import { useParams, useRouter } from "next/navigation";
-import { ProcessMessage } from "@/components/invoice-ui/process-message";
+import { ProcessMessageMemo as ProcessMessage } from "@/components/invoice-ui/process-message";
 import { StepTabsList } from "@/components/invoice-ui/step-tabs-list";
 import { CopyToClipboard } from "@/components/ui/copy-to-clipboard";
 import {

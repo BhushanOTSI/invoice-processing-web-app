@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Markdown } from "./markdown";
 import JsonView from "@uiw/react-json-view";
 import { jsonToMarkdown } from "@/lib/json-to-markdown";
@@ -91,3 +92,6 @@ export function ProcessMessage({
     ))
   );
 }
+
+export const ProcessMessageMemo = memo(ProcessMessage);
+ProcessMessageMemo.displayName = "ProcessMessageMemo";

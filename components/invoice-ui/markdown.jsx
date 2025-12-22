@@ -135,16 +135,15 @@ export function Markdown({ children, className, onCitationChange }) {
     () =>
       [
         "citation-active",
+        // Layout-neutral styling to avoid table scroll resetting (no border/padding/margins)
         "bg-yellow-300/30",
         "dark:bg-yellow-300/20",
-        "border",
-        "border-yellow-500/50",
-        "dark:border-yellow-400/40",
-        "rounded-md",
-        "px-1",
-        "-mx-0.5",
-        "shadow-sm",
-        "transition-all",
+        "ring-1",
+        "ring-inset",
+        "ring-yellow-500/50",
+        "dark:ring-yellow-400/40",
+        "shadow-[0_0_0_1px_rgba(0,0,0,0.02)]",
+        "transition-colors",
         "duration-200",
         "ease-out",
         "motion-reduce:transition-none",
