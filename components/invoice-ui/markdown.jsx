@@ -48,9 +48,9 @@ const MarkdownHeading = ({ level, children }) => {
   );
 };
 
-const KeyValuePair = ({ keyName, children }) => {
+const KeyValuePair = ({ keyName, children, dataPath }) => {
   return (
-    <div className="flex items-center gap-3 mb-2">
+    <div className="flex items-center gap-3 mb-2" data-field-path={dataPath}>
       <div className="font-semibold text-xs text-muted-foreground min-w-36 max-w-36 shrink-0">
         {keyName}:
       </div>
@@ -61,9 +61,12 @@ const KeyValuePair = ({ keyName, children }) => {
   );
 };
 
-const Section = ({ title, children }) => {
+const Section = ({ title, children, dataPath }) => {
   return (
-    <div className="mb-6 pb-4 border-b border-border/40 last:border-b-0">
+    <div
+      className="mb-6 pb-4 border-b border-border/40 last:border-b-0"
+      data-section-path={dataPath}
+    >
       <div className="text-sm font-semibold text-foreground mb-3 px-1">
         {title}
       </div>
@@ -95,6 +98,102 @@ const EmptyValue = ({ children }) => {
 
 const SimpleValue = ({ children }) => {
   return <div className="py-1.5 px-3 text-sm text-foreground">{children}</div>;
+};
+
+export const HtmlComponents = {
+  h1: (props) => <MarkdownHeading level={1} {...props} />,
+  h2: (props) => <MarkdownHeading level={2} {...props} />,
+  h3: (props) => <MarkdownHeading level={3} {...props} />,
+  h4: (props) => <MarkdownHeading level={4} {...props} />,
+  h5: (props) => <MarkdownHeading level={5} {...props} />,
+  h6: (props) => <MarkdownHeading level={6} {...props} />,
+  p: ({ node, ...props }) => (
+    <p className="text-sm leading-6 mb-2 text-foreground" {...props} />
+  ),
+
+  strong: ({ node, ...props }) => (
+    <strong className="text-foreground font-semibold" {...props} />
+  ),
+
+  em: ({ node, ...props }) => (
+    <em className="italic text-foreground font-semibold" {...props} />
+  ),
+
+  a: ({ node, ...props }) => (
+    <a
+      className="text-primary underline hover:no-underline"
+      target="_blank"
+      rel="noopener noreferrer"
+      {...props}
+    />
+  ),
+
+  ul: ({ node, ...props }) => (
+    <ul className="[&_ul]:pl-6 mb-3 space-y-1.5" {...props} />
+  ),
+  ol: ({ node, ...props }) => (
+    <ol className="list-decimal pl-6 mb-3 space-y-1.5" {...props} />
+  ),
+  li: ({ node, ...props }) => (
+    <li className="text-sm leading-7 text-foreground ml-1" {...props} />
+  ),
+
+  blockquote: ({ node, ...props }) => <Blockquote {...props} />,
+
+  pre: ({ node, ...props }) => (
+    <pre
+      className="bg-muted border border-border rounded-lg p-3 overflow-x-auto mb-2 text-xs"
+      {...props}
+    />
+  ),
+
+  code: ({ node, inline, className, children, ...props }) =>
+    inline ? (
+      <code
+        className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground"
+        {...props}
+      >
+        {children}
+      </code>
+    ) : (
+      <code className={className} {...props}>
+        {children}
+      </code>
+    ),
+
+  table: ({ node, ...props }) => (
+    <div className="my-6 overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
+      <Table {...props} containerClassName={"max-h-96"} />
+    </div>
+  ),
+  thead: ({ node, ...props }) => (
+    <TableHeader className="bg-muted/60 border-b-2 border-border" {...props} />
+  ),
+  tbody: ({ node, ...props }) => <TableBody {...props} />,
+  tr: ({ node, ...props }) => (
+    <TableRow
+      className="hover:bg-muted/30 transition-colors border-b border-border last:border-b-0"
+      {...props}
+    />
+  ),
+  th: ({ node, ...props }) => (
+    <TableHead
+      className="font-semibold text-xs py-4 px-4 text-left "
+      {...props}
+    />
+  ),
+
+  td: ({ node, ...props }) => (
+    <TableCell className="text-sm py-4 px-4 align-middle " {...props} />
+  ),
+
+  hr: ({ node, ...props }) => <hr className="border-border my-4" {...props} />,
+  img: ({ node, ...props }) => (
+    <img
+      className="rounded-lg border border-border max-w-full h-auto"
+      {...props}
+    />
+  ),
 };
 
 export function Markdown({ children, className, onCitationChange }) {
@@ -491,22 +590,30 @@ export function Markdown({ children, className, onCitationChange }) {
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight, rehypeCustomProcessor]}
+      <MarkdownWrapper
+        rehypePlugins={[rehypeCustomProcessor]}
         components={{
           div: ({
             node,
             className,
             "data-key": dataKey,
+            "data-path": dataPath,
             "data-title": dataTitle,
             ...props
           }) => {
             if (className === "kv-pair-wrapper") {
-              return <KeyValuePair keyName={dataKey} {...props} />;
+              return (
+                <KeyValuePair
+                  keyName={dataKey}
+                  dataPath={dataPath}
+                  {...props}
+                />
+              );
             }
             if (className === "section-wrapper") {
-              return <Section title={dataTitle} {...props} />;
+              return (
+                <Section title={dataTitle} dataPath={dataPath} {...props} />
+              );
             }
             if (className === "list-container-wrapper") {
               return <ListContainer {...props} />;
@@ -522,108 +629,29 @@ export function Markdown({ children, className, onCitationChange }) {
             }
             return <div className={className} {...props} />;
           },
-          h1: (props) => <MarkdownHeading level={1} {...props} />,
-          h2: (props) => <MarkdownHeading level={2} {...props} />,
-          h3: (props) => <MarkdownHeading level={3} {...props} />,
-          h4: (props) => <MarkdownHeading level={4} {...props} />,
-          h5: (props) => <MarkdownHeading level={5} {...props} />,
-          h6: (props) => <MarkdownHeading level={6} {...props} />,
-          p: ({ node, ...props }) => (
-            <p className="text-sm leading-6 mb-2 text-foreground" {...props} />
-          ),
-
-          strong: ({ node, ...props }) => (
-            <strong className="text-foreground font-semibold" {...props} />
-          ),
-
-          em: ({ node, ...props }) => (
-            <em className="italic text-foreground font-semibold" {...props} />
-          ),
-
-          a: ({ node, ...props }) => (
-            <a
-              className="text-primary underline hover:no-underline"
-              target="_blank"
-              rel="noopener noreferrer"
-              {...props}
-            />
-          ),
-
-          ul: ({ node, ...props }) => (
-            <ul className="[&_ul]:pl-6 mb-3 space-y-1.5" {...props} />
-          ),
-          ol: ({ node, ...props }) => (
-            <ol className="list-decimal pl-6 mb-3 space-y-1.5" {...props} />
-          ),
-          li: ({ node, ...props }) => (
-            <li className="text-sm leading-7 text-foreground ml-1" {...props} />
-          ),
-
-          blockquote: ({ node, ...props }) => <Blockquote {...props} />,
-
-          pre: ({ node, ...props }) => (
-            <pre
-              className="bg-muted border border-border rounded-lg p-3 overflow-x-auto mb-2 text-xs"
-              {...props}
-            />
-          ),
-
-          code: ({ node, inline, className, children, ...props }) =>
-            inline ? (
-              <code
-                className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono text-foreground"
-                {...props}
-              >
-                {children}
-              </code>
-            ) : (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            ),
-
-          table: ({ node, ...props }) => (
-            <div className="my-6 overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
-              <Table {...props} containerClassName={"max-h-96"} />
-            </div>
-          ),
-          thead: ({ node, ...props }) => (
-            <TableHeader
-              className="bg-muted/60 border-b-2 border-border"
-              {...props}
-            />
-          ),
-          tbody: ({ node, ...props }) => <TableBody {...props} />,
-          tr: ({ node, ...props }) => (
-            <TableRow
-              className="hover:bg-muted/30 transition-colors border-b border-border last:border-b-0"
-              {...props}
-            />
-          ),
-          th: ({ node, ...props }) => (
-            <TableHead
-              className="font-semibold text-xs py-4 px-4 text-left "
-              {...props}
-            />
-          ),
-
-          td: ({ node, ...props }) => (
-            <TableCell className="text-sm py-4 px-4 align-middle " {...props} />
-          ),
-
-          hr: ({ node, ...props }) => (
-            <hr className="border-border my-4" {...props} />
-          ),
-          img: ({ node, ...props }) => (
-            <img
-              className="rounded-lg border border-border max-w-full h-auto"
-              {...props}
-            />
-          ),
+          ...HtmlComponents,
         }}
       >
         {processedContent}
-      </ReactMarkdown>
+      </MarkdownWrapper>
     </div>
   );
 }
+
+export const MarkdownWrapper = ({
+  children,
+  components = [],
+  rehypePlugins = [],
+}) => {
+  return (
+    <div className="prose prose-sm dark:prose-invert max-w-none">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight, ...rehypePlugins]}
+        components={{ ...HtmlComponents, ...components }}
+      >
+        {children}
+      </ReactMarkdown>
+    </div>
+  );
+};

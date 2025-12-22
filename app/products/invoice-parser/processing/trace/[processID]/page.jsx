@@ -59,6 +59,7 @@ import {
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
+import { toTitleCase } from "remeda";
 
 const PdfPreview = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
@@ -229,6 +230,139 @@ export default function ProcessTracePage() {
   const [view, setView] = useState("markdown");
 
   const containerRef = useRef(null);
+  const rightPaneRef = useRef(null);
+
+  const step1PreviewData = useMemo(() => {
+    return jsonData?.combined_parsed_json || jsonData || null;
+  }, [jsonData]);
+
+  const step1PdfCitations = useMemo(() => {
+    if (activeTab !== "step-1" || !step1PreviewData) return [];
+
+    const results = [];
+    const seen = new Set();
+
+    const hasValueStructure = (v) =>
+      v &&
+      typeof v === "object" &&
+      ("value" in v ||
+        "formattedValue" in v ||
+        "formattedDate" in v ||
+        "valueFromDocument" in v);
+
+    const toCitation = (grounding, meta) => {
+      const bbox = grounding?.text_bbox;
+      const pageNo = grounding?.page_no;
+      if (!Array.isArray(bbox) || bbox.length !== 4 || !pageNo) return null;
+
+      const pageIndex = Math.max(0, Number(pageNo) - 1);
+      const normBbox = bbox.map((n) => Number(n));
+      const key = `${pageIndex}:${normBbox.join(",")}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+
+      return {
+        id: meta?.id ?? key,
+        path: meta?.path ?? "",
+        title: meta?.title ?? "",
+        text: meta?.text ?? "",
+        pageIndex,
+        bbox: normBbox,
+      };
+    };
+
+    const walk = (node, path = "", labelKey = "") => {
+      if (!node) return;
+
+      if (Array.isArray(node)) {
+        // If it looks like a table (array of objects), add row-level citations
+        const isObjArray = node.every(
+          (x) => typeof x === "object" && x !== null && !Array.isArray(x)
+        );
+
+        if (isObjArray) {
+          node.forEach((row, idx) => {
+            const grounding = row?.grounding;
+            const c = toCitation(grounding, {
+              id: `${path}[${idx}]`,
+              path: `${path}[${idx}]`,
+              title: labelKey
+                ? `${toTitleCase(labelKey)} #${idx + 1}`
+                : `Row #${idx + 1}`,
+              text: grounding?.dots_block?.text || "",
+            });
+            if (c) results.push(c);
+          });
+          return;
+        }
+
+        node.forEach((item, idx) => walk(item, `${path}[${idx}]`, labelKey));
+        return;
+      }
+
+      if (typeof node !== "object") return;
+
+      for (const [k, v] of Object.entries(node)) {
+        if (k === "source" || k === "grounding") continue;
+        const nextPath = path ? `${path}.${k}` : k;
+
+        if (v && typeof v === "object" && !Array.isArray(v)) {
+          if (hasValueStructure(v) && v?.grounding) {
+            const grounding = v.grounding;
+            const c = toCitation(grounding, {
+              id: nextPath,
+              path: nextPath,
+              title: toTitleCase(k),
+              text: grounding?.dots_block?.text || "",
+            });
+            if (c) results.push(c);
+          } else {
+            walk(v, nextPath, k);
+          }
+        } else if (Array.isArray(v)) {
+          walk(v, nextPath, k);
+        }
+      }
+    };
+
+    walk(step1PreviewData, "", "");
+    return results;
+  }, [activeTab, step1PreviewData]);
+
+  const handlePdfCitationClick = useCallback(
+    (c) => {
+      if (!c) return;
+      setActiveCitation({ pageIndex: c.pageIndex, bbox: c.bbox });
+
+      const container = rightPaneRef.current;
+      if (!container) return;
+
+      const cssEscape =
+        typeof CSS !== "undefined" && CSS.escape
+          ? CSS.escape
+          : (s) => String(s).replace(/"/g, '\\"');
+
+      const tryPaths = [];
+      if (c.path) tryPaths.push(c.path);
+      if (c.path && c.path.includes("[")) tryPaths.push(c.path.split("[")[0]);
+
+      for (const p of tryPaths) {
+        const sel = `[data-field-path="${cssEscape(
+          p
+        )}"],[data-section-path="${cssEscape(p)}"]`;
+        const target = container.querySelector(sel);
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
+          return;
+        }
+      }
+    },
+    [setActiveCitation]
+  );
+
+  const clearPdfActiveCitation = useCallback(() => {
+    setActiveCitation(null);
+  }, []);
 
   const isMainProcessFailed = useMemo(() => {
     return (
@@ -326,6 +460,11 @@ export default function ProcessTracePage() {
                         key={s3PdfUrl}
                         fileUrl={s3PdfUrl}
                         citation={activeCitation}
+                        citations={
+                          activeTab === "step-1" ? step1PdfCitations : []
+                        }
+                        onCitationClick={handlePdfCitationClick}
+                        onClearCitation={clearPdfActiveCitation}
                       />
                     </div>
                   </div>
@@ -426,7 +565,10 @@ export default function ProcessTracePage() {
                   )}
 
                   <div className="flex-1 min-h-0 overflow-hidden ">
-                    <div className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4">
+                    <div
+                      ref={rightPaneRef}
+                      className="h-full overflow-y-auto overflow-x-hidden dark:text-foreground/90 px-6 py-4"
+                    >
                       <TabsContent value="step-1" className="h-full relative">
                         <ProcessMessage
                           message={groupedTraceMessages["step-1"]}
