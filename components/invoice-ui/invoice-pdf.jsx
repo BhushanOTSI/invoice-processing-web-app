@@ -6,6 +6,7 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
@@ -49,21 +50,26 @@ const InvoicePdf = forwardRef(({ fileUrl, className, citation }, ref) => {
     return { pageIndex, bbox };
   }, [citation]);
 
+  const lastCitationKeyRef = useRef(null);
+  const lastCitationPageRef = useRef(null);
+
   useEffect(() => {
     if (!normalizedCitation) return;
 
-    // Robust page jump (works even when pages are virtualized)
-    try {
-      pageNavigationPluginInstance.jumpToPage?.(normalizedCitation.pageIndex);
-    } catch {
-      // no-op
-    }
+    const key = `${normalizedCitation.pageIndex}:${normalizedCitation.bbox.join(
+      ","
+    )}`;
+    if (key === lastCitationKeyRef.current) return;
+    lastCitationKeyRef.current = key;
 
-    const pageEl = document.getElementById(
-      `invoice-pdf-page-${normalizedCitation.pageIndex}`
-    );
-    if (pageEl) {
-      pageEl.scrollIntoView({ block: "start", behavior: "smooth" });
+    // Robust page jump (works even when pages are virtualized)
+    if (lastCitationPageRef.current !== normalizedCitation.pageIndex) {
+      lastCitationPageRef.current = normalizedCitation.pageIndex;
+      try {
+        pageNavigationPluginInstance.jumpToPage?.(normalizedCitation.pageIndex);
+      } catch {
+        // no-op
+      }
     }
 
     // Scroll the highlight into view once it exists

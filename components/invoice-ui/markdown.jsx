@@ -121,25 +121,49 @@ export function Markdown({ children, className, onCitationChange }) {
         .kv-pair-wrapper .confidence-badge {
           margin-left: auto !important;
         }
-
-        /* Citation values (hover -> highlight on PDF) */
-        .citation-value {
-          text-decoration-line: underline;
-          text-decoration-style: dashed;
-          text-underline-offset: 3px;
-          text-decoration-thickness: 1px;
-          text-decoration-color: color-mix(in oklab, currentColor 55%, transparent);
-          cursor: pointer;
-        }
-        .citation-value:hover {
-          text-decoration-color: color-mix(in oklab, currentColor 85%, transparent);
-        }
       `;
       document.head.appendChild(style);
     }
   }, []);
 
   const lastCitationKeyRef = React.useRef(null);
+  const activeCitationElRef = React.useRef(null);
+  // No hover/clear delay (instant highlight + instant clear)
+
+  // Tailwind-only active styling (no custom CSS)
+  const CITATION_ACTIVE_CLASSES = React.useMemo(
+    () =>
+      [
+        "citation-active",
+        "bg-yellow-300/30",
+        "dark:bg-yellow-300/20",
+        "border",
+        "border-yellow-500/50",
+        "dark:border-yellow-400/40",
+        "rounded-md",
+        "px-1",
+        "-mx-0.5",
+        "shadow-sm",
+        "transition-all",
+        "duration-200",
+        "ease-out",
+        "motion-reduce:transition-none",
+      ].join(" "),
+    []
+  );
+
+  const setActiveCitationEl = React.useCallback(
+    (el) => {
+      if (activeCitationElRef.current && activeCitationElRef.current !== el) {
+        activeCitationElRef.current.classList.remove(
+          ...CITATION_ACTIVE_CLASSES.split(" ")
+        );
+      }
+      activeCitationElRef.current = el;
+      if (el) el.classList.add(...CITATION_ACTIVE_CLASSES.split(" "));
+    },
+    [CITATION_ACTIVE_CLASSES]
+  );
 
   const emitCitation = React.useCallback((citationEl) => {
     const encoded = citationEl?.dataset?.citation;
@@ -165,31 +189,41 @@ export function Markdown({ children, className, onCitationChange }) {
       const key = citationEl.dataset.citation || null;
       if (!citation || !key) return;
 
-      if (key === lastCitationKeyRef.current) return;
+      if (key === lastCitationKeyRef.current) {
+        setActiveCitationEl(citationEl);
+        return;
+      }
+
       lastCitationKeyRef.current = key;
+      setActiveCitationEl(citationEl);
       if (typeof onCitationChange === "function") onCitationChange(citation);
     },
-    [emitCitation]
+    [emitCitation, onCitationChange, setActiveCitationEl]
   );
 
-  const handlePointerOut = React.useCallback((e) => {
-    const target = e.target;
-    const fromCitationEl =
-      target?.closest?.(".citation-value") ||
-      (target?.classList?.contains?.("citation-value") ? target : null);
-    if (!fromCitationEl) return;
+  const handlePointerOut = React.useCallback(
+    (e) => {
+      const target = e.target;
+      const fromCitationEl =
+        target?.closest?.(".citation-value") ||
+        (target?.classList?.contains?.("citation-value") ? target : null);
+      if (!fromCitationEl) return;
 
-    const related = e.relatedTarget;
-    const toCitationEl =
-      related?.closest?.(".citation-value") ||
-      (related?.classList?.contains?.("citation-value") ? related : null);
+      const related = e.relatedTarget;
+      const toCitationEl =
+        related?.closest?.(".citation-value") ||
+        (related?.classList?.contains?.("citation-value") ? related : null);
 
-    // Still within same citation (moving between nested nodes)
-    if (toCitationEl && toCitationEl === fromCitationEl) return;
+      // Still within same citation (moving between nested nodes)
+      if (toCitationEl && toCitationEl === fromCitationEl) return;
 
-    lastCitationKeyRef.current = null;
-    if (typeof onCitationChange === "function") onCitationChange(null);
-  }, []);
+      // Reset visual state immediately
+      setActiveCitationEl(null);
+      lastCitationKeyRef.current = null;
+      if (typeof onCitationChange === "function") onCitationChange(null);
+    },
+    [onCitationChange, setActiveCitationEl]
+  );
 
   const rehypeCustomProcessor = React.useMemo(() => {
     return () => (tree) => {
@@ -227,6 +261,11 @@ export function Markdown({ children, className, onCitationChange }) {
             properties: {
               className: [
                 "confidence-badge",
+                // Ensure badge doesn't inherit citation underline/interactive affordances
+                "no-underline",
+                "decoration-transparent",
+                "cursor-default",
+                "select-none",
                 "inline-flex",
                 "items-center",
                 "text-[9px]",
