@@ -97,7 +97,7 @@ const SimpleValue = ({ children }) => {
   return <div className="py-1.5 px-3 text-sm text-foreground">{children}</div>;
 };
 
-export function Markdown({ children, className }) {
+export function Markdown({ children, className, onCitationChange }) {
   React.useEffect(() => {
     const styleId = "table-confidence-styles";
     if (!document.getElementById(styleId)) {
@@ -121,9 +121,74 @@ export function Markdown({ children, className }) {
         .kv-pair-wrapper .confidence-badge {
           margin-left: auto !important;
         }
+
+        /* Citation values (hover -> highlight on PDF) */
+        .citation-value {
+          text-decoration-line: underline;
+          text-decoration-style: dashed;
+          text-underline-offset: 3px;
+          text-decoration-thickness: 1px;
+          text-decoration-color: color-mix(in oklab, currentColor 55%, transparent);
+          cursor: pointer;
+        }
+        .citation-value:hover {
+          text-decoration-color: color-mix(in oklab, currentColor 85%, transparent);
+        }
       `;
       document.head.appendChild(style);
     }
+  }, []);
+
+  const lastCitationKeyRef = React.useRef(null);
+
+  const emitCitation = React.useCallback((citationEl) => {
+    const encoded = citationEl?.dataset?.citation;
+    if (!encoded) return null;
+    try {
+      const decoded = decodeURIComponent(encoded);
+      return JSON.parse(decoded);
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handlePointerOver = React.useCallback(
+    (e) => {
+      const target = e.target;
+      const citationEl =
+        target?.closest?.(".citation-value") ||
+        (target?.classList?.contains?.("citation-value") ? target : null);
+
+      if (!citationEl) return;
+
+      const citation = emitCitation(citationEl);
+      const key = citationEl.dataset.citation || null;
+      if (!citation || !key) return;
+
+      if (key === lastCitationKeyRef.current) return;
+      lastCitationKeyRef.current = key;
+      if (typeof onCitationChange === "function") onCitationChange(citation);
+    },
+    [emitCitation]
+  );
+
+  const handlePointerOut = React.useCallback((e) => {
+    const target = e.target;
+    const fromCitationEl =
+      target?.closest?.(".citation-value") ||
+      (target?.classList?.contains?.("citation-value") ? target : null);
+    if (!fromCitationEl) return;
+
+    const related = e.relatedTarget;
+    const toCitationEl =
+      related?.closest?.(".citation-value") ||
+      (related?.classList?.contains?.("citation-value") ? related : null);
+
+    // Still within same citation (moving between nested nodes)
+    if (toCitationEl && toCitationEl === fromCitationEl) return;
+
+    lastCitationKeyRef.current = null;
+    if (typeof onCitationChange === "function") onCitationChange(null);
   }, []);
 
   const rehypeCustomProcessor = React.useMemo(() => {
@@ -385,6 +450,8 @@ export function Markdown({ children, className }) {
   return (
     <div
       className={cn("prose prose-sm dark:prose-invert max-w-none", className)}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}

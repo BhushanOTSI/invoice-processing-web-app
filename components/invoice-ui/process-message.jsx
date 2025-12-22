@@ -21,6 +21,7 @@ export function ProcessMessage({
   jsonData,
   isProcessing = false,
   isMainProcessFailed = false,
+  onCitationChange,
 }) {
   const markdown = message?.extraMetadata?.markdown;
   const hasMarkdown = !!markdown;
@@ -41,8 +42,12 @@ export function ProcessMessage({
   if (view === "markdown") {
     return hasMarkdown ? (
       <div className="space-y-4 pb-6">
-        <Markdown>{markdown}</Markdown>
-        {jsonData && <Markdown>{jsonToMarkdown(jsonData)}</Markdown>}
+        <Markdown onCitationChange={onCitationChange}>{markdown}</Markdown>
+        {jsonData && (
+          <Markdown onCitationChange={onCitationChange}>
+            {jsonToMarkdown(jsonData)}
+          </Markdown>
+        )}
       </div>
     ) : message?.message ? (
       message?.message

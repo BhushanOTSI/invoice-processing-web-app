@@ -77,6 +77,7 @@ export default function ProcessTracePage() {
   const router = useRouter();
   const { setOpen } = useSidebar();
   const { processID } = useParams();
+  const [activeCitation, setActiveCitation] = useState(null);
   const { leftSize, savePanelSize } = usePersistentResize(
     "invoice-trace-panel-size",
     processID
@@ -321,7 +322,11 @@ export default function ProcessTracePage() {
                 {s3PdfUrl && activeTab !== "step-3" && (
                   <div className="h-full overflow-hidden">
                     <div className="h-full overflow-y-auto overflow-x-hidden">
-                      <PdfPreview key={s3PdfUrl} fileUrl={s3PdfUrl} />
+                      <PdfPreview
+                        key={s3PdfUrl}
+                        fileUrl={s3PdfUrl}
+                        citation={activeCitation}
+                      />
                     </div>
                   </div>
                 )}
@@ -434,6 +439,7 @@ export default function ProcessTracePage() {
                           jsonData={jsonData?.combined_parsed_json || jsonData}
                           view={view}
                           isMainProcessFailed={isMainProcessFailed}
+                          onCitationChange={setActiveCitation}
                         />
                       </TabsContent>
                       <TabsContent value="step-2" className="h-full">
