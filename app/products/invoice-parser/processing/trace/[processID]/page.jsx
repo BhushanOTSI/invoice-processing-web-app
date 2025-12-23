@@ -139,12 +139,14 @@ export default function ProcessTracePage() {
 
   const s3PdfUrl = useMemo(() => {
     return (
+      processTraceStatus?.sessionMetadata?.s3_pdf_unmasked_url ||
       processTraceStatus?.sessionMetadata?.s3_pdf_url ||
       groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl
     );
   }, [
-    groupedTraceMessages["step-1"],
+    processTraceStatus?.sessionMetadata?.s3_pdf_unmasked_url,
     processTraceStatus?.sessionMetadata?.s3_pdf_url,
+    groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl,
   ]);
 
   const s3JsonUrl = useMemo(() => {
@@ -239,8 +241,7 @@ export default function ProcessTracePage() {
   const step1PdfCitations = useMemo(() => {
     if (activeTab !== "step-1" || !step1PreviewData) return [];
 
-    const results = [];
-    const seen = new Set();
+    const byBox = new Map();
 
     const hasValueStructure = (v) =>
       v &&
@@ -250,7 +251,47 @@ export default function ProcessTracePage() {
         "formattedDate" in v ||
         "valueFromDocument" in v);
 
-    const toCitation = (grounding, meta) => {
+    const getDisplayValue = (v, keyName) => {
+      if (v === null || v === undefined) return "";
+      if (
+        typeof v === "string" ||
+        typeof v === "number" ||
+        typeof v === "boolean"
+      ) {
+        return String(v);
+      }
+
+      if (typeof v === "object") {
+        // Prefer the raw extracted value (per requirement)
+        const raw = "value" in v ? v.value : undefined;
+        if (raw !== null && raw !== undefined && String(raw).trim() !== "") {
+          return String(raw);
+        }
+
+        // Helpful fallbacks for fields that don't set `value`
+        if ("formattedValue" in v && v.formattedValue)
+          return String(v.formattedValue);
+        if ("formattedDate" in v && v.formattedDate)
+          return String(v.formattedDate);
+        if ("valueFromDocument" in v && v.valueFromDocument)
+          return String(v.valueFromDocument);
+
+        // Common compound case: quantity + unit
+        if (
+          keyName === "quantity" &&
+          "formattedValue" in v &&
+          v.formattedValue &&
+          "unitOfMeasure" in v &&
+          v.unitOfMeasure
+        ) {
+          return `${v.formattedValue} ${v.unitOfMeasure}`;
+        }
+      }
+
+      return "";
+    };
+
+    const ensureEntry = (grounding) => {
       const bbox = grounding?.text_bbox;
       const pageNo = grounding?.page_no;
       if (!Array.isArray(bbox) || bbox.length !== 4 || !pageNo) return null;
@@ -258,41 +299,65 @@ export default function ProcessTracePage() {
       const pageIndex = Math.max(0, Number(pageNo) - 1);
       const normBbox = bbox.map((n) => Number(n));
       const key = `${pageIndex}:${normBbox.join(",")}`;
-      if (seen.has(key)) return null;
-      seen.add(key);
-
-      return {
-        id: meta?.id ?? key,
-        path: meta?.path ?? "",
-        title: meta?.title ?? "",
-        text: meta?.text ?? "",
-        pageIndex,
-        bbox: normBbox,
-      };
+      let entry = byBox.get(key);
+      if (!entry) {
+        entry = {
+          id: key,
+          pageIndex,
+          bbox: normBbox,
+          // Which right-side anchor to scroll to when this overlay is clicked
+          path: "",
+          kvPairs: [],
+          tables: [],
+        };
+        byBox.set(key, entry);
+      }
+      return entry;
     };
 
     const walk = (node, path = "", labelKey = "") => {
       if (!node) return;
 
       if (Array.isArray(node)) {
-        // If it looks like a table (array of objects), add row-level citations
+        // If it looks like a table (array of objects), show in table format in the popover
         const isObjArray = node.every(
           (x) => typeof x === "object" && x !== null && !Array.isArray(x)
         );
 
         if (isObjArray) {
-          node.forEach((row, idx) => {
-            const grounding = row?.grounding;
-            const c = toCitation(grounding, {
-              id: `${path}[${idx}]`,
-              path: `${path}[${idx}]`,
-              title: labelKey
-                ? `${toTitleCase(labelKey)} #${idx + 1}`
-                : `Row #${idx + 1}`,
-              text: grounding?.dots_block?.text || "",
+          // Use row grounding if present (often covers the whole table bbox in sample JSON)
+          const anyGrounding = node.find((r) => r?.grounding)?.grounding;
+          const entry = ensureEntry(anyGrounding);
+          if (entry) {
+            if (!entry.path) entry.path = path || labelKey || "";
+
+            const rows = node.map((row) => {
+              const flat = {};
+              for (const [k, v] of Object.entries(row || {})) {
+                if (k === "source" || k === "grounding") continue;
+                if (v && typeof v === "object" && hasValueStructure(v)) {
+                  flat[toTitleCase(k)] = getDisplayValue(v, k) || "N/A";
+                } else if (
+                  typeof v === "string" ||
+                  typeof v === "number" ||
+                  typeof v === "boolean"
+                ) {
+                  flat[toTitleCase(k)] = String(v);
+                }
+              }
+              return flat;
             });
-            if (c) results.push(c);
-          });
+
+            const columns = Array.from(
+              new Set(rows.flatMap((r) => Object.keys(r)))
+            );
+
+            entry.tables.push({
+              title: labelKey ? toTitleCase(labelKey) : "Items",
+              columns,
+              rows,
+            });
+          }
           return;
         }
 
@@ -309,13 +374,15 @@ export default function ProcessTracePage() {
         if (v && typeof v === "object" && !Array.isArray(v)) {
           if (hasValueStructure(v) && v?.grounding) {
             const grounding = v.grounding;
-            const c = toCitation(grounding, {
-              id: nextPath,
-              path: nextPath,
-              title: toTitleCase(k),
-              text: grounding?.dots_block?.text || "",
-            });
-            if (c) results.push(c);
+            const entry = ensureEntry(grounding);
+            if (entry) {
+              if (!entry.path) entry.path = nextPath;
+              entry.kvPairs.push({
+                key: toTitleCase(k),
+                value: getDisplayValue(v, k) || "N/A",
+                path: nextPath,
+              });
+            }
           } else {
             walk(v, nextPath, k);
           }
@@ -326,7 +393,49 @@ export default function ProcessTracePage() {
     };
 
     walk(step1PreviewData, "", "");
-    return results;
+
+    // Convert grouped entries into citations that the PDF overlay understands.
+    // `text` is markdown rendered by `MarkdownWrapper` in the HoverCard.
+    const escapeMd = (s) =>
+      String(s ?? "")
+        .replace(/\|/g, "\\|")
+        .replace(/\r?\n/g, "<br/>");
+
+    const toMarkdownTable = (columns, rows) => {
+      if (!columns || columns.length === 0) return "";
+      const header = `| ${columns.map(escapeMd).join(" | ")} |`;
+      const divider = `| ${columns.map(() => "---").join(" | ")} |`;
+      const body = rows
+        .map(
+          (r) =>
+            `| ${columns.map((c) => escapeMd(r?.[c] ?? "N/A")).join(" | ")} |`
+        )
+        .join("\n");
+      return `${header}\n${divider}\n${body}`;
+    };
+
+    return Array.from(byBox.values()).map((entry) => {
+      const kvLines = entry.kvPairs
+        .filter((x) => x?.key)
+        .map((x) => `**${escapeMd(x.key)}**: ${escapeMd(x.value)}`);
+
+      const tableBlocks = entry.tables.map((t) => {
+        const title = t.title ? `\n\n**${escapeMd(t.title)}**\n\n` : "\n\n";
+        return `${title}${toMarkdownTable(t.columns, t.rows)}`;
+      });
+
+      // Ensure each KV pair renders on its own line inside MarkdownWrapper
+      const kvBlock = kvLines.length > 0 ? kvLines.join("<br/>") : "";
+
+      return {
+        id: entry.id,
+        path: entry.path,
+        title: "",
+        text: [kvBlock, ...tableBlocks].filter(Boolean).join("\n\n"),
+        pageIndex: entry.pageIndex,
+        bbox: entry.bbox,
+      };
+    });
   }, [activeTab, step1PreviewData]);
 
   const handlePdfCitationClick = useCallback(
