@@ -14,6 +14,7 @@ import {
   isDeferredProcessing,
   isFailedProcessing,
   isProcessing,
+  autoDetectAndNormalize,
 } from "@/lib/utils";
 import {
   useProcessTraceDag,
@@ -297,7 +298,12 @@ export default function ProcessTracePage() {
       if (!Array.isArray(bbox) || bbox.length !== 4 || !pageNo) return null;
 
       const pageIndex = Math.max(0, Number(pageNo) - 1);
-      const normBbox = bbox.map((n) => Number(n));
+      const normBbox = autoDetectAndNormalize(
+        bbox,
+        grounding?.image_width,
+        grounding?.image_height
+      );
+
       const key = `${pageIndex}:${normBbox.join(",")}`;
       let entry = byBox.get(key);
       if (!entry) {
@@ -305,11 +311,11 @@ export default function ProcessTracePage() {
           id: key,
           pageIndex,
           bbox: normBbox,
-          // Which right-side anchor to scroll to when this overlay is clicked
           path: "",
           kvPairs: [],
           tables: [],
         };
+
         byBox.set(key, entry);
       }
       return entry;
