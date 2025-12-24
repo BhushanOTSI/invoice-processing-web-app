@@ -263,7 +263,7 @@ const InvoicePdf = forwardRef(
                     side="top"
                     align="start"
                     sideOffset={8}
-                    className="w-auto max-w-130 p-3 text-xs leading-5 *:text-xs bg-background/95 dark:bg-background/90 border border-border/70 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-80 overflow-auto"
+                    className="w-auto max-w-130 p-3 text-xs leading-5 **:text-xs bg-background/95 dark:bg-background/90 border border-border/70 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-80 overflow-auto"
                   >
                     {c.title && (
                       <div className="font-semibold text-foreground mb-1">

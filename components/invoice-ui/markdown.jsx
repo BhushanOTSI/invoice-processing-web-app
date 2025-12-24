@@ -108,7 +108,7 @@ export const HtmlComponents = {
   h5: (props) => <MarkdownHeading level={5} {...props} />,
   h6: (props) => <MarkdownHeading level={6} {...props} />,
   p: ({ node, ...props }) => (
-    <p className="text-sm leading-6 mb-2 text-foreground" {...props} />
+    <p className="text-sm leading-6 text-foreground" {...props} />
   ),
 
   strong: ({ node, ...props }) => (
@@ -162,7 +162,7 @@ export const HtmlComponents = {
     ),
 
   table: ({ node, ...props }) => (
-    <div className="my-6 overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
+    <div className="overflow-x-auto rounded-lg border border-border shadow-sm bg-card">
       <Table {...props} containerClassName={"max-h-96"} />
     </div>
   ),
