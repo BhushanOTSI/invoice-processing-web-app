@@ -298,14 +298,16 @@ export default function ProcessTracePage() {
       if (!Array.isArray(bbox) || bbox.length !== 4 || !pageNo) return null;
 
       const pageIndex = Math.max(0, Number(pageNo) - 1);
-      const normBbox = autoDetectAndNormalize(
-        bbox,
-        grounding?.image_width,
-        grounding?.image_height
-      );
+      const normBbox =
+        autoDetectAndNormalize(
+          bbox,
+          grounding?.image_width,
+          grounding?.image_height
+        ) || bbox.map((n) => Number(n));
 
       const key = `${pageIndex}:${normBbox.join(",")}`;
       let entry = byBox.get(key);
+
       if (!entry) {
         entry = {
           id: key,
@@ -331,7 +333,49 @@ export default function ProcessTracePage() {
         );
 
         if (isObjArray) {
-          // Use row grounding if present (often covers the whole table bbox in sample JSON)
+          // If each row has grounding, create a citation per row (so overlays don't collapse)
+          const rowsWithGrounding = node
+            .map((row, idx) => ({
+              row,
+              idx,
+              grounding: row?.grounding,
+            }))
+            .filter((x) => x.grounding?.text_bbox && x.grounding?.page_no);
+
+          if (rowsWithGrounding.length > 0) {
+            rowsWithGrounding.forEach(({ row, idx, grounding }) => {
+              const entry = ensureEntry(grounding);
+              if (!entry) return;
+              if (!entry.path) entry.path = `${path}[${idx}]`;
+
+              const flat = {};
+              for (const [k, v] of Object.entries(row || {})) {
+                if (k === "source" || k === "grounding") continue;
+                if (v && typeof v === "object" && hasValueStructure(v)) {
+                  flat[toTitleCase(k)] = getDisplayValue(v, k) || "N/A";
+                } else if (
+                  typeof v === "string" ||
+                  typeof v === "number" ||
+                  typeof v === "boolean"
+                ) {
+                  flat[toTitleCase(k)] = String(v);
+                }
+              }
+
+              const columns = Object.keys(flat);
+              entry.tables.push({
+                title: labelKey
+                  ? `${toTitleCase(labelKey)} #${idx + 1}`
+                  : `Row #${idx + 1}`,
+                columns,
+                rows: [flat],
+              });
+            });
+
+            return;
+          }
+
+          // Otherwise, use the first available grounding (covers whole table in some payloads)
           const anyGrounding = node.find((r) => r?.grounding)?.grounding;
           const entry = ensureEntry(anyGrounding);
           if (entry) {
