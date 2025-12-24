@@ -263,14 +263,26 @@ const InvoicePdf = forwardRef(
                     side="top"
                     align="start"
                     sideOffset={8}
-                    className="w-auto max-w-130 p-3 text-xs leading-5 **:text-xs bg-background/95 dark:bg-background/90 border border-border/70 shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-80 overflow-auto"
+                    className="w-auto max-w-160 p-4 text-xs leading-5 **:text-xs rounded-lg bg-popover/95 text-popover-foreground dark:bg-popover/90 border border-border shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-96 overflow-auto"
                   >
-                    {c.title && (
-                      <div className="font-semibold text-foreground mb-1">
-                        {c.title}
-                      </div>
-                    )}
-                    {c.text && <MarkdownWrapper>{c.text}</MarkdownWrapper>}
+                    <div className="space-y-3">
+                      {c.title && (
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-sm font-semibold leading-5 text-foreground">
+                            {c.title}
+                          </div>
+                          <div className="shrink-0 rounded-full border border-yellow-500/25 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-200">
+                            Citation
+                          </div>
+                        </div>
+                      )}
+
+                      {c.text && (
+                        <div className="text-muted-foreground">
+                          <MarkdownWrapper>{c.text}</MarkdownWrapper>
+                        </div>
+                      )}
+                    </div>
                   </HoverCardContent>
                 </HoverCard>
               );
