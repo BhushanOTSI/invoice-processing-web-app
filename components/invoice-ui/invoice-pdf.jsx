@@ -3,6 +3,7 @@
 import {
   forwardRef,
   memo,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -20,12 +21,12 @@ import "@react-pdf-viewer/zoom/lib/styles/index.css";
 import "@/app/pdf-viewer-dark.css";
 import { cn } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
-import { MarkdownWrapper } from "./markdown";
+import PDFPageRenderer from "./pdf-page-renderer";
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "../ui/hover-card";
+  normalizeCitation,
+  normalizeCitations,
+  groupCitationsByPage,
+} from "./citation-utils";
 
 const InvoicePdf = forwardRef(
   (
@@ -41,21 +42,21 @@ const InvoicePdf = forwardRef(
   ) => {
     const [numPages, setNumPages] = useState(0);
     const [isPdfLoaded, setIsPdfLoaded] = useState(false);
-    const defaultLayoutPluginInstance = defaultLayoutPlugin({
-      sidebarTabs: () => [],
-    });
-    const pageNavigationPluginInstance = pageNavigationPlugin();
-    const zoomPluginInstance = zoomPlugin();
+    const pluginsRef = useRef(null);
 
-    useImperativeHandle(ref, () => ({
-      getNumPages: () => numPages,
-      setNumPages: (n) => setNumPages(n),
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        getNumPages: () => numPages,
+        setNumPages: (n) => setNumPages(n),
+      }),
+      [numPages]
+    );
 
-    const handleDocumentLoad = (e) => {
+    const handleDocumentLoad = useCallback((e) => {
       setNumPages(e.doc.numPages);
       setIsPdfLoaded(true);
-    };
+    }, []);
 
     // Reset load state when switching PDFs
     useEffect(() => {
@@ -63,53 +64,43 @@ const InvoicePdf = forwardRef(
       setNumPages(0);
     }, [fileUrl]);
 
-    const normalizedCitation = useMemo(() => {
-      if (!citation) return null;
-      const pageIndex = Number.isFinite(Number(citation.pageIndex))
-        ? Number(citation.pageIndex)
-        : null;
-      const bbox = Array.isArray(citation.bbox)
-        ? citation.bbox.map((n) => Number(n))
-        : null;
-      if (pageIndex === null || !bbox || bbox.length !== 4) return null;
-      return { pageIndex, bbox };
-    }, [citation]);
+    // Normalize citation
+    const normalizedCitation = useMemo(
+      () => normalizeCitation(citation),
+      [citation]
+    );
 
-    const normalizedCitations = useMemo(() => {
-      if (!Array.isArray(citations)) return [];
-      return citations
-        .map((c, idx) => {
-          const pageIndex = Number.isFinite(Number(c?.pageIndex))
-            ? Number(c.pageIndex)
-            : null;
-          const bbox = Array.isArray(c?.bbox)
-            ? c.bbox.map((n) => Number(n))
-            : null;
-          if (pageIndex === null || !bbox || bbox.length !== 4) return null;
-          return {
-            id: c?.id ?? `${pageIndex}:${bbox.join(",")}:${idx}`,
-            pageIndex,
-            bbox,
-            title: c?.title ?? "",
-            text: c?.text ?? "",
-            path: c?.path ?? "",
-          };
-        })
-        .filter(Boolean);
-    }, [citations]);
+    // Normalize citations array
+    const normalizedCitations = useMemo(
+      () => normalizeCitations(citations),
+      [citations]
+    );
 
-    const citationsByPage = useMemo(() => {
-      const map = new Map();
-      for (const c of normalizedCitations) {
-        const arr = map.get(c.pageIndex) || [];
-        arr.push(c);
-        map.set(c.pageIndex, arr);
-      }
-      return map;
-    }, [normalizedCitations]);
+    // Group citations by page
+    const citationsByPage = useMemo(
+      () => groupCitationsByPage(normalizedCitations),
+      [normalizedCitations]
+    );
 
     const lastCitationKeyRef = useRef(null);
     const lastCitationPageRef = useRef(null);
+
+    // Create plugins after all other hooks to maintain consistent hook order
+    // Plugins may use hooks internally, so they must be created unconditionally on every render
+    // We still store them in ref, but create fresh instances to maintain hook order
+    const defaultLayoutPluginInstance = defaultLayoutPlugin({
+      sidebarTabs: () => [],
+    });
+    const pageNavigationPluginInstance = pageNavigationPlugin();
+    const zoomPluginInstance = zoomPlugin();
+
+    // Store in ref for reference, but plugins are created fresh each render
+    // This is necessary if plugins use hooks internally
+    pluginsRef.current = {
+      defaultLayoutPluginInstance,
+      pageNavigationPluginInstance,
+      zoomPluginInstance,
+    };
 
     // Click outside: clear the active citation (closes the always-open HoverCard)
     useEffect(() => {
@@ -135,6 +126,7 @@ const InvoicePdf = forwardRef(
       };
     }, [isPdfLoaded, normalizedCitation, onClearCitation]);
 
+    // Handle citation navigation and scrolling
     useEffect(() => {
       if (!normalizedCitation) return;
       if (!isPdfLoaded) return;
@@ -165,138 +157,29 @@ const InvoicePdf = forwardRef(
         }
       }, 120);
       return () => window.clearTimeout(t);
-    }, [isPdfLoaded, normalizedCitation]);
+    }, [isPdfLoaded, normalizedCitation, pageNavigationPluginInstance]);
 
-    const renderPage = useMemo(() => {
-      return (props) => {
-        const show =
-          normalizedCitation &&
-          props.pageIndex === normalizedCitation.pageIndex;
-
-        const isSameBbox = (a, b) => {
-          if (!a || !b || a.length !== 4 || b.length !== 4) return false;
-          for (let i = 0; i < 4; i++) {
-            if (Math.abs(Number(a[i]) - Number(b[i])) > 1e-6) return false;
-          }
-          return true;
-        };
-
-        let style = null;
-        if (isPdfLoaded && show) {
-          const [x0, y0, x1, y1] = normalizedCitation.bbox;
-          const left = Math.min(x0, x1) * 100;
-          const top = Math.min(y0, y1) * 100;
-          const width = Math.abs(x1 - x0) * 100;
-          const height = Math.abs(y1 - y0) * 100;
-          style = {
-            position: "absolute",
-            left: `${left}%`,
-            top: `${top}%`,
-            width: `${width}%`,
-            height: `${height}%`,
-            background: "rgba(255, 255, 0, 0.25)",
-            border: "2px solid rgba(234, 179, 8, 0.9)",
-            borderRadius: "4px",
-            pointerEvents: "none",
-            boxSizing: "border-box",
-            zIndex: 5,
-          };
-        }
-
+    // Memoize the page renderer function
+    const renderPage = useCallback(
+      (props) => {
         const pageCitations = isPdfLoaded
           ? citationsByPage.get(props.pageIndex) || []
           : [];
 
         return (
-          <div
-            id={`invoice-pdf-page-${props.pageIndex}`}
-            style={{ position: "relative", width: "100%", height: "100%" }}
-          >
-            {props.canvasLayer.children}
-
-            {/* All citations overlay (step-1) */}
-            {pageCitations.map((c) => {
-              const isActive =
-                !!normalizedCitation &&
-                c.pageIndex === normalizedCitation.pageIndex &&
-                isSameBbox(c.bbox, normalizedCitation.bbox);
-
-              const [x0, y0, x1, y1] = c.bbox;
-              const left = Math.min(x0, x1) * 100;
-              const top = Math.min(y0, y1) * 100;
-              const width = Math.abs(x1 - x0) * 100;
-              const height = Math.abs(y1 - y0) * 100;
-
-              const boxStyle = {
-                position: "absolute",
-                left: `${left}%`,
-                top: `${top}%`,
-                width: `${width}%`,
-                height: `${height}%`,
-                background: "rgba(255, 255, 0, 0.12)",
-                border: "1px solid rgba(234, 179, 8, 0.55)",
-                borderRadius: "4px",
-                boxSizing: "border-box",
-                zIndex: 3,
-                cursor: "pointer",
-              };
-
-              return (
-                <HoverCard
-                  key={c.id}
-                  {...(isActive
-                    ? { open: true }
-                    : { openDelay: 120, closeDelay: 60 })}
-                >
-                  <HoverCardTrigger asChild>
-                    <div
-                      style={boxStyle}
-                      data-citation-overlay="true"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCitationClick?.(c);
-                      }}
-                      aria-label={c.title || "Citation"}
-                    />
-                  </HoverCardTrigger>
-                  <HoverCardContent
-                    side="top"
-                    align="start"
-                    sideOffset={8}
-                    className="w-auto max-w-160 p-4 text-xs leading-5 **:text-xs rounded-lg bg-popover/95 text-popover-foreground dark:bg-popover/90 border border-border shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-96 overflow-auto"
-                  >
-                    <div className="space-y-3">
-                      {c.title && (
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="text-sm font-semibold leading-5 text-foreground">
-                            {c.title}
-                          </div>
-                          <div className="shrink-0 rounded-full border border-yellow-500/25 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-medium text-yellow-800 dark:text-yellow-200">
-                            Citation
-                          </div>
-                        </div>
-                      )}
-
-                      {c.text && (
-                        <div className="text-muted-foreground">
-                          <MarkdownWrapper>{c.text}</MarkdownWrapper>
-                        </div>
-                      )}
-                    </div>
-                  </HoverCardContent>
-                </HoverCard>
-              );
-            })}
-
-            {isPdfLoaded && show && (
-              <div id="invoice-citation-highlight" style={style} />
-            )}
-            {props.textLayer.children}
-            {props.annotationLayer.children}
-          </div>
+          <PDFPageRenderer
+            pageIndex={props.pageIndex}
+            canvasLayer={props.canvasLayer}
+            textLayer={props.textLayer}
+            normalizedCitation={normalizedCitation}
+            pageCitations={pageCitations}
+            isPdfLoaded={isPdfLoaded}
+            onCitationClick={onCitationClick}
+          />
         );
-      };
-    }, [citationsByPage, isPdfLoaded, normalizedCitation, onCitationClick]);
+      },
+      [citationsByPage, isPdfLoaded, normalizedCitation, onCitationClick]
+    );
 
     return (
       <div className={cn("h-full w-full invoice-pdf-container", className)}>

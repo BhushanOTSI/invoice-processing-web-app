@@ -642,9 +642,12 @@ export const MarkdownWrapper = ({
   children,
   components = [],
   rehypePlugins = [],
+  className,
 }) => {
   return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
+    <div
+      className={cn("prose prose-sm dark:prose-invert max-w-none", className)}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeRaw, rehypeHighlight, ...rehypePlugins]}

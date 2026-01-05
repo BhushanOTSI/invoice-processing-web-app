@@ -58,7 +58,7 @@ export function AppSidebar({ ...props }) {
       <SidebarHeader>
         <div className="overflow-hidden">
           <Link href={APP_ROUTES.DASHBOARD}>
-            <LogoOTS className="w-24 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-[width] duration-200 ease-linear" />
+            <LogoOTS className="w-24 group-data-[collapsible=icon]:w-20 group-data-[collapsible=icon]:m-0.5 transition-all duration-200 ease-linear m-auto mt-2" />
           </Link>
         </div>
       </SidebarHeader>
