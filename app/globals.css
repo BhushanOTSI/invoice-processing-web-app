@@ -247,7 +247,7 @@
   }
 
   .rpv-default-layout__toolbar {
-    @apply backdrop-blur-md transition-all duration-200 ease-in-out items-center gap-1 border-x-0! border-b! border-border! shadow-none bg-accent!;
+    @apply backdrop-blur-md transition-all duration-200 ease-in-out items-center gap-1 border-x-0! border-b! border-border! shadow-none bg-background! h-12!;
   }
 
   .dark .rpv-default-layout__toolbar {
@@ -365,7 +365,7 @@
   }
 
   .rpv-core__viewer  {
-    @apply border-r! border-border!;
+    @apply border-0!;
   }
 
   .rpv-core__inner-pages,
@@ -442,7 +442,7 @@
   }
 
   .rpv-default-layout__container {
-    @apply border-y-0! border-r-border! border-l-0!;
+    @apply border-0!;
   }
  
 @layer utilities {
@@ -584,4 +584,18 @@
   .badge-filled [data-slot] svg {
     color: white !important;
   }
+}
+
+
+.rpv-core__viewer--dark {
+  --rpv-default-layout__body-background-color: var(--background);
+  --rpv-default-layout__container-border-color: var(--border);
+  --rpv-default-layout__toolbar-background-color: var(--background);
+  --rpv-default-layout__toolbar-border-bottom-color: var(--border);
+  --rpv-default-layout__sidebar-border-color: var(--border);
+  --rpv-default-layout__sidebar--opened-background-color: var(--background);
+  --rpv-default-layout__sidebar-headers-background-color: var(--background);
+  --rpv-default-layout__sidebar-content--opened-background-color: var(--background);
+  --rpv-default-layout__sidebar-content--opened-border-color: var(--border);
+  --rpv-default-layout__sidebar-content--opened-color: var(--foreground);
 }

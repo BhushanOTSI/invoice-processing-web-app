@@ -9,7 +9,15 @@ import { isSameBbox, calculateBboxStyle } from "./citation-utils";
  * Memoized to prevent unnecessary re-renders when props haven't changed
  */
 const PDFPageRenderer = memo(
-  ({ pageIndex, canvasLayer, textLayer, normalizedCitation, pageCitations, isPdfLoaded, onCitationClick }) => {
+  ({
+    pageIndex,
+    canvasLayer,
+    textLayer,
+    normalizedCitation,
+    pageCitations,
+    isPdfLoaded,
+    onCitationClick,
+  }) => {
     const show =
       normalizedCitation && pageIndex === normalizedCitation.pageIndex;
 
@@ -36,7 +44,12 @@ const PDFPageRenderer = memo(
     return (
       <div
         id={`invoice-pdf-page-${pageIndex}`}
-        style={{ position: "relative", width: "100%", height: "100%" }}
+        style={{
+          position: "relative",
+          width: "100%",
+          height: "100%",
+          padding: "16px",
+        }}
       >
         {canvasLayer.children}
 
@@ -90,4 +103,3 @@ const PDFPageRenderer = memo(
 PDFPageRenderer.displayName = "PDFPageRenderer";
 
 export default PDFPageRenderer;
-

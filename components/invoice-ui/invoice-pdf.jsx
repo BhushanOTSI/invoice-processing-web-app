@@ -27,6 +27,7 @@ import {
   normalizeCitations,
   groupCitationsByPage,
 } from "./citation-utils";
+import { useTheme } from "next-themes";
 
 const InvoicePdf = forwardRef(
   (
@@ -43,6 +44,8 @@ const InvoicePdf = forwardRef(
     const [numPages, setNumPages] = useState(0);
     const [isPdfLoaded, setIsPdfLoaded] = useState(false);
     const pluginsRef = useRef(null);
+    const { theme } = useTheme();
+    const isDarkMode = theme === "dark";
 
     useImperativeHandle(
       ref,
@@ -193,7 +196,7 @@ const InvoicePdf = forwardRef(
                 zoomPluginInstance,
               ]}
               onDocumentLoad={handleDocumentLoad}
-              theme="auto"
+              theme={isDarkMode ? "dark" : "light"}
               defaultScale={"PageWidth"}
               renderLoader={() => <Spinner />}
               pageLayout="single"
