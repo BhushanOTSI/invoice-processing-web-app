@@ -4,10 +4,6 @@ import { memo } from "react";
 import CitationHoverCard from "./citation-hover-card";
 import { isSameBbox, calculateBboxStyle } from "./citation-utils";
 
-/**
- * PDFPageRenderer - Renders a single PDF page with citation overlays
- * Memoized to prevent unnecessary re-renders when props haven't changed
- */
 const PDFPageRenderer = memo(
   ({
     pageIndex,
@@ -73,14 +69,12 @@ const PDFPageRenderer = memo(
         {isPdfLoaded && show && (
           <div id="invoice-citation-highlight" style={highlightStyle} />
         )}
+
         {textLayer.children}
       </div>
     );
   },
   (prevProps, nextProps) => {
-    // Custom comparison for memo - only compare data props, not render props
-    // canvasLayer and textLayer will be new objects on each render from PDF viewer,
-    // but we only want to re-render when citation data actually changes
     const citationDataEqual =
       prevProps.pageIndex === nextProps.pageIndex &&
       prevProps.isPdfLoaded === nextProps.isPdfLoaded &&
@@ -94,8 +88,6 @@ const PDFPageRenderer = memo(
       ) &&
       prevProps.onCitationClick === nextProps.onCitationClick;
 
-    // Always allow re-render if citation data changed, even if canvasLayer/textLayer are the same
-    // This ensures we update when needed but skip when only PDF viewer internals change
     return citationDataEqual;
   }
 );
