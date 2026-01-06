@@ -298,13 +298,11 @@ export function Markdown({ children, className, onCitationChange }) {
       const kvPairWrapper = citationEl.closest?.(".kv-pair-wrapper[data-path]");
       if (kvPairWrapper?.dataset?.path) {
         path = kvPairWrapper.dataset.path;
-        console.log("[Citation] Found kv-pair-wrapper path:", path);
       } else {
         // Fallback to section-wrapper or any element with data-path
         const pathWrapper = citationEl.closest?.("[data-path], [data-section-path]");
         if (pathWrapper) {
           path = pathWrapper.dataset.path || pathWrapper.dataset.sectionPath;
-          console.log("[Citation] Found fallback path:", path, "from:", pathWrapper.className);
         }
       }
       
@@ -327,12 +325,9 @@ export function Markdown({ children, className, onCitationChange }) {
           if (rowIndex >= 0) {
             // Use the row index directly (0-based)
             path = `${path}[${rowIndex}]`;
-            console.log("[Citation] Added row index, final path:", path);
           }
         }
       }
-      
-      console.log("[Citation] Final extracted path:", path);
 
       if (key === lastCitationKeyRef.current) {
         setActiveCitationEl(citationEl);

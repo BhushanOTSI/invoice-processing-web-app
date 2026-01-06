@@ -28,11 +28,6 @@ const CitationHoverCard = memo(
       }
 
       const { kvPairs = [], tables = [] } = citation._rawData;
-      console.log("[CitationHoverCard] Filtering with path:", filterPath, {
-        kvPairsCount: kvPairs.length,
-        tablesCount: tables.length,
-        kvPairsPaths: kvPairs.map((kv) => kv.path),
-      });
 
       const escapeMd = (s) =>
         String(s ?? "")
@@ -58,11 +53,6 @@ const CitationHoverCard = memo(
 
       // Filter kvPairs by exact path match
       const filteredKvPairs = kvPairs.filter((kv) => kv.path === filterPath);
-      console.log("[CitationHoverCard] Filtered kvPairs:", {
-        filterPath,
-        filteredCount: filteredKvPairs.length,
-        filtered: filteredKvPairs.map((kv) => ({ key: kv.key, path: kv.path })),
-      });
       const kvLines = filteredKvPairs
         .filter((x) => x?.key)
         .map((x) => `**${escapeMd(x.key)}**: ${escapeMd(x.value)}`);
@@ -92,14 +82,6 @@ const CitationHoverCard = memo(
       const filteredText = [kvBlock, ...tableBlocks]
         .filter(Boolean)
         .join("\n\n");
-
-      console.log("[CitationHoverCard] Filtering result:", {
-        filterPath,
-        kvBlockLength: kvBlock.length,
-        tableBlocksCount: tableBlocks.length,
-        filteredTextLength: filteredText.length,
-        willUseFiltered: filteredText.trim().length > 0,
-      });
 
       // If filtering resulted in empty content, fall back to original text
       // Use filtered text only if it has actual content
