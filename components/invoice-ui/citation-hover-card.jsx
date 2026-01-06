@@ -17,6 +17,8 @@ const CitationHoverCard = memo(
   ({ citation, isActive, onCitationClick }) => {
     const [side, setSide] = useState("top");
     const triggerRef = useRef(null);
+    const [isHoveringCard, setIsHoveringCard] = useState(false);
+    const hoverCardKey = `${citation.id}-${isActive ? "active" : "passive"}`;
 
     useEffect(() => {
       const updateSide = () => {
@@ -25,26 +27,41 @@ const CitationHoverCard = memo(
         const viewportHeight = window.innerHeight;
         const viewportWidth = window.innerWidth;
 
-        // Check available space above and below
+        // Check available space
         const spaceAbove = rect.top;
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceRight = viewportWidth - rect.right;
+        const spaceLeft = rect.left;
 
-        // Minimum space needed for hover card (approximately 400px)
-        const minSpace = 400;
+        // For value-hover on right panel: only top/bottom based on available space
+        if (isActive) {
+          const estimatedCardHeight = 320; // safer height for vertical fit
+          if (spaceAbove >= estimatedCardHeight) {
+            setSide("top");
+            return;
+          }
+          if (spaceBelow >= estimatedCardHeight) {
+            setSide("bottom");
+            return;
+          }
+          // If tight, pick the side with more vertical room
+          setSide(spaceAbove >= spaceBelow ? "top" : "bottom");
+          return;
+        }
 
-        // Determine best side
+        // Normal hover on PDF overlays: allow all sides with minimum space guard
+        const minSpace = 400; // approx card height
         if (spaceAbove >= minSpace) {
           setSide("top");
         } else if (spaceBelow >= minSpace) {
           setSide("bottom");
         } else if (spaceRight >= 300) {
           setSide("right");
-        } else if (rect.left >= 300) {
+        } else if (spaceLeft >= 300) {
           setSide("left");
         } else {
-          // Default to right if there's any space, otherwise top
-          setSide(spaceRight > spaceAbove ? "right" : "top");
+          // fallback to the side with more room vertically
+          setSide(spaceBelow > spaceAbove ? "bottom" : "top");
         }
       };
 
@@ -58,7 +75,7 @@ const CitationHoverCard = memo(
         window.removeEventListener("scroll", updateSide, true);
         window.removeEventListener("resize", updateSide);
       };
-    }, []);
+    }, [isActive]);
 
     const { left, top, width, height } = calculateBboxStyle(citation.bbox);
 
@@ -78,7 +95,10 @@ const CitationHoverCard = memo(
 
     return (
       <HoverCard
-        {...(isActive ? { open: true } : { openDelay: 120, closeDelay: 60 })}
+        key={hoverCardKey}
+        {...(isActive
+          ? { open: true, openDelay: 0, closeDelay: 0 }
+          : { openDelay: 120, closeDelay: 60 })}
       >
         <HoverCardTrigger asChild>
           <div
@@ -95,10 +115,20 @@ const CitationHoverCard = memo(
         <HoverCardContent
           side={side}
           align="start"
-          sideOffset={8}
-          collisionPadding={16}
-          avoidCollisions={true}
-          className="w-auto max-w-160 p-4 text-xs leading-5 **:text-xs rounded-lg bg-popover/95 text-popover-foreground dark:bg-popover/90 border border-border shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-[min(24rem,calc(100vh-4rem))] overflow-auto"
+          sideOffset={isActive ? 24 : 8}
+          collisionPadding={isActive ? 24 : 16}
+          avoidCollisions={isActive ? false : true}
+          className={`w-auto max-w-160 p-4 text-xs leading-5 **:text-xs rounded-lg bg-popover/95 text-popover-foreground dark:bg-popover/90 border border-border shadow-2xl ring-1 ring-black/10 dark:ring-white/10 backdrop-blur-md max-h-[min(24rem,calc(100vh-4rem))] overflow-auto ${
+            isActive && !isHoveringCard ? "pointer-events-none" : ""
+          }`}
+          onPointerEnter={() => {
+            // Allow pointer events when user intentionally hovers over the card
+            setIsHoveringCard(true);
+          }}
+          onPointerLeave={() => {
+            // Disable pointer events when leaving to avoid blocking interactions
+            setIsHoveringCard(false);
+          }}
         >
           <div className="space-y-3">
             {citation.title && (

@@ -165,7 +165,9 @@ const InvoicePdf = forwardRef(
     // Memoize the page renderer function
     const renderPage = useCallback(
       (props) => {
-        const pageCitations = isPdfLoaded
+        const isPdfReady =
+          isPdfLoaded || !props.canvasLayerRendered || !props.textLayerRendered;
+        const pageCitations = isPdfReady
           ? citationsByPage.get(props.pageIndex) || []
           : [];
 
@@ -176,7 +178,7 @@ const InvoicePdf = forwardRef(
             textLayer={props.textLayer}
             normalizedCitation={normalizedCitation}
             pageCitations={pageCitations}
-            isPdfLoaded={isPdfLoaded}
+            isPdfLoaded={isPdfReady}
             onCitationClick={onCitationClick}
           />
         );
@@ -187,22 +189,20 @@ const InvoicePdf = forwardRef(
     return (
       <div className={cn("h-full w-full invoice-pdf-container", className)}>
         <Worker workerUrl="/pdf.worker.min.js">
-          <div className="h-full">
-            <Viewer
-              fileUrl={fileUrl}
-              plugins={[
-                defaultLayoutPluginInstance,
-                pageNavigationPluginInstance,
-                zoomPluginInstance,
-              ]}
-              onDocumentLoad={handleDocumentLoad}
-              theme={isDarkMode ? "dark" : "light"}
-              defaultScale={"PageWidth"}
-              renderLoader={() => <Spinner />}
-              pageLayout="single"
-              renderPage={renderPage}
-            />
-          </div>
+          <Viewer
+            fileUrl={fileUrl}
+            plugins={[
+              defaultLayoutPluginInstance,
+              pageNavigationPluginInstance,
+              zoomPluginInstance,
+            ]}
+            onDocumentLoad={handleDocumentLoad}
+            theme={isDarkMode ? "dark" : "light"}
+            defaultScale={"PageWidth"}
+            renderLoader={() => <Spinner />}
+            pageLayout="single"
+            renderPage={renderPage}
+          />
         </Worker>
       </div>
     );

@@ -599,3 +599,7 @@
   --rpv-default-layout__sidebar-content--opened-border-color: var(--border);
   --rpv-default-layout__sidebar-content--opened-color: var(--foreground);
 }
+
+.rpv-core__page-loader {
+ @apply hidden!;
+}
