@@ -50,7 +50,11 @@ const MarkdownHeading = ({ level, children }) => {
 
 const KeyValuePair = ({ keyName, children, dataPath }) => {
   return (
-    <div className="flex items-center gap-3 mb-2" data-field-path={dataPath}>
+    <div
+      className="flex items-center gap-3 mb-2"
+      data-field-path={dataPath}
+      data-path={dataPath}
+    >
       <div className="font-semibold text-xs text-muted-foreground min-w-36 max-w-36 shrink-0">
         {keyName}:
       </div>
@@ -287,6 +291,49 @@ export function Markdown({ children, className, onCitationChange }) {
       const key = citationEl.dataset.citation || null;
       if (!citation || !key) return;
 
+      // Extract path from DOM to identify specific value/row being hovered
+      let path = null;
+      
+      // First, try to find the most specific path (kv-pair-wrapper has the exact field path)
+      const kvPairWrapper = citationEl.closest?.(".kv-pair-wrapper[data-path]");
+      if (kvPairWrapper?.dataset?.path) {
+        path = kvPairWrapper.dataset.path;
+        console.log("[Citation] Found kv-pair-wrapper path:", path);
+      } else {
+        // Fallback to section-wrapper or any element with data-path
+        const pathWrapper = citationEl.closest?.("[data-path], [data-section-path]");
+        if (pathWrapper) {
+          path = pathWrapper.dataset.path || pathWrapper.dataset.sectionPath;
+          console.log("[Citation] Found fallback path:", path, "from:", pathWrapper.className);
+        }
+      }
+      
+      // For table cells, find the row index
+      if (path) {
+        const table = citationEl.closest?.("table");
+        if (table) {
+          // Find all rows in the table (including header)
+          const allRows = Array.from(table.querySelectorAll("tr"));
+          const thead = table.querySelector("thead");
+          const tbody = table.querySelector("tbody");
+          
+          // Determine if there's a header row
+          const hasHeader = !!thead;
+          const dataRows = tbody ? Array.from(tbody.querySelectorAll("tr")) : allRows.slice(hasHeader ? 1 : 0);
+          
+          // Find which data row contains the citation element
+          const rowIndex = dataRows.findIndex((row) => row.contains(citationEl));
+          
+          if (rowIndex >= 0) {
+            // Use the row index directly (0-based)
+            path = `${path}[${rowIndex}]`;
+            console.log("[Citation] Added row index, final path:", path);
+          }
+        }
+      }
+      
+      console.log("[Citation] Final extracted path:", path);
+
       if (key === lastCitationKeyRef.current) {
         setActiveCitationEl(citationEl);
         return;
@@ -294,7 +341,10 @@ export function Markdown({ children, className, onCitationChange }) {
 
       lastCitationKeyRef.current = key;
       setActiveCitationEl(citationEl);
-      if (typeof onCitationChange === "function") onCitationChange(citation);
+      // Pass citation with path to filter content when showing hover card
+      if (typeof onCitationChange === "function") {
+        onCitationChange(path ? { ...citation, path } : citation);
+      }
     },
     [emitCitation, onCitationChange, setActiveCitationEl]
   );

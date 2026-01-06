@@ -484,6 +484,11 @@ export default function ProcessTracePage() {
         text: [kvBlock, ...tableBlocks].filter(Boolean).join("\n\n"),
         pageIndex: entry.pageIndex,
         bbox: entry.bbox,
+        // Store raw data for filtering when path is provided
+        _rawData: {
+          kvPairs: entry.kvPairs,
+          tables: entry.tables,
+        },
       };
     });
   }, [activeTab, step1PreviewData]);

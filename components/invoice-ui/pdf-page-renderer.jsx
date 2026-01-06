@@ -61,6 +61,7 @@ const PDFPageRenderer = memo(
               key={c.id}
               citation={c}
               isActive={isActive}
+              filterPath={normalizedCitation?.path || null}
               onCitationClick={onCitationClick}
             />
           );
@@ -82,6 +83,8 @@ const PDFPageRenderer = memo(
         nextProps.normalizedCitation?.pageIndex &&
       prevProps.normalizedCitation?.bbox?.join(",") ===
         nextProps.normalizedCitation?.bbox?.join(",") &&
+      prevProps.normalizedCitation?.path ===
+        nextProps.normalizedCitation?.path &&
       prevProps.pageCitations.length === nextProps.pageCitations.length &&
       prevProps.pageCitations.every(
         (c, i) => c.id === nextProps.pageCitations[i]?.id

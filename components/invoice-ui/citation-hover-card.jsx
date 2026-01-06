@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import {
   HoverCard,
   HoverCardContent,
@@ -14,11 +14,97 @@ import { calculateBboxStyle } from "./citation-utils";
  * Optimized with memo to prevent unnecessary re-renders
  */
 const CitationHoverCard = memo(
-  ({ citation, isActive, onCitationClick }) => {
+  ({ citation, isActive, filterPath, onCitationClick }) => {
     const [side, setSide] = useState("top");
     const triggerRef = useRef(null);
     const [isHoveringCard, setIsHoveringCard] = useState(false);
     const hoverCardKey = `${citation.id}-${isActive ? "active" : "passive"}`;
+
+    // Filter citation text when path is provided (right panel hover)
+    const displayText = useMemo(() => {
+      // Only filter when actively hovered from right panel (isActive) and path is provided
+      if (!isActive || !filterPath || !citation._rawData) {
+        return citation.text;
+      }
+
+      const { kvPairs = [], tables = [] } = citation._rawData;
+      console.log("[CitationHoverCard] Filtering with path:", filterPath, {
+        kvPairsCount: kvPairs.length,
+        tablesCount: tables.length,
+        kvPairsPaths: kvPairs.map((kv) => kv.path),
+      });
+
+      const escapeMd = (s) =>
+        String(s ?? "")
+          .replace(/\|/g, "\\|")
+          .replace(/\r?\n/g, "<br/>");
+
+      const toMarkdownTable = (columns, rows) => {
+        if (!columns || columns.length === 0) return "";
+        const header = `| ${columns.map(escapeMd).join(" | ")} |`;
+        const divider = `| ${columns.map(() => "---").join(" | ")} |`;
+        const body = rows
+          .map(
+            (r) =>
+              `| ${columns.map((c) => escapeMd(r?.[c] ?? "N/A")).join(" | ")} |`
+          )
+          .join("\n");
+        return `${header}\n${divider}\n${body}`;
+      };
+
+      // Extract row index from path (e.g., "lineItems[0]" -> 0, "lineItems[1]" -> 1)
+      const pathMatch = filterPath.match(/\[(\d+)\]/);
+      const rowIndex = pathMatch ? parseInt(pathMatch[1], 10) : null;
+
+      // Filter kvPairs by exact path match
+      const filteredKvPairs = kvPairs.filter((kv) => kv.path === filterPath);
+      console.log("[CitationHoverCard] Filtered kvPairs:", {
+        filterPath,
+        filteredCount: filteredKvPairs.length,
+        filtered: filteredKvPairs.map((kv) => ({ key: kv.key, path: kv.path })),
+      });
+      const kvLines = filteredKvPairs
+        .filter((x) => x?.key)
+        .map((x) => `**${escapeMd(x.key)}**: ${escapeMd(x.value)}`);
+
+      // Filter tables: find tables that contain the row matching the path
+      // Each table entry has title like "Line Items #1" (for row 0), "Line Items #2" (for row 1), etc.
+      const filteredTables = tables.filter((t) => {
+        if (rowIndex === null) return false;
+
+        // Extract row number from title (e.g., "Line Items #1" -> 1, then subtract 1 to get index 0)
+        const titleMatch = t.title?.match(/#(\d+)/);
+        if (!titleMatch) return false;
+
+        const titleRowNumber = parseInt(titleMatch[1], 10);
+        const titleRowIndex = titleRowNumber - 1; // Convert to 0-based index
+
+        // Match if the row index from path matches the row index from title
+        return titleRowIndex === rowIndex;
+      });
+
+      const tableBlocks = filteredTables.map((t) => {
+        const title = t.title ? `\n\n**${escapeMd(t.title)}**\n\n` : "\n\n";
+        return `${title}${toMarkdownTable(t.columns, t.rows)}`;
+      });
+
+      const kvBlock = kvLines.length > 0 ? kvLines.join("<br/>") : "";
+      const filteredText = [kvBlock, ...tableBlocks]
+        .filter(Boolean)
+        .join("\n\n");
+
+      console.log("[CitationHoverCard] Filtering result:", {
+        filterPath,
+        kvBlockLength: kvBlock.length,
+        tableBlocksCount: tableBlocks.length,
+        filteredTextLength: filteredText.length,
+        willUseFiltered: filteredText.trim().length > 0,
+      });
+
+      // If filtering resulted in empty content, fall back to original text
+      // Use filtered text only if it has actual content
+      return filteredText.trim().length > 0 ? filteredText : citation.text;
+    }, [citation.text, citation._rawData, isActive, filterPath]);
 
     useEffect(() => {
       const updateSide = () => {
@@ -142,10 +228,10 @@ const CitationHoverCard = memo(
               </div>
             )}
 
-            {citation.text && (
+            {displayText && (
               <div className="text-muted-foreground">
                 <MarkdownWrapper className={"space-y-4"}>
-                  {citation.text}
+                  {displayText}
                 </MarkdownWrapper>
               </div>
             )}
@@ -159,6 +245,7 @@ const CitationHoverCard = memo(
     return (
       prevProps.citation.id === nextProps.citation.id &&
       prevProps.isActive === nextProps.isActive &&
+      prevProps.filterPath === nextProps.filterPath &&
       prevProps.onCitationClick === nextProps.onCitationClick
     );
   }

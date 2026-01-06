@@ -16,7 +16,7 @@ export function normalizeCitation(citation) {
     ? citation.bbox.map((n) => Number(n))
     : null;
   if (pageIndex === null || !bbox || bbox.length !== 4) return null;
-  return { pageIndex, bbox };
+  return { pageIndex, bbox, path: citation.path || null };
 }
 
 /**
@@ -42,6 +42,7 @@ export function normalizeCitations(citations) {
         title: c?.title ?? "",
         text: c?.text ?? "",
         path: c?.path ?? "",
+        _rawData: c?._rawData ?? null,
       };
     })
     .filter(Boolean);
