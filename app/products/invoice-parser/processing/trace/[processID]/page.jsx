@@ -94,20 +94,34 @@ export default function ProcessTracePage() {
     };
   }, []);
 
-  useSetBreadcrumbs([
-    { title: "Home", url: APP_ROUTES.DASHBOARD },
-    { title: "Monitor Traces", url: APP_ROUTES.PROCESSING.TRACE },
-    {
-      title: "Process Trace",
-      url: APP_ROUTES.PROCESSING.TRACE_PROCESS.replace(
-        "[processID]",
-        processID
-      ),
-    },
-  ]);
-
   const { data: processTraceStatus, isLoading } =
     useProcessTraceStatus(processID);
+
+  const breadcrumbs = useMemo(() => {
+    return [
+      { title: "Home", url: APP_ROUTES.DASHBOARD },
+      {
+        title: "Monitor Batch",
+        url: APP_ROUTES.PROCESSING.BATCH.replace(
+          "[batchID]",
+          processTraceStatus?.sessionMetadata?.batch_id
+        ),
+      },
+      { title: "Monitor Traces", url: APP_ROUTES.PROCESSING.TRACE },
+      {
+        title: "Process Trace",
+        url: APP_ROUTES.PROCESSING.TRACE_PROCESS.replace(
+          "[processID]",
+          processID
+        ),
+      },
+      {
+        title: processID,
+      },
+    ];
+  }, [processID, processTraceStatus?.sessionMetadata?.batch_id]);
+
+  useSetBreadcrumbs(breadcrumbs);
 
   const [activeTab, setCurrentActiveTab] = useState(params.tab || "step-1");
 

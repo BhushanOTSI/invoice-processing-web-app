@@ -30,9 +30,11 @@ export function AppBreadcrumbs() {
                   !isLast && "hidden"
                 )}
               >
-                <BreadcrumbLink href={item.url || "#"}>
-                  {item.title}
-                </BreadcrumbLink>
+                {item.url ? (
+                  <BreadcrumbLink href={item.url}>{item.title}</BreadcrumbLink>
+                ) : (
+                  item.title
+                )}
               </BreadcrumbItem>
               {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
             </Fragment>
