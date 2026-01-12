@@ -217,8 +217,8 @@ const FlowInner = () => {
     adjustViewport();
   };
 
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <div className="w-full h-full relative" ref={containerRef}>

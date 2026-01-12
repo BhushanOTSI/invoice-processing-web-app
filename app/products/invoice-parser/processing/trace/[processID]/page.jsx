@@ -138,29 +138,22 @@ export default function ProcessTracePage() {
     PROCESS_STATUS.FAILED,
   ].includes(processTraceStatus?.status);
 
-  const s3PdfUrl = useMemo(() => {
-    return (
-      processTraceStatus?.sessionMetadata?.s3_pdf_unmasked_url ||
-      processTraceStatus?.sessionMetadata?.s3_pdf_url ||
-      groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl
-    );
-  }, [
-    processTraceStatus?.sessionMetadata?.s3_pdf_unmasked_url,
-    processTraceStatus?.sessionMetadata?.s3_pdf_url,
-    groupedTraceMessages["step-1"]?.extraMetadata?.s3PdfUrl,
-  ]);
+  const { s3PdfUrl, s3JsonUrl } = useMemo(() => {
+    const stepExtraMetadata =
+      groupedTraceMessages?.["step-1"]?.extraMetadata || {};
+    const sessionMetadata = processTraceStatus?.sessionMetadata || {};
 
-  const s3JsonUrl = useMemo(() => {
-    return (
-      processTraceStatus?.sessionMetadata?.s3_raw_json_url ||
-      processTraceStatus?.sessionMetadata?.s3_json_url ||
-      groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl
-    );
-  }, [
-    processTraceStatus?.sessionMetadata?.s3_raw_json_url,
-    processTraceStatus?.sessionMetadata?.s3_json_url,
-    groupedTraceMessages["step-1"]?.extraMetadata?.s3JsonUrl,
-  ]);
+    return {
+      s3PdfUrl:
+        sessionMetadata?.s3_pdf_unmasked_url ||
+        sessionMetadata?.s3_pdf_url ||
+        stepExtraMetadata?.s3PdfUrl,
+      s3JsonUrl:
+        sessionMetadata?.s3_raw_json_url ||
+        sessionMetadata?.s3_json_url ||
+        stepExtraMetadata?.s3JsonUrl,
+    };
+  }, [processTraceStatus, groupedTraceMessages]);
 
   const { data: jsonData } = useFetchS3Json(s3JsonUrl, !!s3JsonUrl);
 
@@ -687,22 +680,22 @@ export default function ProcessTracePage() {
                         isCancelled: stepStatus.isStep1Cancelled,
                         isPreviousStepCompleted: true,
                       },
-                      {
-                        value: "step-2",
-                        label: "Validate CW Invoice",
-                        stepNumber: 2,
-                        isProcessing: stepStatus.isStep2Processing,
-                        isLoading: isLoading,
-                        isCompleted: stepStatus.isStep2Completed,
-                        isFailed:
-                          stepStatus.isStep2Failed || stepStatus.isStep1Failed,
-                        isCancelled: stepStatus.isStep2Cancelled,
-                        isPreviousStepCompleted: stepStatus.isStep1Completed,
-                      },
+                      // {
+                      //   value: "step-2",
+                      //   label: "Validate CW Invoice",
+                      //   stepNumber: 2,
+                      //   isProcessing: stepStatus.isStep2Processing,
+                      //   isLoading: isLoading,
+                      //   isCompleted: stepStatus.isStep2Completed,
+                      //   isFailed:
+                      //     stepStatus.isStep2Failed || stepStatus.isStep1Failed,
+                      //   isCancelled: stepStatus.isStep2Cancelled,
+                      //   isPreviousStepCompleted: stepStatus.isStep1Completed,
+                      // },
                       {
                         value: "step-3",
-                        label: "Process Steps",
-                        stepNumber: 3,
+                        label: "CW Integration",
+                        stepNumber: 2,
                         isProcessing: stepStatus.isStep3Processing,
                         isLoading: isLoading,
                         isCompleted: stepStatus.isStep3Completed,
@@ -748,13 +741,13 @@ export default function ProcessTracePage() {
                           onCitationChange={setActiveCitation}
                         />
                       </TabsContent>
-                      <TabsContent value="step-2" className="h-full">
+                      {/* <TabsContent value="step-2" className="h-full">
                         <ProcessMessage
                           message={groupedTraceMessages["step-2"]}
                           isLoading={isLoading}
                           isMainProcessFailed={isMainProcessFailed}
                         />
-                      </TabsContent>
+                      </TabsContent> */}
                       <TabsContent value="step-3" className="space-y-4 h-full">
                         <ActiveProcessMessage isLoading={isLoading} />
                       </TabsContent>

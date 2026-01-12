@@ -55,7 +55,7 @@ export function InvoiceFilter() {
 
       <Popover open={open} onOpenChange={(ps) => !ps && setOpen(false)}>
         <PopoverTrigger asChild onClick={() => setOpen(true)}>
-          <Button type="button" size="sm">
+          <Button type="button" size="sm" variant="outline">
             <FilterIcon className="size-4" />
             Filter {filterCount > 0 && `(${filterCount})`}
           </Button>

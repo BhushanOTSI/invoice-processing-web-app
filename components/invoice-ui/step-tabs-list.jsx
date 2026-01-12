@@ -129,16 +129,6 @@ function StepTabTrigger({
         {children}
       </span>
 
-      {/* Processing pulse indicator */}
-      {isProcessing && (
-        <div className="absolute top-1.5 right-1.5 z-10">
-          <span className="relative flex size-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-60" />
-            <span className="relative inline-flex rounded-full size-2 bg-blue-600" />
-          </span>
-        </div>
-      )}
-
       {/* Animated sliding underline - attached to border */}
       <div
         className={cn(

@@ -10,13 +10,14 @@ import {
   PageSubtitle,
 } from "@/components/invoice-ui/typography";
 import { PageDescriptiveSection } from "@/components/invoice-ui/typography";
-import { Card } from "@/components/ui/card";
 import { useSetBreadcrumbs } from "@/hooks/use-set-breadcrumbs";
 import { useDashboardStats } from "@/services/hooks/useDashboard";
 import { useTraces } from "@/services/hooks/useBatchProcessInvoice";
 import { Calculator, Clock10, FileText } from "lucide-react";
 import { useMemo } from "react";
 import { formatFractionalHoursAuto } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function Page() {
   useSetBreadcrumbs([{ title: "Dashboard", url: APP_ROUTES.DASHBOARD }]);
@@ -70,10 +71,15 @@ export default function Page() {
         />
       </div>
       <div className="space-y-6">
-        <PageDescriptiveSection>
-          <PageSubtitle subtitle="Recent Traces" />
-          <PageSubdescription subdescription="View all recent traces" />
-        </PageDescriptiveSection>
+        <div className="flex justify-between items-center">
+          <PageDescriptiveSection>
+            <PageSubtitle subtitle="Recent Traces" />
+            <PageSubdescription subdescription="View all recent traces" />
+          </PageDescriptiveSection>
+          <Button variant="outline">
+            <Link href={APP_ROUTES.PROCESSING.TRACE}>View All</Link>
+          </Button>
+        </div>
 
         <InvoiceProcessingTable
           data={recentTraces?.details || []}
