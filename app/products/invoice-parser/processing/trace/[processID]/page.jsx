@@ -138,7 +138,7 @@ export default function ProcessTracePage() {
     PROCESS_STATUS.FAILED,
   ].includes(processTraceStatus?.status);
 
-  const { s3PdfUrl, s3JsonUrl } = useMemo(() => {
+  const { s3PdfUrl, s3JsonUrl, cwWorkFlowUrl } = useMemo(() => {
     const stepExtraMetadata =
       groupedTraceMessages?.["step-1"]?.extraMetadata || {};
     const sessionMetadata = processTraceStatus?.sessionMetadata || {};
@@ -152,6 +152,7 @@ export default function ProcessTracePage() {
         sessionMetadata?.s3_raw_json_url ||
         sessionMetadata?.s3_json_url ||
         stepExtraMetadata?.s3JsonUrl,
+      cwWorkFlowUrl: sessionMetadata?.cw_url,
     };
   }, [processTraceStatus, groupedTraceMessages]);
 
@@ -163,18 +164,6 @@ export default function ProcessTracePage() {
       jsonData?.DocumentNumber
     );
   }, [jsonData]);
-
-  const cwWorkFlowUrl = useMemo(() => {
-    if (processTraceStatus?.sessionMetadata?.cw_url) {
-      return processTraceStatus?.sessionMetadata?.cw_url;
-    }
-
-    if (documentNumber) {
-      return `https://cw.otsiaistudio.com/invoice/${documentNumber}`;
-    }
-
-    return null;
-  }, [documentNumber, processTraceStatus?.sessionMetadata?.cw_url]);
 
   const containerHeight =
     "h-[calc(100vh-6rem)] group-has-data-[collapsible=icon]/sidebar-wrapper:h-[calc(100vh-5.5rem)] transition-all duration-200 ease-linear";
