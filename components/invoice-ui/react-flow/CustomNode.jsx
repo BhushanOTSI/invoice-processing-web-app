@@ -14,15 +14,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useLayoutEffect, useRef } from "react";
+import { CircleIcon, PlayIcon } from "lucide-react";
 
 const getNodeClassName = (status, isActive) => {
   const statusLower = (status || "").toLowerCase();
 
   // Active/Selected nodes
+
   if (isActive) {
     if (isProcessing(status)) {
       return "node-processing-border";
     }
+
     return "node-active-gradient";
   }
 
@@ -67,7 +70,14 @@ const getNodeClassName = (status, isActive) => {
   return "";
 };
 
-export const CustomNode = ({ id, data, onClick, isActive, ...props }) => {
+export const CustomNode = ({
+  id,
+  data,
+  onClick,
+  isActive,
+  isPlaybackActive,
+  ...props
+}) => {
   const isSkipped = isSkippedProcessing(data.status);
 
   const Content = (
@@ -79,7 +89,18 @@ export const CustomNode = ({ id, data, onClick, isActive, ...props }) => {
     />
   );
 
-  return !isSkipped ? (
+  if (isPlaybackActive && isActive) {
+    return (
+      <>
+        {Content}
+        <div className="absolute top-2.5 right-2.5 flex items-center justify-center animate-pulse text-green-600 dark:text-green-400 border border-green-600 rounded-full p-0.5">
+          <CircleIcon className="size-3 fill-current animate-pulse" />
+        </div>
+      </>
+    );
+  }
+
+  return !isSkipped && !isPlaybackActive ? (
     <Tooltip>
       <TooltipTrigger asChild>{Content}</TooltipTrigger>
       <TooltipContent>Click to view logs</TooltipContent>

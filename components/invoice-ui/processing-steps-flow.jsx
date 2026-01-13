@@ -56,7 +56,8 @@ export const useProcessingStepsFlow = () => useContext(FlowContext);
 
 const nodeTypes = {
   step: ({ data, id, width, height }) => {
-    const { activeNodeId, setActiveNodeId } = useProcessingStepsFlow();
+    const { activeNodeId, setActiveNodeId, isPlaybackActive } =
+      useProcessingStepsFlow();
     const isActive = activeNodeId === id;
 
     return (
@@ -65,9 +66,10 @@ const nodeTypes = {
 
         <CustomNode
           data={data}
-          onClick={() => setActiveNodeId(id)}
+          onClick={() => !isPlaybackActive && setActiveNodeId(id)}
           isActive={isActive}
           style={{ width, height }}
+          isPlaybackActive={isPlaybackActive}
         />
 
         <CustomNodeHandles
@@ -273,14 +275,14 @@ const FlowInner = () => {
         panOnScroll={!isPlaybackActive}
       >
         <Background variant="dots" />
-        <CustomControlPanel />
+        <CustomControlPanel adjustViewport={adjustViewport} />
       </ReactFlow>
     </div>
   );
 };
 
 // Custom Control Panel with integrated play button
-const CustomControlPanel = () => {
+const CustomControlPanel = ({ adjustViewport }) => {
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const { isPlaybackActive, executionEdges } = useProcessingStepsFlow();
 
@@ -348,7 +350,12 @@ const CustomControlPanel = () => {
         </Tooltip>
 
         {/* Play Button - Only if has steps */}
-        {hasSteps && <PlayButton controlBtnClass={controlBtnClass} />}
+        {hasSteps && (
+          <PlayButton
+            controlBtnClass={controlBtnClass}
+            adjustViewport={adjustViewport}
+          />
+        )}
       </div>
 
       {/* Player Expansion Panel */}
@@ -358,7 +365,7 @@ const CustomControlPanel = () => {
 };
 
 // Play button component
-const PlayButton = ({ controlBtnClass }) => {
+const PlayButton = ({ controlBtnClass, adjustViewport = () => {} }) => {
   const { playbackStatus, handlePlay, handlePause, handleResume } =
     usePlaybackControls();
 
@@ -370,7 +377,20 @@ const PlayButton = ({ controlBtnClass }) => {
       <TooltipTrigger asChild>
         <button
           onClick={
-            isPlaying ? handlePause : isPaused ? handleResume : handlePlay
+            isPlaying
+              ? (e) => {
+                  handlePause(e);
+                  adjustViewport();
+                }
+              : isPaused
+              ? (e) => {
+                  handleResume(e);
+                  adjustViewport();
+                }
+              : (e) => {
+                  handlePlay(e);
+                  adjustViewport();
+                }
           }
           className={controlBtnClass}
         >
