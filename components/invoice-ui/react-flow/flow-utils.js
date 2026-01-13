@@ -239,6 +239,7 @@ export const layoutGraph = async (nodes, edges) => {
   return {
     nodes: finalNodes.sort((a, b) => a.position.y - b.position.y),
     edges: finalEdges,
+    executionEdges,
   };
 };
 
