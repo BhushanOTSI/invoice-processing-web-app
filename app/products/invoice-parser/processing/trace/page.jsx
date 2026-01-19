@@ -21,11 +21,10 @@ import { useSetSearchParams } from "@/hooks/use-set-search-params";
 import { PageLoadingSkeleton } from "@/components/ui/loading";
 
 function TracePageContent() {
-  const { params = {} } = useSetSearchParams();
-  const [page, setPage] = useState(1);
+  const { params = {} , updateParams} = useSetSearchParams();
 
   const { data: traces, isLoading } = useTraces({
-    page: page,
+    page: params.page || 1,
     createdFrom: params.from || "",
     createdTo: params.to || "",
     status: alwaysArray(params.status || ""),
@@ -63,7 +62,7 @@ function TracePageContent() {
           pageSize={traces?.size}
           enablePagination
           onPageChange={(newPage) => {
-            setPage(newPage + 1);
+            updateParams({ page: newPage + 1 });
           }}
           showBatchId
         />

@@ -773,7 +773,7 @@ export default function ProcessTracePage() {
                         stepNumber: 2,
                         isProcessing: stepStatus.isStep3Processing,
                         isLoading: isLoading,
-                        isCompleted: stepStatus.isStep3Completed,
+                        isCompleted: stepStatus.isStep3Completed || isMainProcessCompleted,
                         isFailed:
                           stepStatus.isStep3Failed ||
                           stepStatus.isStep2Failed ||
