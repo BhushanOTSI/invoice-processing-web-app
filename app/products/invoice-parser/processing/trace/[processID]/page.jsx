@@ -288,18 +288,87 @@ export default function ProcessTracePage() {
       return "";
     };
 
-    const ensureEntry = (grounding) => {
-      const bbox = grounding?.text_bbox;
-      const pageNo = grounding?.page_no;
-      if (!Array.isArray(bbox) || bbox.length !== 4 || !pageNo) return null;
+    /**
+     * Normalize citation source data to handle both old and new formats:
+     * Old format: { grounding: { text_bbox, page_no, image_width, image_height } }
+     * New format: { sources: { bbox, image_width, image_height } } or sources as array
+     */
+    const normalizeSourceData = (sourceObj) => {
+      if (!sourceObj) return null;
 
-      const pageIndex = Math.max(0, Number(pageNo) - 1);
+      // Old format: grounding object with text_bbox and page_no
+      if (sourceObj.grounding && typeof sourceObj.grounding === "object") {
+        const g = sourceObj.grounding;
+        if (g.text_bbox && Array.isArray(g.text_bbox) && g.text_bbox.length === 4) {
+          return {
+            bbox: g.text_bbox,
+            pageNo: g.page_no || 1,
+            imageWidth: g.image_width,
+            imageHeight: g.image_height,
+          };
+        }
+      }
+
+      // New format: sources object (or array of sources)
+      if (sourceObj.sources) {
+        const src = Array.isArray(sourceObj.sources)
+          ? sourceObj.sources[0] // Take first source from array
+          : sourceObj.sources;
+
+        if (src && src.bbox && Array.isArray(src.bbox) && src.bbox.length === 4) {
+          return {
+            bbox: src.bbox,
+            // New format has no page_no, default to 1
+            pageNo: src.page_no || 1,
+            imageWidth: src.image_width,
+            imageHeight: src.image_height,
+          };
+        }
+      }
+
+      // Direct grounding check (for nested objects like lineItems)
+      if (sourceObj.text_bbox && Array.isArray(sourceObj.text_bbox)) {
+        return {
+          bbox: sourceObj.text_bbox,
+          pageNo: sourceObj.page_no || 1,
+          imageWidth: sourceObj.image_width,
+          imageHeight: sourceObj.image_height,
+        };
+      }
+
+      // Direct bbox check (new format without wrapper)
+      if (sourceObj.bbox && Array.isArray(sourceObj.bbox) && sourceObj.bbox.length === 4) {
+        return {
+          bbox: sourceObj.bbox,
+          pageNo: sourceObj.page_no || 1,
+          imageWidth: sourceObj.image_width,
+          imageHeight: sourceObj.image_height,
+        };
+      }
+
+      return null;
+    };
+
+    /**
+     * Get normalized source data from an object - handles both formats
+     */
+    const getSourceData = (obj) => {
+      if (!obj) return null;
+      return normalizeSourceData(obj);
+    };
+
+    const ensureEntry = (sourceData) => {
+      if (!sourceData || !Array.isArray(sourceData.bbox) || sourceData.bbox.length !== 4) {
+        return null;
+      }
+
+      const pageIndex = Math.max(0, Number(sourceData.pageNo || 1) - 1);
       const normBbox =
         autoDetectAndNormalize(
-          bbox,
-          grounding?.image_width,
-          grounding?.image_height
-        ) || bbox.map((n) => Number(n));
+          sourceData.bbox,
+          sourceData.imageWidth,
+          sourceData.imageHeight
+        ) || sourceData.bbox.map((n) => Number(n));
 
       const key = `${pageIndex}:${normBbox.join(",")}`;
       let entry = byBox.get(key);
@@ -329,24 +398,24 @@ export default function ProcessTracePage() {
         );
 
         if (isObjArray) {
-          // If each row has grounding, create a citation per row (so overlays don't collapse)
-          const rowsWithGrounding = node
+          // If each row has grounding/sources, create a citation per row (so overlays don't collapse)
+          const rowsWithSource = node
             .map((row, idx) => ({
               row,
               idx,
-              grounding: row?.grounding,
+              sourceData: getSourceData(row),
             }))
-            .filter((x) => x.grounding?.text_bbox && x.grounding?.page_no);
+            .filter((x) => x.sourceData !== null);
 
-          if (rowsWithGrounding.length > 0) {
-            rowsWithGrounding.forEach(({ row, idx, grounding }) => {
-              const entry = ensureEntry(grounding);
+          if (rowsWithSource.length > 0) {
+            rowsWithSource.forEach(({ row, idx, sourceData }) => {
+              const entry = ensureEntry(sourceData);
               if (!entry) return;
               if (!entry.path) entry.path = `${path}[${idx}]`;
 
               const flat = {};
               for (const [k, v] of Object.entries(row || {})) {
-                if (k === "source" || k === "grounding") continue;
+                if (k === "source" || k === "grounding" || k === "sources" || k === "sourceKeyList") continue;
                 if (v && typeof v === "object" && hasValueStructure(v)) {
                   flat[toTitleCase(k)] = getDisplayValue(v, k) || "N/A";
                 } else if (
@@ -371,16 +440,18 @@ export default function ProcessTracePage() {
             return;
           }
 
-          // Otherwise, use the first available grounding (covers whole table in some payloads)
-          const anyGrounding = node.find((r) => r?.grounding)?.grounding;
-          const entry = ensureEntry(anyGrounding);
+          // Otherwise, use the first available grounding/sources (covers whole table in some payloads)
+          const anySourceData = node
+            .map((r) => getSourceData(r))
+            .find((s) => s !== null);
+          const entry = ensureEntry(anySourceData);
           if (entry) {
             if (!entry.path) entry.path = path || labelKey || "";
 
             const rows = node.map((row) => {
               const flat = {};
               for (const [k, v] of Object.entries(row || {})) {
-                if (k === "source" || k === "grounding") continue;
+                if (k === "source" || k === "grounding" || k === "sources" || k === "sourceKeyList") continue;
                 if (v && typeof v === "object" && hasValueStructure(v)) {
                   flat[toTitleCase(k)] = getDisplayValue(v, k) || "N/A";
                 } else if (
@@ -414,13 +485,14 @@ export default function ProcessTracePage() {
       if (typeof node !== "object") return;
 
       for (const [k, v] of Object.entries(node)) {
-        if (k === "source" || k === "grounding") continue;
+        if (k === "source" || k === "grounding" || k === "sources" || k === "sourceKeyList") continue;
         const nextPath = path ? `${path}.${k}` : k;
 
         if (v && typeof v === "object" && !Array.isArray(v)) {
-          if (hasValueStructure(v) && v?.grounding) {
-            const grounding = v.grounding;
-            const entry = ensureEntry(grounding);
+          // Check for both old format (grounding) and new format (sources)
+          const sourceData = getSourceData(v);
+          if (hasValueStructure(v) && sourceData) {
+            const entry = ensureEntry(sourceData);
             if (entry) {
               if (!entry.path) entry.path = nextPath;
               entry.kvPairs.push({
