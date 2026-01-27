@@ -19,6 +19,9 @@ import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
 import "@/app/pdf-viewer-dark.css";
+
+import Tesseract from "tesseract.js";
+
 import { cn } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import PDFPageRenderer from "./pdf-page-renderer";
@@ -43,15 +46,19 @@ const InvoicePdf = forwardRef(
   ) => {
     const [numPages, setNumPages] = useState(0);
     const [isPdfLoaded, setIsPdfLoaded] = useState(false);
-    const pluginsRef = useRef(null);
     const { theme } = useTheme();
     const isDarkMode = theme === "dark";
+
+    // ✅ Selection & Capture State
+    const [snipBox, setSnipBox] = useState(null);
+    const [isSnipping, setIsSnipping] = useState(false);
+    const [captured, setCaptured] = useState(null);
+    const containerRef = useRef(null);
 
     useImperativeHandle(
       ref,
       () => ({
         getNumPages: () => numPages,
-        setNumPages: (n) => setNumPages(n),
       }),
       [numPages]
     );
@@ -61,7 +68,6 @@ const InvoicePdf = forwardRef(
       setIsPdfLoaded(true);
     }, []);
 
-    // Reset load state when switching PDFs
     useEffect(() => {
       setIsPdfLoaded(false);
       setNumPages(0);
@@ -73,52 +79,32 @@ const InvoicePdf = forwardRef(
       [citation]
     );
 
-    // Normalize citations array
     const normalizedCitations = useMemo(
       () => normalizeCitations(citations),
       [citations]
     );
 
-    // Group citations by page
     const citationsByPage = useMemo(
       () => groupCitationsByPage(normalizedCitations),
       [normalizedCitations]
     );
 
-    const lastCitationKeyRef = useRef(null);
-    const lastCitationPageRef = useRef(null);
-
-    // Create plugins after all other hooks to maintain consistent hook order
-    // Plugins may use hooks internally, so they must be created unconditionally on every render
-    // We still store them in ref, but create fresh instances to maintain hook order
     const defaultLayoutPluginInstance = defaultLayoutPlugin({
       sidebarTabs: () => [],
     });
     const pageNavigationPluginInstance = pageNavigationPlugin();
     const zoomPluginInstance = zoomPlugin();
 
-    // Store in ref for reference, but plugins are created fresh each render
-    // This is necessary if plugins use hooks internally
-    pluginsRef.current = {
-      defaultLayoutPluginInstance,
-      pageNavigationPluginInstance,
-      zoomPluginInstance,
-    };
-
-    // Click outside: clear the active citation (closes the always-open HoverCard)
+    // Clear citation click outside
     useEffect(() => {
-      if (!isPdfLoaded) return;
-      if (!normalizedCitation) return;
+      if (!isPdfLoaded || !normalizedCitation) return;
 
       const onDocPointerDown = (e) => {
         const target = e.target;
-        // Don't clear when clicking the citation overlays or the hovercard content
         if (
           target?.closest?.('[data-citation-overlay="true"]') ||
           target?.closest?.('[data-slot="hover-card-content"]')
-        ) {
-          return;
-        }
+        ) return;
 
         onClearCitation?.();
       };
@@ -129,47 +115,145 @@ const InvoicePdf = forwardRef(
       };
     }, [isPdfLoaded, normalizedCitation, onClearCitation]);
 
-    // Handle citation navigation and scrolling
+    // Citation scroll
     useEffect(() => {
-      if (!normalizedCitation) return;
-      if (!isPdfLoaded) return;
+      if (!normalizedCitation || !isPdfLoaded) return;
 
-      const key = `${
-        normalizedCitation.pageIndex
-      }:${normalizedCitation.bbox.join(",")}`;
-      if (key === lastCitationKeyRef.current) return;
-      lastCitationKeyRef.current = key;
+      try {
+        pageNavigationPluginInstance.jumpToPage?.(
+          normalizedCitation.pageIndex
+        );
+      } catch {}
 
-      // Robust page jump (works even when pages are virtualized)
-      if (lastCitationPageRef.current !== normalizedCitation.pageIndex) {
-        lastCitationPageRef.current = normalizedCitation.pageIndex;
-        try {
-          pageNavigationPluginInstance.jumpToPage?.(
-            normalizedCitation.pageIndex
-          );
-        } catch {
-          // no-op
-        }
-      }
-
-      // Scroll the highlight into view once it exists
-      const t = window.setTimeout(() => {
-        const hl = document.getElementById("invoice-citation-highlight");
-        if (hl) {
-          hl.scrollIntoView({ block: "center", behavior: "smooth" });
-        }
+      setTimeout(() => {
+        document
+          .getElementById("invoice-citation-highlight")
+          ?.scrollIntoView({ block: "center", behavior: "smooth" });
       }, 120);
-      return () => window.clearTimeout(t);
     }, [isPdfLoaded, normalizedCitation, pageNavigationPluginInstance]);
 
-    // Memoize the page renderer function
+    // 🖱️ START SELECTION
+    const startSnip = (e) => {
+      const rect = containerRef.current.getBoundingClientRect();
+      setIsSnipping(true);
+
+      setSnipBox({
+        startX: e.clientX - rect.left,
+        startY: e.clientY - rect.top,
+        endX: e.clientX - rect.left,
+        endY: e.clientY - rect.top,
+      });
+    };
+
+    // 🖱️ MOVE SELECTION
+    const moveSnip = (e) => {
+      if (!isSnipping || !snipBox) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+
+      setSnipBox((prev) => ({
+        ...prev,
+        endX: e.clientX - rect.left,
+        endY: e.clientY - rect.top,
+      }));
+    };
+
+    // 🖱️ END → SAFE SCREENSHOT + OCR
+    const endSnip = async () => {
+      try {
+        if (!snipBox) return;
+        setIsSnipping(false);
+
+        const container = containerRef.current;
+        if (!container) return;
+
+        const x = Math.min(snipBox.startX, snipBox.endX);
+        const y = Math.min(snipBox.startY, snipBox.endY);
+        const w = Math.abs(snipBox.endX - snipBox.startX);
+        const h = Math.abs(snipBox.endY - snipBox.startY);
+
+        if (w < 10 || h < 10) {
+          setSnipBox(null);
+          return;
+        }
+
+        // Find real PDF canvas safely
+        const pdfCanvas = container.querySelector(
+          ".rpv-core__canvas-layer canvas"
+        );
+
+        if (!pdfCanvas) {
+          console.warn("PDF canvas not ready yet");
+          setSnipBox(null);
+          return;
+        }
+
+        const canvasRect = pdfCanvas.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        const scaleX = pdfCanvas.width / canvasRect.width;
+        const scaleY = pdfCanvas.height / canvasRect.height;
+
+        const cropX = (x + containerRect.left - canvasRect.left) * scaleX;
+        const cropY = (y + containerRect.top - canvasRect.top) * scaleY;
+        const cropW = w * scaleX;
+        const cropH = h * scaleY;
+
+        if (cropW <= 0 || cropH <= 0) {
+          console.warn("Invalid crop area");
+          setSnipBox(null);
+          return;
+        }
+
+        const crop = document.createElement("canvas");
+        crop.width = cropW;
+        crop.height = cropH;
+
+        const ctx = crop.getContext("2d");
+
+        ctx.drawImage(
+          pdfCanvas,
+          cropX,
+          cropY,
+          cropW,
+          cropH,
+          0,
+          0,
+          cropW,
+          cropH
+        );
+
+        const image = crop.toDataURL("image/png");
+
+        console.log("✅ Screenshot captured");
+
+        let extractedText = "";
+        try {
+          // const result = await Tesseract.recognize(image, "eng");
+          
+          console.log(result,'resuly')
+          extractedText = result.data.text;
+          console.log("✅ OCR extracted");
+        } catch {
+          console.warn("OCR failed but image captured");
+        }
+
+        setCaptured({
+          image,
+          text: extractedText,
+        });
+
+        setSnipBox(null);
+      } catch (err) {
+        console.error("❌ Snipping error:", err);
+        setSnipBox(null);
+      }
+    };
+
+    // Render PDF page
     const renderPage = useCallback(
       (props) => {
-        const isPdfReady =
-          isPdfLoaded || !props.canvasLayerRendered || !props.textLayerRendered;
-        const pageCitations = isPdfReady
-          ? citationsByPage.get(props.pageIndex) || []
-          : [];
+        const pageCitations = citationsByPage.get(props.pageIndex) || [];
 
         return (
           <PDFPageRenderer
@@ -178,7 +262,7 @@ const InvoicePdf = forwardRef(
             textLayer={props.textLayer}
             normalizedCitation={normalizedCitation}
             pageCitations={pageCitations}
-            isPdfLoaded={isPdfReady}
+            isPdfLoaded={isPdfLoaded}
             onCitationClick={onCitationClick}
           />
         );
@@ -187,7 +271,34 @@ const InvoicePdf = forwardRef(
     );
 
     return (
-      <div className={cn("h-full w-full invoice-pdf-container", className)}>
+      <div
+        ref={containerRef}
+        className={cn(
+          "h-full w-full invoice-pdf-container relative",
+          className
+        )}
+        onPointerDown={startSnip}
+        onPointerMove={moveSnip}
+        onPointerUp={endSnip}
+        style={{ touchAction: "none" }}
+      >
+        {/* Selection Box */}
+        {snipBox && (
+          <div
+            style={{
+              position: "absolute",
+              left: Math.min(snipBox.startX, snipBox.endX),
+              top: Math.min(snipBox.startY, snipBox.endY),
+              width: Math.abs(snipBox.endX - snipBox.startX),
+              height: Math.abs(snipBox.endY - snipBox.startY),
+              border: "2px solid #22c55e",
+              background: "rgba(34,197,94,0.15)",
+              zIndex: 9999,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+
         <Worker workerUrl="/pdf.worker.min.js">
           <Viewer
             fileUrl={fileUrl}
@@ -204,6 +315,16 @@ const InvoicePdf = forwardRef(
             renderPage={renderPage}
           />
         </Worker>
+
+        {/* Preview Image + OCR Text */}
+        {captured && (
+          <div className="fixed bottom-4 right-4 bg-white dark:bg-black shadow-xl rounded-lg p-3 z-[99999] max-w-xs">
+            <img src={captured.image} className="rounded mb-2" />
+            <pre className="text-xs max-h-32 overflow-auto whitespace-pre-wrap">
+              {captured.text}
+            </pre>
+          </div>
+        )}
       </div>
     );
   }
