@@ -229,7 +229,7 @@ const InvoicePdf = forwardRef(
 
         let extractedText = "";
         try {
-          // const result = await Tesseract.recognize(image, "eng");
+          const result = await Tesseract.recognize(image, "eng");
           
           console.log(result,'resuly')
           extractedText = result.data.text;

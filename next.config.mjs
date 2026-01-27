@@ -42,26 +42,46 @@ const nextConfig = {
             value:
               "camera=(), microphone=(), geolocation=(), browsing-topics=()",
           },
+          // {
+          //   key: "Content-Security-Policy",
+          //   value: [
+          //     "default-src 'self'",
+          //     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+          //     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+          //     "font-src 'self' https://fonts.gstatic.com",
+          //     `img-src ${allowedSources}`,
+          //     `connect-src 'self' https: wss: ${s3BucketUrl}${
+          //       apiUrl ? ` ${apiUrl}` : ""
+          //     }`,
+          //     `media-src ${allowedSources}`,
+          //     `object-src 'self' ${s3BucketUrl}`,
+          //     `frame-src 'self' ${s3BucketUrl}`,
+          //     "base-uri 'self'",
+          //     `form-action 'self'${apiUrl ? ` ${apiUrl}` : ""}`,
+          //     "frame-ancestors 'none'",
+          //     "upgrade-insecure-requests",
+          //   ].join("; "),
+          // },
           {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              `img-src ${allowedSources}`,
-              `connect-src 'self' https: wss: ${s3BucketUrl}${
-                apiUrl ? ` ${apiUrl}` : ""
-              }`,
-              `media-src ${allowedSources}`,
-              `object-src 'self' ${s3BucketUrl}`,
-              `frame-src 'self' ${s3BucketUrl}`,
-              "base-uri 'self'",
-              `form-action 'self'${apiUrl ? ` ${apiUrl}` : ""}`,
-              "frame-ancestors 'none'",
-              "upgrade-insecure-requests",
-            ].join("; "),
-          },
+  key: "Content-Security-Policy",
+  value: [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://vercel.live https://unpkg.com https://cdn.jsdelivr.net",
+    "worker-src 'self' blob: https://unpkg.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    `img-src ${allowedSources}`,
+    `connect-src 'self' https: wss: https://unpkg.com https://cdn.jsdelivr.net ${s3BucketUrl}${apiUrl ? ` ${apiUrl}` : ""}`,
+    `media-src ${allowedSources}`,
+    `object-src 'self' ${s3BucketUrl}`,
+    `frame-src 'self' ${s3BucketUrl}`,
+    "base-uri 'self'",
+    `form-action 'self'${apiUrl ? ` ${apiUrl}` : ""}`,
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests",
+  ].join("; "),
+},
+
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
