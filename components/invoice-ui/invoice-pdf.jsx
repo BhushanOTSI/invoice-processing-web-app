@@ -22,16 +22,27 @@ import "@react-pdf-viewer/zoom/lib/styles/index.css";
 import { cn } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
 import { useTheme } from "next-themes";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Check, Copy } from "lucide-react";
 
-const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
+const InvoicePdf = forwardRef(({ fileUrl, className, editMode = false }, ref) => {
   const [numPages, setNumPages] = useState(0);
   const [isPdfLoaded, setIsPdfLoaded] = useState(false);
 
   const pdfContainerRef = useRef(null);
 
-  const [editMode, setEditMode] = useState(false);
+  // const [editMode, setEditMode] = useState(false); // Controlled via prop now
   const [dragStart, setDragStart] = useState(null);
   const [selection, setSelection] = useState(null);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
@@ -63,6 +74,8 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const onPointerDown = (e) => {
     if (!editMode) return;
 
+    e.target.setPointerCapture(e.pointerId);
+
     const rect = pdfContainerRef.current.getBoundingClientRect();
 
     setDragStart({
@@ -89,8 +102,17 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
     });
   };
 
-  const onPointerUp = async () => {
-    if (!editMode || !selection) {
+  const onPointerUp = async (e) => {
+    if (!editMode) {
+      setDragStart(null);
+      return;
+    }
+
+    if (editMode && dragStart) {
+      e.target.releasePointerCapture(e.pointerId);
+    }
+
+    if (!selection) {
       setDragStart(null);
       return;
     }
@@ -102,31 +124,61 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
   const captureSelection = async () => {
     if (!pdfContainerRef.current || !selection) return;
 
-    const canvas = await htmlToImage.toCanvas(pdfContainerRef.current);
+    try {
+      // Filter out the selection box itself
+      const filter = (node) => {
+        return node.id !== "selection-overlay";
+      };
 
-    const cropped = document.createElement("canvas");
-    cropped.width = selection.width;
-    cropped.height = selection.height;
+      const pixelRatio = window.devicePixelRatio || 1;
 
-    const ctx = cropped.getContext("2d");
+      const canvas = await htmlToImage.toCanvas(pdfContainerRef.current, {
+        filter,
+        pixelRatio,
+        skipAutoScale: true,
+      });
 
-    ctx.drawImage(
-      canvas,
-      selection.x,
-      selection.y,
-      selection.width,
-      selection.height,
-      0,
-      0,
-      selection.width,
-      selection.height
-    );
+      const cropped = document.createElement("canvas");
+      // Scale the cropped canvas to match the pixelRatio
+      cropped.width = selection.width * pixelRatio;
+      cropped.height = selection.height * pixelRatio;
 
-    const img = cropped.toDataURL("image/png");
+      const ctx = cropped.getContext("2d");
 
-    console.log("SNIPPED IMAGE:", img);
+      ctx.drawImage(
+        canvas,
+        selection.x * pixelRatio,
+        selection.y * pixelRatio,
+        selection.width * pixelRatio,
+        selection.height * pixelRatio,
+        0,
+        0,
+        selection.width * pixelRatio,
+        selection.height * pixelRatio
+      );
 
-    // Send img to backend / OCR / save here
+      const img = cropped.toDataURL("image/png");
+      setCapturedImage(img);
+      setIsDialogOpen(true);
+
+    } catch (error) {
+      console.error("Failed to capture selection:", error);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (!capturedImage) return;
+    try {
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ "image/png": blob }),
+      ]);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   };
 
   return (
@@ -137,19 +189,45 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
       onPointerUp={onPointerUp}
       className={cn(
         "relative h-full w-full invoice-pdf-container select-none",
+        editMode ? "touch-none cursor-crosshair" : "",
         className
       )}
     >
-      {/* Edit toggle */}
-      <button
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Captured Image</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4">
+            {capturedImage && (
+              <div className="border rounded bg-muted/50 p-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={capturedImage}
+                  alt="Snippet"
+                  className="max-h-[60vh] w-auto object-contain"
+                />
+              </div>
+            )}
+            <div className="flex justify-end w-full">
+              <Button onClick={copyToClipboard} className="gap-2">
+                {isCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                {isCopied ? "Copied" : "Copy to Clipboard"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Edit toggle - moved to parent */}
+      {/* <button
         onClick={() => {
           setEditMode((v) => !v);
           setSelection(null);
         }}
-        className="absolute right-3 top-3 z-50 rounded bg-black/70 px-3 py-1 text-sm text-white"
+        className="absolute right-14 top-3 z-50 rounded bg-black/70 px-3 py-1 text-sm text-white hover:bg-black/90 transition-colors"
       >
         {editMode ? "Done" : "Edit"}
-      </button>
+      </button> */}
 
       {/* Selection rectangle */}
       {editMode && selection && (
@@ -160,6 +238,7 @@ const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
             width: selection.width,
             height: selection.height,
           }}
+          id="selection-overlay"
           className="absolute z-40 border-2 border-blue-500 bg-blue-400/20"
         />
       )}
