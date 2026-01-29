@@ -6,7 +6,6 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -14,200 +13,175 @@ import { Worker, Viewer } from "@react-pdf-viewer/core";
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { pageNavigationPlugin } from "@react-pdf-viewer/page-navigation";
 import { zoomPlugin } from "@react-pdf-viewer/zoom";
+import * as htmlToImage from "html-to-image";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/zoom/lib/styles/index.css";
-import "@/app/pdf-viewer-dark.css";
+
 import { cn } from "@/lib/utils";
 import { Spinner } from "../ui/spinner";
-import PDFPageRenderer from "./pdf-page-renderer";
-import {
-  normalizeCitation,
-  normalizeCitations,
-  groupCitationsByPage,
-} from "./citation-utils";
 import { useTheme } from "next-themes";
 
-const InvoicePdf = forwardRef(
-  (
-    {
-      fileUrl,
-      className,
-      citation,
-      citations = [],
-      onCitationClick,
-      onClearCitation,
-    },
-    ref
-  ) => {
-    const [numPages, setNumPages] = useState(0);
-    const [isPdfLoaded, setIsPdfLoaded] = useState(false);
-    const pluginsRef = useRef(null);
-    const { theme } = useTheme();
-    const isDarkMode = theme === "dark";
+const InvoicePdf = forwardRef(({ fileUrl, className }, ref) => {
+  const [numPages, setNumPages] = useState(0);
+  const [isPdfLoaded, setIsPdfLoaded] = useState(false);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        getNumPages: () => numPages,
-        setNumPages: (n) => setNumPages(n),
-      }),
-      [numPages]
-    );
+  const pdfContainerRef = useRef(null);
 
-    const handleDocumentLoad = useCallback((e) => {
-      setNumPages(e.doc.numPages);
-      setIsPdfLoaded(true);
-    }, []);
+  const [editMode, setEditMode] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const [selection, setSelection] = useState(null);
 
-    // Reset load state when switching PDFs
-    useEffect(() => {
-      setIsPdfLoaded(false);
-      setNumPages(0);
-    }, [fileUrl]);
+  const { theme } = useTheme();
+  const isDarkMode = theme === "dark";
 
-    // Normalize citation
-    const normalizedCitation = useMemo(
-      () => normalizeCitation(citation),
-      [citation]
-    );
+  const defaultLayoutPluginInstance = defaultLayoutPlugin({
+    sidebarTabs: () => [],
+  });
+  const pageNavigationPluginInstance = pageNavigationPlugin();
+  const zoomPluginInstance = zoomPlugin();
 
-    // Normalize citations array
-    const normalizedCitations = useMemo(
-      () => normalizeCitations(citations),
-      [citations]
-    );
+  useImperativeHandle(ref, () => ({
+    getNumPages: () => numPages,
+  }));
 
-    // Group citations by page
-    const citationsByPage = useMemo(
-      () => groupCitationsByPage(normalizedCitations),
-      [normalizedCitations]
-    );
+  const handleDocumentLoad = useCallback((e) => {
+    setNumPages(e.doc.numPages);
+    setIsPdfLoaded(true);
+  }, []);
 
-    const lastCitationKeyRef = useRef(null);
-    const lastCitationPageRef = useRef(null);
+  useEffect(() => {
+    setIsPdfLoaded(false);
+    setNumPages(0);
+  }, [fileUrl]);
 
-    // Create plugins after all other hooks to maintain consistent hook order
-    // Plugins may use hooks internally, so they must be created unconditionally on every render
-    // We still store them in ref, but create fresh instances to maintain hook order
-    const defaultLayoutPluginInstance = defaultLayoutPlugin({
-      sidebarTabs: () => [],
+  // -----------------------------
+  // Selection logic
+  // -----------------------------
+
+  const onPointerDown = (e) => {
+    if (!editMode) return;
+
+    const rect = pdfContainerRef.current.getBoundingClientRect();
+
+    setDragStart({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     });
-    const pageNavigationPluginInstance = pageNavigationPlugin();
-    const zoomPluginInstance = zoomPlugin();
 
-    // Store in ref for reference, but plugins are created fresh each render
-    // This is necessary if plugins use hooks internally
-    pluginsRef.current = {
-      defaultLayoutPluginInstance,
-      pageNavigationPluginInstance,
-      zoomPluginInstance,
-    };
+    setSelection(null);
+  };
 
-    // Click outside: clear the active citation (closes the always-open HoverCard)
-    useEffect(() => {
-      if (!isPdfLoaded) return;
-      if (!normalizedCitation) return;
+  const onPointerMove = (e) => {
+    if (!editMode || !dragStart) return;
 
-      const onDocPointerDown = (e) => {
-        const target = e.target;
-        // Don't clear when clicking the citation overlays or the hovercard content
-        if (
-          target?.closest?.('[data-citation-overlay="true"]') ||
-          target?.closest?.('[data-slot="hover-card-content"]')
-        ) {
-          return;
-        }
+    const rect = pdfContainerRef.current.getBoundingClientRect();
 
-        onClearCitation?.();
-      };
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-      document.addEventListener("pointerdown", onDocPointerDown, true);
-      return () => {
-        document.removeEventListener("pointerdown", onDocPointerDown, true);
-      };
-    }, [isPdfLoaded, normalizedCitation, onClearCitation]);
+    setSelection({
+      x: Math.min(dragStart.x, x),
+      y: Math.min(dragStart.y, y),
+      width: Math.abs(x - dragStart.x),
+      height: Math.abs(y - dragStart.y),
+    });
+  };
 
-    // Handle citation navigation and scrolling
-    useEffect(() => {
-      if (!normalizedCitation) return;
-      if (!isPdfLoaded) return;
+  const onPointerUp = async () => {
+    if (!editMode || !selection) {
+      setDragStart(null);
+      return;
+    }
 
-      const key = `${
-        normalizedCitation.pageIndex
-      }:${normalizedCitation.bbox.join(",")}`;
-      if (key === lastCitationKeyRef.current) return;
-      lastCitationKeyRef.current = key;
+    await captureSelection();
+    setDragStart(null);
+  };
 
-      // Robust page jump (works even when pages are virtualized)
-      if (lastCitationPageRef.current !== normalizedCitation.pageIndex) {
-        lastCitationPageRef.current = normalizedCitation.pageIndex;
-        try {
-          pageNavigationPluginInstance.jumpToPage?.(
-            normalizedCitation.pageIndex
-          );
-        } catch {
-          // no-op
-        }
-      }
+  const captureSelection = async () => {
+    if (!pdfContainerRef.current || !selection) return;
 
-      // Scroll the highlight into view once it exists
-      const t = window.setTimeout(() => {
-        const hl = document.getElementById("invoice-citation-highlight");
-        if (hl) {
-          hl.scrollIntoView({ block: "center", behavior: "smooth" });
-        }
-      }, 120);
-      return () => window.clearTimeout(t);
-    }, [isPdfLoaded, normalizedCitation, pageNavigationPluginInstance]);
+    const canvas = await htmlToImage.toCanvas(pdfContainerRef.current);
 
-    // Memoize the page renderer function
-    const renderPage = useCallback(
-      (props) => {
-        const isPdfReady =
-          isPdfLoaded || !props.canvasLayerRendered || !props.textLayerRendered;
-        const pageCitations = isPdfReady
-          ? citationsByPage.get(props.pageIndex) || []
-          : [];
+    const cropped = document.createElement("canvas");
+    cropped.width = selection.width;
+    cropped.height = selection.height;
 
-        return (
-          <PDFPageRenderer
-            pageIndex={props.pageIndex}
-            canvasLayer={props.canvasLayer}
-            textLayer={props.textLayer}
-            normalizedCitation={normalizedCitation}
-            pageCitations={pageCitations}
-            isPdfLoaded={isPdfReady}
-            onCitationClick={onCitationClick}
-          />
-        );
-      },
-      [citationsByPage, isPdfLoaded, normalizedCitation, onCitationClick]
+    const ctx = cropped.getContext("2d");
+
+    ctx.drawImage(
+      canvas,
+      selection.x,
+      selection.y,
+      selection.width,
+      selection.height,
+      0,
+      0,
+      selection.width,
+      selection.height
     );
 
-    return (
-      <div className={cn("h-full w-full invoice-pdf-container", className)}>
-        <Worker workerUrl="/pdf.worker.min.js">
-          <Viewer
-            fileUrl={fileUrl}
-            plugins={[
-              defaultLayoutPluginInstance,
-              pageNavigationPluginInstance,
-              zoomPluginInstance,
-            ]}
-            onDocumentLoad={handleDocumentLoad}
-            theme={isDarkMode ? "dark" : "light"}
-            defaultScale={"PageWidth"}
-            renderLoader={() => <Spinner />}
-            pageLayout="single"
-            renderPage={renderPage}
-          />
-        </Worker>
-      </div>
-    );
-  }
-);
+    const img = cropped.toDataURL("image/png");
+
+    console.log("SNIPPED IMAGE:", img);
+
+    // Send img to backend / OCR / save here
+  };
+
+  return (
+    <div
+      ref={pdfContainerRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      className={cn(
+        "relative h-full w-full invoice-pdf-container select-none",
+        className
+      )}
+    >
+      {/* Edit toggle */}
+      <button
+        onClick={() => {
+          setEditMode((v) => !v);
+          setSelection(null);
+        }}
+        className="absolute right-3 top-3 z-50 rounded bg-black/70 px-3 py-1 text-sm text-white"
+      >
+        {editMode ? "Done" : "Edit"}
+      </button>
+
+      {/* Selection rectangle */}
+      {editMode && selection && (
+        <div
+          style={{
+            left: selection.x,
+            top: selection.y,
+            width: selection.width,
+            height: selection.height,
+          }}
+          className="absolute z-40 border-2 border-blue-500 bg-blue-400/20"
+        />
+      )}
+
+      <Worker workerUrl="/pdf.worker.min.js">
+        <Viewer
+          fileUrl={fileUrl}
+          plugins={[
+            defaultLayoutPluginInstance,
+            pageNavigationPluginInstance,
+            zoomPluginInstance,
+          ]}
+          onDocumentLoad={handleDocumentLoad}
+          theme={isDarkMode ? "dark" : "light"}
+          defaultScale="PageWidth"
+          renderLoader={() => <Spinner />}
+          pageLayout="single"
+        />
+      </Worker>
+    </div>
+  );
+});
 
 InvoicePdf.displayName = "InvoicePdf";
 
