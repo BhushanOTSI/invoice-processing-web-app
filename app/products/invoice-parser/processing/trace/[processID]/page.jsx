@@ -61,6 +61,7 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { useSetSearchParams } from "@/hooks/use-set-search-params";
 import { toTitleCase } from "remeda";
+import { CropIcon } from "lucide-react";
 
 const PdfPreview = dynamic(
   () => import("@/components/invoice-ui/invoice-pdf"),
@@ -80,6 +81,7 @@ export default function ProcessTracePage() {
   const { setOpen } = useSidebar();
   const { processID } = useParams();
   const [activeCitation, setActiveCitation] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
   const { leftSize, savePanelSize } = usePersistentResize(
     "invoice-trace-panel-size",
     processID
@@ -185,8 +187,8 @@ export default function ProcessTracePage() {
   const { data: processTraceDag } = useProcessTraceDag(
     processID,
     !isLoading &&
-      isCompletedProcessing(groupedTraceMessages["step-1"]?.status, true) &&
-      isCompletedProcessing(groupedTraceMessages["step-2"]?.status, true)
+    isCompletedProcessing(groupedTraceMessages["step-1"]?.status, true) &&
+    isCompletedProcessing(groupedTraceMessages["step-2"]?.status, true)
   );
 
   const { dagNodes = [], dagEdges = [] } = useMemo(() => {
@@ -697,6 +699,7 @@ export default function ProcessTracePage() {
                         }
                         onCitationClick={handlePdfCitationClick}
                         onClearCitation={clearPdfActiveCitation}
+                        editMode={isEditMode}
                       />
                     </div>
                   </div>
@@ -738,51 +741,67 @@ export default function ProcessTracePage() {
                   }}
                   className="flex flex-col h-full"
                 >
-                  <StepTabsList
-                    tabs={[
-                      {
-                        value: "step-1",
-                        label: "AI Invoice Extraction",
-                        stepNumber: 1,
-                        isProcessing:
-                          (stepStatus.isStep1Processing ||
-                            (!groupedTraceMessages["step-1"] && !isLoading)) &&
-                          !isMainProcessCompleted,
-                        isLoading: isLoading,
-                        isCompleted: stepStatus.isStep1Completed,
-                        isFailed:
-                          stepStatus.isStep1Failed || isMainProcessFailed,
-                        isCancelled: stepStatus.isStep1Cancelled,
-                        isPreviousStepCompleted: true,
-                      },
-                      // {
-                      //   value: "step-2",
-                      //   label: "Validate CW Invoice",
-                      //   stepNumber: 2,
-                      //   isProcessing: stepStatus.isStep2Processing,
-                      //   isLoading: isLoading,
-                      //   isCompleted: stepStatus.isStep2Completed,
-                      //   isFailed:
-                      //     stepStatus.isStep2Failed || stepStatus.isStep1Failed,
-                      //   isCancelled: stepStatus.isStep2Cancelled,
-                      //   isPreviousStepCompleted: stepStatus.isStep1Completed,
-                      // },
-                      {
-                        value: "step-3",
-                        label: "CW Integration",
-                        stepNumber: 2,
-                        isProcessing: stepStatus.isStep3Processing,
-                        isLoading: isLoading,
-                        isCompleted: stepStatus.isStep3Completed || isMainProcessCompleted,
-                        isFailed:
-                          stepStatus.isStep3Failed ||
-                          stepStatus.isStep2Failed ||
-                          stepStatus.isStep1Failed,
-                        isCancelled: stepStatus.isStep3Cancelled,
-                        isPreviousStepCompleted: stepStatus.isStep2Completed,
-                      },
-                    ]}
-                  />
+                  <div className="flex items-center justify-between border-b border-border/50 bg-background">
+                    <StepTabsList
+                      className="border-b-0"
+                      tabs={[
+                        {
+                          value: "step-1",
+                          label: "AI Invoice Extraction",
+                          stepNumber: 1,
+                          isProcessing:
+                            (stepStatus.isStep1Processing ||
+                              (!groupedTraceMessages["step-1"] && !isLoading)) &&
+                            !isMainProcessCompleted,
+                          isLoading: isLoading,
+                          isCompleted: stepStatus.isStep1Completed,
+                          isFailed:
+                            stepStatus.isStep1Failed || isMainProcessFailed,
+                          isCancelled: stepStatus.isStep1Cancelled,
+                          isPreviousStepCompleted: true,
+                        },
+                        // {
+                        //   value: "step-2",
+                        //   label: "Validate CW Invoice",
+                        //   stepNumber: 2,
+                        //   isProcessing: stepStatus.isStep2Processing,
+                        //   isLoading: isLoading,
+                        //   isCompleted: stepStatus.isStep2Completed,
+                        //   isFailed:
+                        //     stepStatus.isStep2Failed || stepStatus.isStep1Failed,
+                        //   isCancelled: stepStatus.isStep2Cancelled,
+                        //   isPreviousStepCompleted: stepStatus.isStep1Completed,
+                        // },
+                        {
+                          value: "step-3",
+                          label: "CW Integration",
+                          stepNumber: 2,
+                          isProcessing: stepStatus.isStep3Processing,
+                          isLoading: isLoading,
+                          isCompleted: stepStatus.isStep3Completed || isMainProcessCompleted,
+                          isFailed:
+                            stepStatus.isStep3Failed ||
+                            stepStatus.isStep2Failed ||
+                            stepStatus.isStep1Failed,
+                          isCancelled: stepStatus.isStep3Cancelled,
+                          isPreviousStepCompleted: stepStatus.isStep2Completed,
+                        },
+                      ]}
+                    />
+                    <div className="flex items-center gap-2 px-2">
+                      <Button
+                        variant={isEditMode ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        className={cn("h-7 gap-1.5 text-xs", isEditMode && "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50")}
+                        title="Snipping Tool"
+                      >
+                        <CropIcon className="size-3.5" />
+                        {isEditMode ? "Done" : "Edit"}
+                      </Button>
+                    </div>
+                  </div>
+
                   {jsonData && activeTab === "step-1" && (
                     <div className="flex items-center gap-1 py-2 px-6 bg-accent dark:bg-accent/50 border-b border-border/50 justify-end">
                       <Switch
